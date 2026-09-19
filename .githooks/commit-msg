@@ -1,0 +1,6 @@
+#!/bin/sh
+# Keeps commit messages free of tool attribution so the history stays clean.
+# Hooks can be skipped, so CI re-scans the whole history as well.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+exec node scripts/check-agent-names.mjs --message "$1"
