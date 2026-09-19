@@ -3,3 +3,14 @@ node_modules/
 .env
 .env.*
 !.env.example
+.output/
+.nitro/
+.tanstack/
+dist/
+coverage/
+.venv-gate/
+*.sqlite
+*.sqlite3
+*.db
+snapshots/
+*.tsbuildinfo
