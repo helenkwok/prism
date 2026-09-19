@@ -1,0 +1,6 @@
+#!/bin/sh
+# Refuses staged files that must never enter the public history.
+# Hooks can be skipped, so CI re-runs the same check over all tracked files.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+exec node scripts/check-forbidden-paths.mjs --staged
