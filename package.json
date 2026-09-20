@@ -1,0 +1,41 @@
+{
+  "name": "prism",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "test:gate": "node --test \"tests/gate/*.gate.mjs\"",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "smoke": "vite build && node scripts/app-smoke.mjs --spawn",
+    "typecheck": "tsc --noEmit",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.38",
+    "@tanstack/react-start": "1.168.56",
+    "better-auth": "1.7.5",
+    "better-sqlite3": "12.11.1",
+    "highs": "1.15.3",
+    "kysely": "0.29.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "takumi-pdf": "0.14.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.13.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "nitro": "3.0.260903-beta",
+    "typescript": "6.0.3",
+    "vite": "8.3.0"
+  }
+}
