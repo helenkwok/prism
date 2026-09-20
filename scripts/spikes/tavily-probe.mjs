@@ -93,24 +93,103 @@ async function tavily(endpoint, body, { method = "POST", attempts = 2 } = {}) {
   }
 }
 
-// GET /usage allows 10 requests per 10 minutes; a sliding window keeps us under it.
-const usageReads = [];
-async function readUsage() {
-  const now = Date.now();
-  while (usageReads.length && now - usageReads[0] > 10 * 60 * 1000) usageReads.shift();
-  if (usageReads.length >= 8) {
-    await sleep(Math.max(1000, usageReads[0] + 10 * 60 * 1000 - now + 1000));
-    return readUsage();
+// GET /usage allows 10 requests per 10 minutes. The read times are kept in the
+// private store so the window is honoured across processes, not just within one.
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_READS_IN_WINDOW = 7;
+function usageLogPath() {
+  return path.join(spikeDirs().spikes, "usage-reads.json");
+}
+function loadReads() {
+  try {
+    return JSON.parse(fs.readFileSync(usageLogPath(), "utf8")).filter((t) => Date.now() - t < WINDOW_MS);
+  } catch {
+    return [];
   }
-  usageReads.push(Date.now());
-  const { json } = await tavily("/usage", null, { method: "GET" });
-  return {
-    key_usage: json?.key?.usage ?? null,
-    key_limit: json?.key?.limit ?? null,
-    plan_usage: json?.account?.plan_usage ?? null,
-    plan_limit: json?.account?.plan_limit ?? null,
-    paygo_usage: json?.account?.paygo_usage ?? null,
+}
+async function readUsage() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const reads = loadReads();
+    if (reads.length >= MAX_READS_IN_WINDOW) {
+      await sleep(Math.max(1000, reads[0] + WINDOW_MS - Date.now() + 1000));
+      continue;
+    }
+    reads.push(Date.now());
+    fs.writeFileSync(usageLogPath(), JSON.stringify(reads), { mode: 0o600 });
+    try {
+      const { json } = await tavily("/usage", null, { method: "GET", attempts: 1 });
+      return {
+        key_usage: json?.key?.usage ?? null,
+        key_limit: json?.key?.limit ?? null,
+        plan_usage: json?.account?.plan_usage ?? null,
+        plan_limit: json?.account?.plan_limit ?? null,
+        paygo_usage: json?.account?.paygo_usage ?? null,
+        map_usage: json?.account?.map_usage ?? null,
+        extract_usage: json?.account?.extract_usage ?? null,
+        search_usage: json?.account?.search_usage ?? null,
+      };
+    } catch (e) {
+      if (e.status === 429) {
+        // The service counted a read this process did not know about: fill the window and wait it out.
+        fs.writeFileSync(usageLogPath(), JSON.stringify(Array(MAX_READS_IN_WINDOW).fill(Date.now())), { mode: 0o600 });
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("usage endpoint stayed rate limited");
+}
+
+/** Everything spent so far, by both methods, from the run summaries plus the manual ledger. */
+function expectedSpend(dirs) {
+  const read = (f) => JSON.parse(fs.readFileSync(path.join(dirs.summaries, f), "utf8"));
+  const has = (f) => fs.existsSync(path.join(dirs.summaries, f));
+  const manual = read("ledger-manual.json");
+  let perCall = manual.logged_through_main_run.per_call + manual.inferred_interrupted_first_run_project3.per_call;
+  let formula = manual.logged_through_main_run.formula + manual.inferred_interrupted_first_run_project3.formula;
+  if (has("calibration.json")) {
+    const c = read("calibration.json");
+    perCall += c.per_call_sum;
+    formula += c.formula_sum;
+  }
+  if (has("controls.json")) {
+    const c = read("controls.json");
+    const rp = c.repo_only_project;
+    if (rp) {
+      perCall += rp.naive_defaults.credits_per_call + rp.allow_external_true.credits_per_call;
+      formula += rp.naive_defaults.credits_formula + rp.allow_external_true.credits_formula;
+    }
+  }
+  if (has("topup.json")) {
+    const t = read("topup.json");
+    perCall += t.per_call;
+    formula += t.formula;
+  }
+  return { per_call: perCall, formula };
+}
+
+/** Read the account counter until it reaches the logged per-call total, or the wait runs out. */
+export async function finalRead(dirs, waitMinutes) {
+  const expected = expectedSpend(dirs);
+  const t0 = Date.now();
+  let u = await readUsage();
+  while ((u.plan_usage ?? 0) < expected.per_call && Date.now() - t0 < waitMinutes * 60000) {
+    await sleep(5 * 60000);
+    u = await readUsage();
+  }
+  const out = {
+    plan_usage: u.plan_usage,
+    map_usage: u.map_usage,
+    extract_usage: u.extract_usage,
+    search_usage: u.search_usage,
+    expected_per_call_total: expected.per_call,
+    expected_formula_total: expected.formula,
+    caught_up: (u.plan_usage ?? 0) >= expected.per_call,
+    waited_min: Math.round((Date.now() - t0) / 60000),
   };
+  fs.writeFileSync(path.join(dirs.summaries, "final.json"), JSON.stringify(out, null, 2), { mode: 0o600 });
+  log({ final_counter: out });
+  return out;
 }
 
 /** Poll the usage endpoint until plan usage moves past `since`, or give up. Returns { usage, waited_s }. */
@@ -122,6 +201,54 @@ async function settledUsage(since, { reads = 9, spacingMs = 70000 } = {}) {
     last = await readUsage();
   }
   return { usage: last, waited_s: Math.round((Date.now() - t0) / 1000) };
+}
+
+/** Poll until the plan counter is unchanged across two reads spaced apart. Returns { usage, waited_s, reads }. */
+async function stableUsage({ spacingMs = 70000, maxReads = 14, mustExceed = null } = {}) {
+  const t0 = Date.now();
+  const val = (u) => u.plan_usage ?? u.key_usage;
+  let prev = await readUsage();
+  let reads = 1;
+  while (reads < maxReads) {
+    await sleep(spacingMs);
+    const cur = await readUsage();
+    reads += 1;
+    const moved = mustExceed === null || val(cur) > mustExceed;
+    if (val(cur) === val(prev) && moved) return { usage: cur, waited_s: Math.round((Date.now() - t0) / 1000), reads, stable: true };
+    prev = cur;
+  }
+  return { usage: prev, waited_s: Math.round((Date.now() - t0) / 1000), reads, stable: false };
+}
+
+/**
+ * Billing calibration: run projects back to back with no usage reads in between, then
+ * wait for the account counter to settle and compare its delta with the per-call and
+ * formula sums of the same workload.
+ */
+export async function calibrate(dirs, list) {
+  const base = await stableUsage();
+  const baseVal = base.usage.plan_usage ?? base.usage.key_usage;
+  const runs = [];
+  for (const n of list) {
+    const { summary } = await runProject(dirs, n, { quiet: true, skipUsage: true, save: false });
+    runs.push({ type_class: summary.type_class, per_call: summary.credits.per_call, formula: summary.credits.formula, extract_calls: summary.credits.by_call });
+  }
+  const perCall = runs.reduce((a, r) => a + r.per_call, 0);
+  const formula = runs.reduce((a, r) => a + r.formula, 0);
+  const done = await stableUsage({ mustExceed: perCall > 0 || formula > 0 ? baseVal : null });
+  const delta = (done.usage.plan_usage ?? done.usage.key_usage) - baseVal;
+  const out = {
+    projects: runs,
+    per_call_sum: perCall,
+    formula_sum: formula,
+    account_delta: delta,
+    baseline_stable: base.stable,
+    end_stable: done.stable,
+    settle_wait_s: done.waited_s,
+  };
+  fs.writeFileSync(path.join(dirs.summaries, "calibration.json"), JSON.stringify(out, null, 2), { mode: 0o600 });
+  log({ calibration: out });
+  return out;
 }
 
 const usageDelta = (a, b) => {
@@ -205,7 +332,7 @@ const isEmptyContent = (r) => typeof r.raw_content !== "string" || r.raw_content
 
 // ---- one project ------------------------------------------------------------------
 
-export async function runProject(dirs, n, { quiet = false } = {}) {
+export async function runProject(dirs, n, { quiet = false, skipUsage = false, save = true } = {}) {
   const projects = loadProjects(dirs);
   const proj = projects.find((p) => p.n === n);
   if (!proj) throw new Error(`no project ${n}`);
@@ -223,7 +350,7 @@ export async function runProject(dirs, n, { quiet = false } = {}) {
   const calls = [];
   let refused = 0;
 
-  const before = await readUsage();
+  const before = skipUsage ? null : await readUsage();
 
   const tStart = Date.now();
   // 2. map
@@ -326,15 +453,19 @@ export async function runProject(dirs, n, { quiet = false } = {}) {
     finalPages.filter((r) => !withinBoundary(r.url, boundary)).length;
 
   // 8. account delta (usage lags a little, so wait before the second read)
-  await sleep(8000);
-  const after = await readUsage();
-  const d = usageDelta(before, after);
+  let after = null;
+  let d = { plan: null, key: null, account_delta: null };
+  if (!skipUsage) {
+    await sleep(8000);
+    after = await readUsage();
+    d = usageDelta(before, after);
+  }
 
   const perCallSum = calls.reduce((s, c) => s + c.per_call, 0);
   const formulaSum = calls.reduce((s, c) => s + c.formula, 0);
   // The usage endpoint lags (measured 2026-09-20: still 0 minutes after a 9 credit
   // project). A zero delta after non-zero spend is a lagged read, not a measurement.
-  const lagged = d.account_delta === 0 && perCallSum > 0;
+  const lagged = skipUsage || (d.account_delta === 0 && perCallSum > 0);
   const accountDelta = lagged ? null : d.account_delta;
   const total = Math.max(perCallSum, accountDelta ?? 0);
 
@@ -374,9 +505,9 @@ export async function runProject(dirs, n, { quiet = false } = {}) {
     usage_zero_below_5: { calls_below_5: extractCallsBelow5, reported_zero: extractCallsBelow5Zero },
     redaction: red,
     wall_ms: wallMs,
-    balance: { plan_usage_after: after.plan_usage, plan_limit: after.plan_limit, key_usage_after: after.key_usage },
+    balance: after ? { plan_usage_after: after.plan_usage, plan_limit: after.plan_limit, key_usage_after: after.key_usage } : null,
   };
-  fs.writeFileSync(path.join(dirs.summaries, `proj${n}.json`), JSON.stringify(summary, null, 2), { mode: 0o600 });
+  if (save) fs.writeFileSync(path.join(dirs.summaries, `proj${n}.json`), JSON.stringify(summary, null, 2), { mode: 0o600 });
   if (!quiet) log(summary);
   return { summary, before, after };
 }
@@ -466,6 +597,40 @@ export async function runControls(dirs) {
   return out;
 }
 
+export async function runExtraControls(dirs) {
+  const projects = loadProjects(dirs);
+  const p = projects.find((x) => x.type_class === "repo-only");
+  const b = deriveBoundary(p.final_url);
+  const sel = selectorsFor(b);
+  const base = { url: p.final_url, max_depth: MAP_DEPTH, limit: MAP_LIMIT, include_usage: true };
+  const variants = {
+    naive_defaults: { ...base, allow_external: true },
+    allow_external_true: { ...base, allow_external: true, ...sel },
+  };
+  const out = { type_class: p.type_class };
+  for (const [name, body] of Object.entries(variants)) {
+    const r = await tavily("/map", body);
+    saveRaw(dirs, `control-repo-${name}`, { request: { ...body, url: "(private)" }, response: r.json });
+    const urls = Array.isArray(r.json?.results) ? r.json.results : [];
+    const off = urls.filter((u) => !withinBoundary(u, b));
+    out[name] = {
+      urls_returned: urls.length,
+      offsite_urls_returned: off.length,
+      offsite_same_host_other_path: off.filter((u) => hostOf(u).replace(/^www\./, "") === b.host).length,
+      offsite_classes: countClasses(off),
+      credits_per_call: r.json?.usage?.credits ?? 0,
+      credits_formula: mapCredits(urls.length),
+    };
+    await sleep(1500);
+  }
+  const file = path.join(dirs.summaries, "controls.json");
+  const all = JSON.parse(fs.readFileSync(file, "utf8"));
+  all.repo_only_project = out;
+  fs.writeFileSync(file, JSON.stringify(all, null, 2), { mode: 0o600 });
+  log({ extra_controls: out });
+  return out;
+}
+
 // ---- top-up ------------------------------------------------------------------------
 
 export async function topUp(dirs, count) {
@@ -474,7 +639,6 @@ export async function topUp(dirs, count) {
   const pool = candidates.filter((c) => !used.has(c.id)).sort((a, b) => b.points - a.points);
   const dir = path.join(dirs.pages, "topup");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const before = await readUsage();
   const urls = [];
   for (const c of pool) {
     if (urls.length >= count) break;
@@ -500,9 +664,7 @@ export async function topUp(dirs, count) {
     perCall += r.json?.usage?.credits ?? 0;
     formula += extractCredits((r.json?.results ?? []).length);
   }
-  await sleep(8000);
-  const after = await readUsage();
-  const res = { topup_requested: count, topup_urls: urls.length, topup_pages_kept: kept, per_call: perCall, formula, account_delta: usageDelta(before, after).account_delta };
+  const res = { topup_requested: count, topup_urls: urls.length, topup_pages_kept: kept, per_call: perCall, formula };
   fs.writeFileSync(path.join(dirs.summaries, "topup.json"), JSON.stringify(res, null, 2), { mode: 0o600 });
   log(res);
   return res;
@@ -514,11 +676,12 @@ const CRITERION_TEXT = {
   A: "ceiling of 40 credits per project (D-16) plus binding median at most 10 and p95 at most 40 on the 5 projects; Phase 2 cap derived from remaining credits divided by projects still to collect",
 };
 
-export function buildRecord({ summaries, controls, topup, balance, today, settled = null }) {
+export function buildRecord({ summaries, controls, topup, balance, today, settled = null, calibration = null, final = null, spend = null }) {
   const totals = summaries.map((s) => s.credits.total);
   const med = median(totals);
   const p95 = percentile(totals, 95);
   const max = Math.max(...totals);
+  const fTotals = summaries.map((s) => s.credits.formula);
   const ceilingHeld = summaries.every((s) => s.credits.ceiling_held);
   const met = med <= 10 && p95 <= 40 && ceilingHeld;
   const leaked = summaries.some((s) => s.leakage.after_filter > 0);
@@ -539,7 +702,17 @@ export function buildRecord({ summaries, controls, topup, balance, today, settle
       id: "A",
       outcome: met ? "met" : "missed",
       definition: CRITERION_TEXT.A,
-      measured: { median_credits: med, p95_credits: p95, max_credits: max, ceiling: CEILING_CREDITS, ceiling_held: ceilingHeld },
+      measured: {
+        median_credits: med,
+        p95_credits: p95,
+        max_credits: max,
+        by: "per-call usage reported by the API, the larger of that and the account delta when one was read",
+        formula_median_credits: median(fTotals),
+        formula_p95_credits: percentile(fTotals, 95),
+        formula_max_credits: Math.max(...fTotals),
+        ceiling: CEILING_CREDITS,
+        ceiling_held: ceilingHeld,
+      },
     },
     projects: summaries.map((s) => ({
       type_class: s.type_class,
@@ -550,7 +723,8 @@ export function buildRecord({ summaries, controls, topup, balance, today, settle
       credits: {
         per_call: s.credits.per_call,
         formula: s.credits.formula,
-        account_delta: s.credits.account_delta,
+        account_delta: null, // every per-project account read was stale (see account_reconciliation)
+        account_delta_lagged: true,
         total: s.credits.total,
         by_call: s.credits.by_call,
         projected_full_extract_formula: s.credits.projected_full_extract_formula,
@@ -564,16 +738,48 @@ export function buildRecord({ summaries, controls, topup, balance, today, settle
       naive_defaults: controls.naive_defaults,
       search_fallback: controls.search_fallback,
       redirect_entry_extract: controls.redirect_entry_extract ?? null,
+      repo_only_project: controls.repo_only_project ?? null,
       account_delta: controls.account_delta,
     },
-    account_reconciliation: settled
-      ? {
-          settled_account_delta_total: settled.account_delta_total_settled,
-          settle_wait_s: settled.settle_wait_s,
-          per_call_total_projects_and_controls: totals.reduce((a, b) => a + b, 0) + (controls.total_per_call ?? 0),
-        }
-      : null,
+    account_reconciliation: {
+      lag_note: "the usage endpoint did not move for many minutes after spend, so a per-project read taken seconds later was always stale",
+      main_run: settled
+        ? { account_counter_absolute: settled.plan_usage_now, settle_wait_s: settled.settle_wait_s, spend_logged_per_call_through_main_run: 71, spend_logged_formula_through_main_run: 76, derivation: "sum of per-call and formula credits over every Tavily call made from the first tracer run through the main run" }
+        : null,
+      final_counter: final ?? null,
+      calibration: calibration
+        ? {
+            workload: calibration.projects.map((x) => x.type_class),
+            per_call_sum: calibration.per_call_sum,
+            formula_sum: calibration.formula_sum,
+            account_delta: calibration.account_delta,
+            baseline_stable: calibration.baseline_stable,
+            end_stable: calibration.end_stable,
+            settle_wait_s: calibration.settle_wait_s,
+          }
+        : null,
+    },
     aggregate: { median_credits: med, p95_credits: p95, max_credits: max, p95_method: "nearest rank over 5 projects (equals the maximum)", total_credits: totals.reduce((a, b) => a + b, 0) },
+    phase2_budget: (() => {
+      const limit = balance.api_plan_limit ?? 1500;
+      const spent = spend?.per_call ?? 0;
+      const remaining = limit - spent;
+      const toCollect = 295;
+      const mean = totals.reduce((a, b) => a + b, 0) / totals.length;
+      return {
+        basis: "free monthly allowance only; the hackathon credit is unconfirmed",
+        plan_limit: limit,
+        spent_all_spike_calls_per_call: spent,
+        remaining_credits: remaining,
+        projects_still_to_collect: toCollect,
+        derived_cap_per_project: Math.floor((remaining / toCollect) * 10) / 10,
+        observed_mean_per_project: Math.round(mean * 10) / 10,
+        observed_median_per_project: med,
+        projected_300_at_mean: Math.round(mean * 300),
+        projected_300_at_median: Math.round(med * 300),
+        fits_free_allowance: Math.round(mean * 300) <= remaining,
+      };
+    })(),
     blocks_phase2_collector: leaked,
     corpus_pages: corpus,
     corpus_target: CORPUS_TARGET,
@@ -589,12 +795,11 @@ export function buildRecord({ summaries, controls, topup, balance, today, settle
   return { record, met, leaked };
 }
 
-function commentary(record, summaries, controls) {
+function commentary(record, summaries, controls, calibration, final) {
   const r = record;
   const lines = [];
   const perCall = summaries.map((s) => s.credits.per_call);
   const formula = summaries.map((s) => s.credits.formula);
-  const delta = summaries.map((s) => s.credits.account_delta);
   const rex = controls.redirect_entry_extract;
   lines.push("# Tavily spike (FND-06)");
   lines.push("");
@@ -607,8 +812,11 @@ function commentary(record, summaries, controls) {
   lines.push("## Commentary");
   lines.push("");
   lines.push(`- Criterion A (ceiling 40 plus median at most 10 and p95 at most 40): ${r.criterion.outcome}. Measured median ${r.aggregate.median_credits}, p95 ${r.aggregate.p95_credits}, max ${r.aggregate.max_credits} credits per project. p95 over five projects is the maximum by nearest rank.`);
-  lines.push(`- Credits per project, by method. Per-call usage: ${perCall.join(", ")}. Documented formula: ${formula.join(", ")}. Account usage delta: ${delta.join(", ")}. A project's total is the larger of per-call and account delta.`);
-  lines.push(`- Reconciliation: per-call and formula ${perCall.every((v, i) => v === formula[i]) ? "agree on every project" : "disagree on at least one project"}; account delta and per-call ${delta.every((v, i) => v === perCall[i]) ? "agree on every project" : "disagree on at least one project"}.`);
+  lines.push(`- Credits per project, by method. Per-call usage: ${perCall.join(", ")}. Documented formula: ${formula.join(", ")}. Account usage delta: not attributable per project (stale reads). A project's total is its per-call usage.`);
+  lines.push(`- Reconciliation: per-call and formula ${perCall.every((v, i) => v === formula[i]) ? "agree on every project" : "disagree on at least one project"} (${perCall.map((v, i) => (v === formula[i] ? "=" : `${v} vs ${formula[i]}`)).join(", ")}). Every per-project account read was stale, because the usage endpoint moved only after several minutes, so per-project account deltas are null.`);
+  if (calibration) {
+    lines.push(`- Billing calibration: two projects re-run back to back with no reads in between, then a wait for the counter to settle (${calibration.settle_wait_s} s, stable ${calibration.end_stable}). Per-call sum ${calibration.per_call_sum}, formula sum ${calibration.formula_sum}, account delta ${calibration.account_delta}.`);
+  }
   lines.push(`- Extract usage below 5 successes read 0 on ${summaries.reduce((s, x) => s + x.usage_zero_below_5.reported_zero, 0)} of ${summaries.reduce((s, x) => s + x.usage_zero_below_5.calls_below_5, 0)} such calls in the project runs${rex ? `; the single-URL control extract read ${rex.credits_per_call} credits (formula ${rex.credits_formula})` : ""} (research Pitfall 6).`);
   if (rex) {
     lines.push(
@@ -617,6 +825,16 @@ function commentary(record, summaries, controls) {
   }
   lines.push(`- Leakage with allow_external false plus anchored selectors: ${summaries.reduce((s, x) => s + x.leakage.raw_offsite_in_map, 0)} off-site URLs in map lists and ${summaries.reduce((s, x) => s + x.leakage.raw_offsite_in_results, 0)} in extract results across the five projects; ${summaries.reduce((s, x) => s + x.leakage.after_filter, 0)} after the code-side host filter.`);
   lines.push(`- Controls on the own-domain project: allow_external true (selectors kept) returned ${controls.allow_external_true.offsite_urls_returned} off-site of ${controls.allow_external_true.urls_returned}; selectors off with allow_external false returned ${controls.selectors_off_allow_false.offsite_urls_returned} off-site of ${controls.selectors_off_allow_false.urls_returned}; naive defaults returned ${controls.naive_defaults.offsite_urls_returned} off-site of ${controls.naive_defaults.urls_returned}. Restricted search returned ${controls.search_fallback.results} results, ${controls.search_fallback.offsite_results} off-site.`);
+  if (final) {
+    lines.push(`- Final account counter read: ${final.plan_usage} credits (map ${final.map_usage}, extract ${final.extract_usage}, search ${final.search_usage}) against ${final.expected_per_call_total} logged by per-call usage and ${final.expected_formula_total} by the formula; caught up with the logged spend: ${final.caught_up}, after waiting ${final.waited_min} minutes. The counter moves in lumps many minutes after spend.`);
+  }
+  const rp = controls.repo_only_project;
+  if (rp) {
+    lines.push(`- Controls on the repo-only project (shared host, path boundary): naive defaults returned ${rp.naive_defaults.offsite_urls_returned} URLs outside the path boundary of ${rp.naive_defaults.urls_returned} (${rp.naive_defaults.offsite_same_host_other_path} on the same host under other paths); allow_external true with selectors kept returned ${rp.allow_external_true.offsite_urls_returned} of ${rp.allow_external_true.urls_returned}.`);
+  }
+  lines.push("- after_filter is zero by construction, because the code-side filter drops every URL outside the boundary; the informative leakage numbers are the raw counts in the map list and in the extract results.");
+  const b2 = r.phase2_budget;
+  lines.push(`- Phase 2 budget on the free allowance alone (the hackathon credit is unconfirmed): ${b2.remaining_credits} credits remain of ${b2.plan_limit}, so ${b2.projects_still_to_collect} projects leave a derived cap of ${b2.derived_cap_per_project} credits each. Observed mean ${b2.observed_mean_per_project} and median ${b2.observed_median_per_project} per project would need about ${b2.projected_300_at_mean} to ${b2.projected_300_at_median} credits for 300 projects; fits the free allowance: ${b2.fits_free_allowance}.`);
   lines.push(`- Corpus: ${r.corpus_pages} non-empty redacted pages against a target of ${r.corpus_target}.`);
   lines.push(`- Phase 2 collector design is ${r.blocks_phase2_collector ? "BLOCKED by leakage" : "not blocked by leakage"}.`);
   lines.push("- Limits: the DNS answer checked in pre-flight is not pinned to the connecting socket, and only HTTP redirects are followed. Both are Phase 2 and Phase 7 work.");
@@ -631,10 +849,15 @@ export function writeRecord(dirs, { balance, today }) {
   const topup = fs.existsSync(topupPath) ? JSON.parse(fs.readFileSync(topupPath, "utf8")) : null;
   const settledPath = path.join(dirs.summaries, "settled.json");
   const settled = fs.existsSync(settledPath) ? JSON.parse(fs.readFileSync(settledPath, "utf8")) : null;
-  const { record, met, leaked } = buildRecord({ summaries, controls, topup, balance, today, settled });
+  const calPath = path.join(dirs.summaries, "calibration.json");
+  const calibration = fs.existsSync(calPath) ? JSON.parse(fs.readFileSync(calPath, "utf8")) : null;
+  const finalPath = path.join(dirs.summaries, "final.json");
+  const final = fs.existsSync(finalPath) ? JSON.parse(fs.readFileSync(finalPath, "utf8")) : null;
+  const spend = expectedSpend(dirs);
+  const { record, met, leaked } = buildRecord({ summaries, controls, topup, balance, today, settled, calibration, final, spend });
   const problems = validateRecord("tavily", record, { requireFinal: true });
   if (problems.length) throw new Error(`record fails the tavily contract: ${problems.join("; ")}`);
-  const md = replaceJsonBlock(commentary(record, summaries, controls), record);
+  const md = replaceJsonBlock(commentary(record, summaries, controls, calibration, final), record);
   assertNumbersOnly(md);
   const target = path.join(dirs.root, RECORD_PATH);
   fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -657,6 +880,18 @@ async function main() {
 
   if (flag("--project")) {
     await runProject(dirs, Number(val("--project")), { quiet: false });
+    return;
+  }
+  if (flag("--final-read")) {
+    await finalRead(dirs, Number(val("--wait") ?? 0));
+    return;
+  }
+  if (flag("--controls-extra")) {
+    await runExtraControls(dirs);
+    return;
+  }
+  if (flag("--calibrate")) {
+    await calibrate(dirs, val("--calibrate").split(",").map(Number));
     return;
   }
   if (flag("--top-up")) {
