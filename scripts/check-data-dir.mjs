@@ -128,8 +128,12 @@ function main() {
   }
 }
 
+// The basename test matters once a bundler inlines this module into a server
+// entry file: there import.meta.url is the entry itself, and without it the
+// bundled server would run the CLI (and exit) at start.
 const invokedDirectly =
   process.argv[1] !== undefined &&
+  path.basename(process.argv[1]) === "check-data-dir.mjs" &&
   fs.existsSync(process.argv[1]) &&
   fs.realpathSync.native(process.argv[1]) === fs.realpathSync.native(fileURLToPath(import.meta.url));
 

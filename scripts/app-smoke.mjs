@@ -133,6 +133,30 @@ async function assertions(base, creds) {
   }
 }
 
+// Start the built server with a broken configuration and expect it to exit
+// non-zero within 10 seconds, its output naming the failed setting. The
+// process never stays alive: it is killed if it does not exit in time.
+function bootRefusal(name, envOverrides, unset, expectText) {
+  return new Promise((resolve) => {
+    const env = { ...process.env, NODE_ENV: "production", HOST: "127.0.0.1", ...envOverrides };
+    for (const key of unset) delete env[key];
+    const proc = spawn(process.execPath, [".output/server/index.mjs"], {
+      env: { ...env, PORT: "0" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let out = "";
+    proc.stdout.on("data", (d) => (out += d));
+    proc.stderr.on("data", (d) => (out += d));
+    const timer = setTimeout(() => proc.kill("SIGKILL"), 10_000);
+    proc.once("exit", (code, signal) => {
+      clearTimeout(timer);
+      check(`${name}: exits non-zero within 10 seconds`, code !== null && code !== 0 && signal === null, `code ${code} signal ${signal}`);
+      check(`${name}: output names ${expectText}`, out.includes(expectText), out.trim().slice(0, 200));
+      resolve();
+    });
+  });
+}
+
 function randomCreds() {
   return {
     email: `smoke-${randomBytes(4).toString("hex")}@example.test`,
@@ -178,6 +202,21 @@ try {
     const up = await waitFor(base, 30_000);
     check("built server answers within 30 seconds", up && !exited);
     if (up && !exited && seed.status === 0) await assertions(base, creds);
+
+    // Boot refusals: a mis-configured server must stop, not serve.
+    await bootRefusal(
+      "no BETTER_AUTH_SECRET",
+      { PRISM_DATA_DIR: dataDir },
+      ["BETTER_AUTH_SECRET"],
+      "BETTER_AUTH_SECRET",
+    );
+    await bootRefusal(
+      "data directory inside the repo",
+      { PRISM_DATA_DIR: path.join(process.cwd(), ".prism-smoke-data"), BETTER_AUTH_SECRET: randomBytes(32).toString("hex") },
+      [],
+      "PRISM_DATA_DIR",
+    );
+    check("in-repo data directory was not created", !fs.existsSync(path.join(process.cwd(), ".prism-smoke-data")));
   } else {
     const email = flagValue("--email");
     const password = flagValue("--password");

@@ -121,3 +121,19 @@ describe("PRISM_DATA_DIR containment guard", () => {
     assert.equal(rel.status, 2);
   });
 });
+
+describe("importing the guard from another entry file", () => {
+  test("does not run the CLI: an inlined copy in a server entry must not exit at start", () => {
+    const dir = tmp("inlined");
+    // The same file content under another name, as a bundler produces when it
+    // inlines the module into the entry it then runs.
+    const copy = path.join(dir, "index.mjs");
+    fs.copyFileSync(SCRIPT, copy);
+    const res = spawnSync(process.execPath, [copy], {
+      env: { ...process.env, PRISM_DATA_DIR: dir },
+      encoding: "utf8",
+    });
+    assert.equal(res.status, 0);
+    assert.equal(res.stdout, "");
+  });
+});
