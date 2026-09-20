@@ -1,0 +1,2 @@
+# Runtime dependency of scripts/claim_gate.py. Vendor this file with the gate.
+jsonschema==4.25.1

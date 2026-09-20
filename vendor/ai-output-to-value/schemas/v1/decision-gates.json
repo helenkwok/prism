@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.1",
+  "principle": "Use the lowest claim sufficient for the next decision. Do not average claim levels.",
+  "statuses": {
+    "PASS": "All checks required for this target decision are marked pass.",
+    "BLOCKED": "At least one required check is explicitly marked fail.",
+    "INSUFFICIENT_EVIDENCE": "No required check failed, but at least one is missing, unknown, or not-applicable where evidence is required."
+  },
+  "decisions": {
+    "explore": {
+      "label": "Keep exploring",
+      "requiredClaimLevel": "02-output",
+      "description": "Enough Output evidence to reproduce the artefact or action and learn from it.",
+      "requiredChecks": [
+        { "id": "output-reproducible", "label": "The artefact or action can be reproduced or inspected." },
+        { "id": "assumptions-catalogued", "label": "Important supplied context, assumptions, and inferences are visible." }
+      ]
+    },
+    "rely": {
+      "label": "Permit reliance for the named use",
+      "requiredClaimLevel": "03-deliverable",
+      "description": "The result is fit for a defined intended use against explicit acceptance criteria.",
+      "requiredChecks": [
+        { "id": "intended-use-defined", "label": "The intended use and boundaries are explicit." },
+        { "id": "acceptance-criteria-defined", "label": "Acceptance criteria are explicit and testable enough for the use." },
+        { "id": "acceptance-criteria-met", "label": "Evidence shows the acceptance criteria were met." },
+        { "id": "failure-modes-tested", "label": "Relevant failure modes and fallback behaviour were evaluated." },
+        { "id": "limitations-stated", "label": "Known limitations and out-of-scope conditions are stated." }
+      ]
+    },
+    "operate": {
+      "label": "Sell, operate, support, or staff repeatedly",
+      "requiredClaimLevel": "04-capability",
+      "description": "The organisation can repeatedly verify, operate, support, recover, and improve the workflow.",
+      "requiredChecks": [
+        { "id": "deliverable-gate-passed", "label": "The Deliverable gate for the intended use has passed." },
+        { "id": "operational-owner-assigned", "label": "Operational ownership is explicit." },
+        { "id": "assurance-defined", "label": "The assurance mechanism is defined for the important failure modes." },
+        { "id": "fallback-defined", "label": "Fallback or escalation is defined." },
+        { "id": "recovery-tested", "label": "Recovery or rollback has been tested where failure consequence warrants it." },
+        { "id": "support-maintenance-defined", "label": "Support, maintenance, debugging, and change responsibility are defined." },
+        { "id": "operating-cost-known", "label": "The relevant operating-cost boundary is known well enough for the decision." }
+      ]
+    },
+    "measure-outcome": {
+      "label": "Determine whether the initiative changed the result",
+      "requiredClaimLevel": "05-outcome",
+      "description": "A named outcome is measured against a baseline using a consistent definition.",
+      "requiredChecks": [
+        { "id": "outcome-measure-defined", "label": "The outcome measure is defined." },
+        { "id": "baseline-defined", "label": "A comparable baseline or counterfactual is defined." },
+        { "id": "outcome-measured", "label": "The outcome was measured after the intervention." },
+        { "id": "measurement-definition-consistent", "label": "Before/after measurements use the same relevant definition." },
+        { "id": "important-confounds-named", "label": "Material confounds, uncertainty, or attribution limits are named." }
+      ]
+    },
+    "scale-renew-stop": {
+      "label": "Scale, renew, expand, or stop",
+      "requiredClaimLevel": "06-value",
+      "description": "The evidenced outcome is worth the full relevant cost, risk, alternatives, and trade-offs.",
+      "requiredChecks": [
+        { "id": "outcome-evidence-available", "label": "Outcome evidence relevant to the decision is available." },
+        { "id": "full-cost-accounted", "label": "The full relevant cost boundary is accounted for." },
+        { "id": "risk-tradeoffs-assessed", "label": "Material risks and trade-offs are assessed." },
+        { "id": "alternatives-compared", "label": "Reasonable alternatives or the status quo are compared." },
+        { "id": "value-rule-explicit", "label": "The rule for scale, renew, expand, or stop is explicit." }
+      ]
+    }
+  }
+}

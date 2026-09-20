@@ -1,0 +1,33 @@
+{
+  "upstream": "https://github.com/AlreadyOpen/ai-output-to-value",
+  "tag": "v0.1.0-rc.1",
+  "commit": "66660cfde8fd06c7a9b5532e696255716b4b1f10",
+  "gateVersion": "1.1",
+  "pinnedAt": "2026-09-20T13:14:47.840Z",
+  "files": {
+    "LICENSE": {
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358
+    },
+    "requirements-claim-gate.txt": {
+      "sha256": "a13507af8d4868fdbc3641f7dcbeb6761df89a91f32700313256099336250b6c",
+      "bytes": 98
+    },
+    "schemas/v1/claim.schema.json": {
+      "sha256": "31955fa839d38de9af9ce1d7f83ae57beda6cc32fcc500e1fc4fe5bcea192b45",
+      "bytes": 3944
+    },
+    "schemas/v1/decision-gates.json": {
+      "sha256": "8d54a2f6cc3a19bb3c02a13bc28a92ac0f95cb2f7072a9f573f845be845d3881",
+      "bytes": 4512
+    },
+    "scripts/claim_gate.py": {
+      "sha256": "32104364bbb3a2af0644889743c533cdc569889038d8d55b01ab146ef809eff3",
+      "bytes": 9594
+    },
+    "tests/fixtures/claim-gate-conformance.json": {
+      "sha256": "af928bf5d7e04bbfc73f83c3f5c3cac6e7100bfb0f5817371573fc26b8a34771",
+      "bytes": 9857
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# Vendored bytes are pinned by hash: never normalise line endings or apply filters.
+vendor/** -text
+# Shell hooks must keep LF endings on every platform.
+.githooks/* text eol=lf

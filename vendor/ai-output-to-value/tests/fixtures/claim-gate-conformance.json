@@ -1,0 +1,408 @@
+{
+  "version": "1.1",
+  "baseRecord": {
+    "schemaVersion": "1.0",
+    "project": "example",
+    "targetDecision": "rely",
+    "requiredClaimLevel": "03-deliverable",
+    "assertedClaimLevel": "03-deliverable",
+    "intendedUse": "Named use",
+    "actors": [
+      {
+        "type": "ai-agent",
+        "role": "Draft"
+      }
+    ],
+    "authority": "Bounded",
+    "accountability": "Organisation",
+    "gateChecks": {
+      "intended-use-defined": "pass",
+      "acceptance-criteria-defined": "pass",
+      "acceptance-criteria-met": "pass",
+      "failure-modes-tested": "pass",
+      "limitations-stated": "pass"
+    },
+    "nextEvidence": "Fresh evaluation",
+    "stopRule": "Stop if threshold fails"
+  },
+  "cases": [
+    {
+      "name": "complete rely record passes",
+      "patch": {},
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "failed required check blocks",
+      "patch": {
+        "gateChecks": {
+          "acceptance-criteria-met": "fail"
+        }
+      },
+      "expectedStatus": "BLOCKED"
+    },
+    {
+      "name": "unknown required check is insufficient",
+      "patch": {
+        "gateChecks": {
+          "acceptance-criteria-met": "unknown"
+        }
+      },
+      "expectedStatus": "INSUFFICIENT_EVIDENCE"
+    },
+    {
+      "name": "non-string required fields are structurally blocked",
+      "patch": {
+        "authority": [],
+        "accountability": false,
+        "stopRule": 0,
+        "intendedUse": {}
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "authority",
+        "accountability",
+        "stopRule",
+        "intendedUse"
+      ]
+    },
+    {
+      "name": "invalid gate check state is structurally blocked",
+      "patch": {
+        "gateChecks": {
+          "acceptance-criteria-met": "maybe"
+        }
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "gateChecks"
+      ]
+    },
+    {
+      "name": "required claim mapping mismatch is structurally blocked",
+      "patch": {
+        "requiredClaimLevel": "02-output"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "requiredClaimLevel"
+      ]
+    },
+    {
+      "name": "asserted claim mismatch is insufficient",
+      "patch": {
+        "assertedClaimLevel": "02-output"
+      },
+      "expectedStatus": "INSUFFICIENT_EVIDENCE",
+      "expectedClaimMismatch": true
+    },
+    {
+      "name": "empty actors list is structurally blocked",
+      "patch": {
+        "actors": []
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "actors"
+      ],
+      "expectedMissingFields": [
+        "actors"
+      ]
+    },
+    {
+      "name": "non-string target decision returns structured block",
+      "patch": {
+        "targetDecision": []
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "targetDecision"
+      ]
+    },
+    {
+      "name": "undeclared top-level property is structurally blocked",
+      "patch": {
+        "unexpectedField": "not in claim.schema.json"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "Additional properties",
+        "additional properties"
+      ]
+    },
+    {
+      "name": "non-object record (array) is structurally blocked",
+      "expectedStatus": "BLOCKED",
+      "record": [],
+      "errorContains": [
+        "object"
+      ]
+    },
+    {
+      "name": "non-object record (null) is structurally blocked",
+      "expectedStatus": "BLOCKED",
+      "record": null,
+      "errorContains": [
+        "object"
+      ]
+    },
+    {
+      "name": "absent required key is structurally blocked",
+      "expectedStatus": "BLOCKED",
+      "patch": {},
+      "remove": [
+        "authority"
+      ],
+      "errorContains": [
+        "authority"
+      ]
+    },
+    {
+      "name": "$schema that is not a URI is structurally blocked",
+      "expectedStatus": "BLOCKED",
+      "patch": {
+        "$schema": "not a URI"
+      },
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema that is a URI passes",
+      "expectedStatus": "PASS",
+      "patch": {
+        "$schema": "https://alreadyopen.github.io/ai-output-to-value/schemas/v1/claim.schema.json"
+      }
+    },
+    {
+      "name": "space-only required field is missing",
+      "expectedStatus": "INSUFFICIENT_EVIDENCE",
+      "patch": {
+        "authority": "   "
+      },
+      "expectedMissingFields": [
+        "authority"
+      ]
+    },
+    {
+      "name": "BOM-only required field is blank in both gates",
+      "expectedStatus": "INSUFFICIENT_EVIDENCE",
+      "patch": {
+        "authority": "﻿"
+      },
+      "expectedMissingFields": [
+        "authority"
+      ]
+    },
+    {
+      "name": "no-break-space-only required field is blank in both gates",
+      "expectedStatus": "INSUFFICIENT_EVIDENCE",
+      "patch": {
+        "authority": " "
+      },
+      "expectedMissingFields": [
+        "authority"
+      ]
+    },
+    {
+      "name": "NEL is not blank in either gate",
+      "expectedStatus": "PASS",
+      "patch": {
+        "authority": ""
+      }
+    },
+    {
+      "name": "unit separator is not blank in either gate",
+      "expectedStatus": "PASS",
+      "patch": {
+        "authority": "\u001f"
+      }
+    },
+    {
+      "name": "inherited object key is an unknown decision",
+      "expectedStatus": "BLOCKED",
+      "patch": {
+        "targetDecision": "constructor"
+      },
+      "errorContains": [
+        "unknown targetdecision"
+      ],
+      "expectedClaimMismatch": false
+    },
+    {
+      "name": "non-rely decision passes with its own claim level and checks",
+      "expectedStatus": "PASS",
+      "patch": {
+        "targetDecision": "explore",
+        "requiredClaimLevel": "02-output",
+        "assertedClaimLevel": "02-output",
+        "gateChecks": {
+          "output-reproducible": "pass",
+          "assumptions-catalogued": "pass"
+        }
+      }
+    },
+    {
+      "name": "$schema URI passes: authority with userinfo, port, query and fragment",
+      "patch": {
+        "$schema": "https://user:pw@example.com:8080/a/b?q=1&r=2#frag"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema URI passes: IPv6 literal host",
+      "patch": {
+        "$schema": "http://[2001:db8::7]:80/x"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema URI passes: urn with no authority",
+      "patch": {
+        "$schema": "urn:isbn:0451450523"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema URI passes: upper-case scheme and host",
+      "patch": {
+        "$schema": "HTTPS://EXAMPLE.COM"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema is not a URI: scheme with nothing after the colon",
+      "patch": {
+        "$schema": "a:"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema URI passes: percent-encoded path",
+      "patch": {
+        "$schema": "https://example.com/%41"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema is not a URI: leading space",
+      "patch": {
+        "$schema": " https://example.com"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: embedded space",
+      "patch": {
+        "$schema": "https://example.com/a b"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: trailing newline",
+      "patch": {
+        "$schema": "https://example.com\n"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: scheme starting with a digit",
+      "patch": {
+        "$schema": "1http://example.com"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: no scheme",
+      "patch": {
+        "$schema": "//example.com/x"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: relative reference",
+      "patch": {
+        "$schema": "/relative/path"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: malformed percent escape",
+      "patch": {
+        "$schema": "https://example.com/%zz"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: non-ASCII host",
+      "patch": {
+        "$schema": "https://exämple.com"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: backslash in path",
+      "patch": {
+        "$schema": "https://example.com\\x"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema is not a URI: unclosed IPv6 literal",
+      "patch": {
+        "$schema": "http://[::1/"
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    },
+    {
+      "name": "$schema URI passes: non-numeric port (ajv-formats' grammar is lenient here; both gates must agree)",
+      "patch": {
+        "$schema": "http://example.com:port/"
+      },
+      "expectedStatus": "PASS"
+    },
+    {
+      "name": "$schema is not a URI: empty string",
+      "patch": {
+        "$schema": ""
+      },
+      "expectedStatus": "BLOCKED",
+      "errorContains": [
+        "$schema"
+      ]
+    }
+  ],
+  "notes": "Optional case keys: 'record' replaces the whole record (any JSON value); 'remove' lists top-level keys to delete after 'patch' is applied."
+}
