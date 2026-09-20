@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReportDotpdfRoute = ApiReportDotpdfRouteImport.update({
+  id: '/api/report.pdf',
+  path: '/api/report.pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -24,38 +36,60 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/sign-in' | '/api/auth/$'
+  fullPaths: '/' | '/sign-in' | '/api/report.pdf' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/sign-in' | '/api/auth/$'
-  id: '__root__' | '/sign-in' | '/api/auth/$'
+  to: '/' | '/sign-in' | '/api/report.pdf' | '/api/auth/$'
+  id: '__root__' | '/' | '/sign-in' | '/api/report.pdf' | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   SignInRoute: typeof SignInRoute
+  ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/report.pdf': {
+      id: '/api/report.pdf'
+      path: '/api/report.pdf'
+      fullPath: '/api/report.pdf'
+      preLoaderRoute: typeof ApiReportDotpdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -69,7 +103,9 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   SignInRoute: SignInRoute,
+  ApiReportDotpdfRoute: ApiReportDotpdfRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -100,6 +100,37 @@ async function assertions(base, creds) {
   const setCookie = signIn.headers.get("set-cookie") ?? "";
   check("seeded sign-in returns 200", signIn.status === 200, `status ${signIn.status}`);
   check("seeded sign-in sets a cookie", setCookie.length > 0);
+  const cookie = signIn.headers
+    .getSetCookie()
+    .map((c) => c.split(";")[0])
+    .join("; ");
+
+  // Guarded page: with the session it shows the email, without it it redirects.
+  const home = await fetch(`${base}/`, { headers: { cookie }, redirect: "manual" });
+  const homeBody = await home.text();
+  check("GET / with a session returns 200", home.status === 200, `status ${home.status}`);
+  check("GET / with a session shows the signed-in email", homeBody.includes(creds.email));
+  const anon = await fetch(`${base}/`, { redirect: "manual" });
+  const location = anon.headers.get("location") ?? "";
+  check(
+    "GET / without a session redirects to /sign-in",
+    anon.status >= 300 && anon.status < 400 && location.endsWith("/sign-in"),
+    `status ${anon.status} location ${location}`,
+  );
+
+  // Skeleton PDF: read SQLite first, then takumi renders.
+  const pdfRes = await fetch(`${base}/api/report.pdf`);
+  const pdf = Buffer.from(await pdfRes.arrayBuffer());
+  const pdfType = pdfRes.headers.get("content-type") ?? "";
+  check("GET /api/report.pdf returns 200", pdfRes.status === 200, `status ${pdfRes.status}`);
+  check("PDF content type is application/pdf", pdfType.startsWith("application/pdf"), pdfType);
+  check("PDF starts with %PDF-", pdf.subarray(0, 5).toString("latin1") === "%PDF-");
+  check("PDF is larger than 1000 bytes", pdf.length > 1000, `${pdf.length} bytes`);
+  check("PDF holds no user data", !pdf.includes(Buffer.from(creds.email)));
+  const text = spawnSync("pdftotext", ["-", "-"], { input: pdf, encoding: "utf8" });
+  if (text.status === 0 && !text.error) {
+    console.log(`INFO pdftotext shows SQLite version line: ${/SQLite version \d/.test(text.stdout)}`);
+  }
 }
 
 function randomCreds() {
