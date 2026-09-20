@@ -400,7 +400,7 @@ Numbers only. Project URLs, page text and keys stay in the private store (D-21).
       "expected_per_call_total": 104,
       "expected_formula_total": 110,
       "caught_up": false,
-      "waited_min": 0
+      "waited_min": 45
     },
     "calibration": {
       "workload": [
@@ -465,7 +465,7 @@ Numbers only. Project URLs, page text and keys stay in the private store (D-21).
 - Final URL after a redirect: the single-URL extract of a pre-redirect link returned 1 result and 0 failed; result url equals requested: true, equals final: false. Result fields: images, raw_content, title, url. No field carries a final URL, so the redirect check is PRISM code (Pitfall 8).
 - Leakage with allow_external false plus anchored selectors: 0 off-site URLs in map lists and 0 in extract results across the five projects; 0 after the code-side host filter.
 - Controls on the own-domain project: allow_external true (selectors kept) returned 0 off-site of 50; selectors off with allow_external false returned 0 off-site of 50; naive defaults returned 0 off-site of 50. Restricted search returned 5 results, 0 off-site.
-- Final account counter read: 80 credits (map 50, extract 29, search 1) against 104 logged by per-call usage and 110 by the formula; caught up with the logged spend: false, after waiting 0 minutes. The counter moves in lumps many minutes after spend.
+- Final account counter read: 80 credits (map 50, extract 29, search 1) against 104 logged by per-call usage and 110 by the formula; caught up with the logged spend: false, after waiting 45 minutes. The counter moves in lumps many minutes after spend.
 - Controls on the repo-only project (shared host, path boundary): naive defaults returned 37 URLs outside the path boundary of 50 (37 on the same host under other paths); allow_external true with selectors kept returned 0 of 50.
 - after_filter is zero by construction, because the code-side filter drops every URL outside the boundary; the informative leakage numbers are the raw counts in the map list and in the extract results.
 - Phase 2 budget on the free allowance alone (the hackathon credit is unconfirmed): 1396 credits remain of 1500, so 295 projects leave a derived cap of 4.7 credits each. Observed mean 5.6 and median 9 per project would need about 1680 to 2700 credits for 300 projects; fits the free allowance: false.
