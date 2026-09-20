@@ -1,0 +1,265 @@
+{
+  "schema": 1,
+  "note": "Synthetic counts only. The expected sections are written by `node protocol/disclosure/audit.mjs --generate-expected` and checked by `--check-expected`; never edit them by hand.",
+  "solver": {
+    "package": "highs",
+    "version": "1.15.3"
+  },
+  "fixtures": {
+    "safe": {
+      "description": "Two suppressed tuples that no published row links to each other or to a published total. The audit passes.",
+      "data": {
+        "tuples": [
+          {
+            "id": "x-q1",
+            "n": 75,
+            "c": 4
+          },
+          {
+            "id": "x-q2",
+            "n": 75,
+            "c": 40
+          },
+          {
+            "id": "y-q1",
+            "n": 75,
+            "c": 30
+          },
+          {
+            "id": "y-q2",
+            "n": 75,
+            "c": 7
+          },
+          {
+            "id": "xy-pool",
+            "n": 150,
+            "c": 70
+          }
+        ],
+        "constraints": [
+          {
+            "terms": [
+              {
+                "id": "x-q2",
+                "coef": 1
+              },
+              {
+                "id": "y-q1",
+                "coef": 1
+              },
+              {
+                "id": "xy-pool",
+                "coef": -1
+              }
+            ],
+            "sense": "=",
+            "rhs": 0
+          }
+        ]
+      },
+      "expected": {
+        "primarySuppressed": [
+          "x-q1",
+          "y-q2"
+        ],
+        "countOnlySuppressed": [
+          "x-q1",
+          "y-q2"
+        ],
+        "verdict": "PASS",
+        "failing": [],
+        "cells": {
+          "x-q1": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-9,66-75",
+            "count": 20,
+            "ok": true
+          },
+          "y-q2": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-9,66-75",
+            "count": 20,
+            "ok": true
+          }
+        }
+      }
+    },
+    "differencing-fail": {
+      "description": "Four quarterly counts of one check. The first two and the pooled total are published, so the two suppressed counts must sum to 3. Each has 4 feasible values and the audit fails.",
+      "data": {
+        "tuples": [
+          {
+            "id": "q1",
+            "n": 75,
+            "c": 12
+          },
+          {
+            "id": "q2",
+            "n": 75,
+            "c": 15
+          },
+          {
+            "id": "q3",
+            "n": 75,
+            "c": 2
+          },
+          {
+            "id": "q4",
+            "n": 75,
+            "c": 1
+          },
+          {
+            "id": "total",
+            "n": 300,
+            "c": 30
+          }
+        ],
+        "constraints": [
+          {
+            "terms": [
+              {
+                "id": "q1",
+                "coef": 1
+              },
+              {
+                "id": "q2",
+                "coef": 1
+              },
+              {
+                "id": "q3",
+                "coef": 1
+              },
+              {
+                "id": "q4",
+                "coef": 1
+              },
+              {
+                "id": "total",
+                "coef": -1
+              }
+            ],
+            "sense": "=",
+            "rhs": 0
+          }
+        ]
+      },
+      "expected": {
+        "primarySuppressed": [
+          "q3",
+          "q4"
+        ],
+        "countOnlySuppressed": [
+          "q3",
+          "q4"
+        ],
+        "verdict": "FAIL",
+        "failing": [
+          "q3",
+          "q4"
+        ],
+        "cells": {
+          "q3": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-3",
+            "count": 4,
+            "ok": false
+          },
+          "q4": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-3",
+            "count": 4,
+            "ok": false
+          }
+        }
+      }
+    },
+    "closure": {
+      "description": "The differencing-fail release after the closure loop: exactly one further tuple is suppressed and the audit passes.",
+      "from": "differencing-fail",
+      "expected": {
+        "added": [
+          "q1"
+        ],
+        "suppression": {
+          "q1": "complementary",
+          "q3": "primary",
+          "q4": "primary"
+        },
+        "verdict": "PASS",
+        "failing": [],
+        "cells": {
+          "q1": {
+            "kind": "complementary",
+            "prior": 76,
+            "feasible": "0-15",
+            "count": 16,
+            "ok": true
+          },
+          "q3": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-9",
+            "count": 10,
+            "ok": true
+          },
+          "q4": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-9",
+            "count": 10,
+            "ok": true
+          }
+        }
+      }
+    },
+    "complement-floor": {
+      "description": "70 of 75 has a complement of 5, under the floor, so the tuple is primary-suppressed although its count is far above 10. A count-only rule would publish it.",
+      "data": {
+        "tuples": [
+          {
+            "id": "a-q1",
+            "n": 75,
+            "c": 70
+          },
+          {
+            "id": "a-q2",
+            "n": 75,
+            "c": 30
+          },
+          {
+            "id": "a-q3",
+            "n": 75,
+            "c": 40
+          },
+          {
+            "id": "a-q4",
+            "n": 75,
+            "c": 35
+          }
+        ],
+        "constraints": []
+      },
+      "expected": {
+        "primarySuppressed": [
+          "a-q1"
+        ],
+        "countOnlySuppressed": [],
+        "verdict": "PASS",
+        "failing": [],
+        "cells": {
+          "a-q1": {
+            "kind": "primary",
+            "prior": 20,
+            "feasible": "0-9,66-75",
+            "count": 20,
+            "ok": true
+          }
+        }
+      }
+    }
+  }
+}
