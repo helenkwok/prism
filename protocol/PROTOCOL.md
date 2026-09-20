@@ -4,7 +4,7 @@
 
 ## 0. Status and pre-registration
 
-- Version: 1 (draft dated 2026-09-21).
+- Version: 1 (draft dated 2026-09-20 UTC).
 - Gate tag: `v0.1.0-rc.1`
 - Gate commit: `66660cfde8fd06c7a9b5532e696255716b4b1f10`
 - The gate tag and commit above are the pinned claim gate recorded in `vendor/ai-output-to-value/PIN.json`.
@@ -23,7 +23,7 @@
 
 **Seeded draw.** For each stratum, sort the candidates ascending by the hexadecimal SHA-256 of the string `<seed>:<HN object id>` and take the first n. A new seed re-orders every list, and the same seed always reproduces the same order.
 
-**Seeds.** Five seeds, generated on 2026-09-21 before any draw exists, each from eight random bytes written as 16 hexadecimal characters (`node -e "console.log(require('node:crypto').randomBytes(8).toString('hex'))"`):
+**Seeds.** Five seeds, generated on 2026-09-20 (UTC) before any draw exists, each from eight random bytes written as 16 hexadecimal characters (`node -e "console.log(require('node:crypto').randomBytes(8).toString('hex'))"`):
 
 | Use | Seed |
 |---|---|
