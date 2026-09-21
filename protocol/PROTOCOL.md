@@ -6,7 +6,7 @@
 
 - Version: 1 (draft dated 2026-09-20 UTC).
 - Gate tag: `v0.1.0-rc.1`
-- Gate commit: `66660cfde8fd06c7a9b5532e696255716b4b1f10`
+- Gate commit: `d8ffa8be1436dd9a36ebf91e10ca548bce82edcb`
 - The gate tag and commit above are the pinned claim gate recorded in `vendor/ai-output-to-value/PIN.json`.
 - No pipeline code exists at the time of writing. The directory `src/pipeline/` holds no file, and the check `scripts/check-protocol-order.mjs` fails if a file is added there before the tag `protocol-v1` exists.
 - Spike inputs are outside the sampling frame by construction. Every project used to measure a model, the collector or the deployment is a Show HN post dated on or after 2026-09-01, and the frame in section 1 ends on 2026-08-31. Numbers from the spikes are therefore not results of this review.

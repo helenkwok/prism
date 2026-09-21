@@ -6,7 +6,7 @@ Third-party attribution lines are added to this file as dependencies are vendore
 This product includes the AI Output to Value claim gate
 (https://github.com/AlreadyOpen/ai-output-to-value), licensed under the
 Apache License, Version 2.0, vendored unmodified under vendor/ai-output-to-value/
-at tag v0.1.0-rc.1 (commit 66660cfde8fd06c7a9b5532e696255716b4b1f10). The pinned files
+at tag v0.1.0-rc.1 (commit d8ffa8be1436dd9a36ebf91e10ca548bce82edcb). The pinned files
 and their hashes are listed in vendor/ai-output-to-value/PIN.json.
 
 The vendored scripts/claim_gate.py contains a regular expression taken from
