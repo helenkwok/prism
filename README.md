@@ -2,6 +2,10 @@
 
 **Public-evidence Review of Innovation, Standards & Markets**
 
+[![ci](https://github.com/helenkwok/prism/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/helenkwok/prism/actions/workflows/ci.yml)
+
+Repository: https://github.com/helenkwok/prism
+
 PRISM is a systematic-review style study of how publicly launched AI projects
 (on Show HN, subreddits and GitHub) evidence their readiness. It discovers
 self-promoted projects, gathers evidence from each project's own website and
