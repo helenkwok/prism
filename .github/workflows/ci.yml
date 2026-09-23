@@ -100,3 +100,25 @@ jobs:
           .venv-gate/bin/pip install --require-virtualenv -r vendor/ai-output-to-value/requirements-claim-gate.txt
       - name: Gate tests through the pinned jsonschema
         run: npm run test:gate
+
+  docker-smoke:
+    name: docker-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Build the image and run the container smoke checks
+        run: bash scripts/docker-smoke.sh --results "${RUNNER_TEMP}/docker-smoke-results.json"
+      - name: Upload docker-smoke results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docker-smoke-results
+          path: ${{ runner.temp }}/docker-smoke-results.json
+          if-no-files-found: warn

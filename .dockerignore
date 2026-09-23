@@ -1,0 +1,20 @@
+# Allow-list build context (D-24): deny everything, then allow exactly the
+# paths the Dockerfile copies. No agent-tool or planning directory is ever
+# named here, on purpose - the deny-all-first form means none can slip in
+# even if one is added to the working tree later.
+#
+# Both the bare directory and its recursive contents are un-ignored, because
+# a plain `!dir/**` alone does not reliably re-include a directory entry that
+# `*` already excluded.
+*
+!package.json
+!package-lock.json
+!requirements-gate.txt
+!vite.config.ts
+!tsconfig.json
+!src
+!src/**
+!scripts
+!scripts/check-data-dir.mjs
+!vendor
+!vendor/**
