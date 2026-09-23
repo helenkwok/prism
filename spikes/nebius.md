@@ -2,12 +2,12 @@
 
 Numbers only. Keys, raw model output and batch files stay in the private store (D-21).
 
-Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fallback state are completed by plan 01-10; this plan records the catalogue, one real structured-output call, the ZDR/credits console facts and the Batch API submission.
+Status: final. Plan 01-10 completed the 12-config matrix, the escape probe, the D-15 pin and the 50-page streak.
 
 ```json
 {
   "record": "nebius",
-  "status": "pending",
+  "status": "final",
   "updated": "2026-09-23",
   "catalogue": [
     {
@@ -606,7 +606,19 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
       "finish_reason": "stop",
       "checked_on": "2026-09-23"
     }
-  ]
+  ],
+  "pinned": {
+    "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+    "output_mode": "json_schema",
+    "thinking": "off",
+    "base_url": "https://api.tokenfactory.nebius.com/v1",
+    "mode": "real-time",
+    "retry_rate": 0,
+    "streak": {
+      "n": 50,
+      "max_consecutive_valid": 23
+    }
+  }
 }
 ```
 
@@ -615,3 +627,9 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
 - **Catalogue:** 4 `nvidia/*` models found on each of the two hosts queried (docs: `api.tokenfactory.nebius.com`; regional: `api.tokenfactory.us-central1.nebius.com`), 8 entries total, both hosts serving an identical 4-model set. The `supported_features` vocabulary observed across all 4 models is `reasoning, tools` only: no explicit JSON-mode tag exists in the catalogue, so JSON-mode support is a measured property (Pitfall 10/A5), not a catalogue fact.
 - **One real structured-output call:** Lightning (`nvidia/Nemotron-3_5-Lightning`), `response_format: json_schema`, `chat_template_kwargs.enable_thinking: false`, `max_tokens: 300`: status 200, `finish_reason: stop`, reply validated by zod, 14 completion tokens. With thinking left on (measured once, not recorded above), the same call exhausted `max_tokens: 200` on chain-of-thought text before emitting JSON (`finish_reason: length`), confirming the harness must set `enable_thinking: false` for a parseable reply on this model.
 - **Task 3, Batch API round trip (measured, not left console-unknown):** submitted for all 3 candidate models (Ultra, Super, Lightning). The files endpoint accepted each 10-line JSONL upload (purpose batch, status 200), but batch creation itself returned HTTP 403 "Creating new batch job is temporarily unavailable" for all 3, identically, on the same submitted file ids. This is an account/service-level rejection at the `/batches` endpoint, not a per-model entitlement difference (the endpoint takes no model parameter; the rejection occurs before any per-line model is considered), so Pitfall 5's "batch access requires separate model entitlements" question resolves to: the service itself is unavailable for this account right now, upstream of any per-model check. All 3 submissions are therefore already terminal (rejected), `batch.final_status` is `rejected`, and `fallbacks.batch` is `triggered`: per D-17, Phase 2 falls back to real-time calls with p-limit under the rate limits, and the STACK.md Batch-at-50% budget line does not apply. `poll` was run once and read back the same 3 rejections (exit 0, nothing pending).
+
+- **Plan 01-10, the 12-config matrix (25 real pages, same set for every config):** Ultra `json_schema`/thinking-off reached schema_valid_rate 1.0 (0 retries); its other 3 configs measured 0.88, 0.92 and 0.84. Super reached 1.0 on 3 of its 4 configs and 0.96 on the fourth (thinking on, json_schema). Lightning reached 1.0 on `json_schema`/thinking-off but collapsed under thinking-on (0.08 json_schema, 0.04 json_object) and degraded under `json_object`/thinking-off (0.60), consistent with the 01-07 finding that thinking exhausts `max_tokens` before JSON on this model. Total recorded matrix spend: $1.22 against the $10 budget (`--configs all --pages 25`, no config hit the API-rejection path, so all 12 entries are `status: measured`, none `unsupported`).
+- **Escape probe (one free-text field, 2 output modes x 3 models):** Ultra and Super preserved the exact target sequence (`survived: true`) in both `json_schema` and `json_object` mode; Lightning did not (`survived: false` in both modes) while still returning parseable JSON (`json_parses: true`) — the string-escape defect is present on Lightning specifically, not model-wide. The output contract used in the matrix (span ids and enums only) cannot be corrupted by this defect; the probe only measures it.
+- **Plan 01-10, the D-15 pin:** Ultra qualified first in preference order (>=0.95 schema-valid on >=20 pages, D-15) via `json_schema`/thinking-off; pinned `nvidia/Nemotron-3-Ultra-550b-a55b`, output_mode `json_schema`, thinking `off`, mode `real-time`, retry_rate 0, base_url the docs host.
+- **50-page streak (pages disjoint from the matrix's 25):** n=50, max_consecutive_valid=23. **The STATE gate (>=50 consecutive schema-valid responses before any bulk run) is NOT met on this streak.** This is recorded as a measured shortfall, not a plan failure (D-15/STATE do not require the streak itself to reach 50 as a condition of pinning): Phase 2 must either re-run a fresh streak before any bulk coding pass, or treat the ~23-in-a-row ceiling as informing its own retry/backoff design before committing to an unattended bulk run.
+- **Batch close-out (Task 3):** re-polled to a terminal state; `final_status` remains `rejected` (all 3 candidates, unchanged from the Task 3/01-07 submission). Fallbacks: batch `triggered`, zdr `not-needed` (ZDR is `on`).
