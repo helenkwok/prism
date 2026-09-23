@@ -70,6 +70,32 @@ test("the gate job installs the pinned requirements and runs the gate tests", ()
   assert.match(text, /run:\s*npm run test:gate\s*$/m);
 });
 
+test("every required job is present", () => {
+  for (const job of ["guards", "test", "gate", "vendor-remote", "protocol-order", "spike-records", "docker-smoke"]) {
+    assert.ok(codeLines.includes(`  ${job}:`), `missing job: ${job}`);
+  }
+});
+
+test("vendor-remote runs both the offline and remote vendor checks", () => {
+  assert.match(text, /run:\s*node scripts\/verify-vendor\.mjs\s*$/m);
+  assert.match(text, /run:\s*node scripts\/verify-vendor\.mjs --remote\s*$/m);
+});
+
+test("protocol-order requires the tag and runs the protocol tests in final mode", () => {
+  assert.match(text, /run:\s*node scripts\/check-protocol-order\.mjs --require-tag\s*$/m);
+  assert.match(text, /run:\s*PROTOCOL_FINAL=1 node --test tests\/protocol\.test\.mjs\s*$/m);
+});
+
+test("spike-records requires every record to be final", () => {
+  assert.match(text, /run:\s*node scripts\/check-spike-records\.mjs --require-final\s*$/m);
+});
+
+test("docker-smoke builds and smoke-tests the image, then uploads its results", () => {
+  assert.match(text, /run:\s*bash scripts\/docker-smoke\.sh --results/);
+  assert.match(text, /uses:\s*actions\/upload-artifact@[0-9a-f]{40}\s*#\s*v\d+\.\d+\.\d+\s*$/m);
+  assert.match(text, /name:\s*docker-smoke-results/);
+});
+
 test("the data-dir negative steps require a specific non-zero exit, not merely any outcome", () => {
   assert.match(text, /PRISM_DATA_DIR="\$GITHUB_WORKSPACE\/data" node scripts\/check-data-dir\.mjs \|\| rc=\$\?/);
   assert.match(text, /\[ "\$rc" -eq 1 \]/);
