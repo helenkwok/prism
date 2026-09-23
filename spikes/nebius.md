@@ -221,9 +221,40 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
     "org_name": "TAFE SA-rrr",
     "reconciliation": "open"
   },
-  "batch": null,
+  "batch": {
+    "submitted_at": "2026-09-23T02:00:28.087Z",
+    "completed_at": null,
+    "final_status": "rejected",
+    "per_model": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "label": "ultra",
+        "status": "rejected",
+        "stage": "batch_create",
+        "http_status": 403,
+        "error_class": "forbidden",
+        "detail": "Creating new batch job is temporarily unavailable"
+      },
+      "nvidia/nemotron-3-super-120b-a12b": {
+        "label": "super",
+        "status": "rejected",
+        "stage": "batch_create",
+        "http_status": 403,
+        "error_class": "forbidden",
+        "detail": "Creating new batch job is temporarily unavailable"
+      },
+      "nvidia/Nemotron-3_5-Lightning": {
+        "label": "lightning",
+        "status": "rejected",
+        "stage": "batch_create",
+        "http_status": 403,
+        "error_class": "forbidden",
+        "detail": "Creating new batch job is temporarily unavailable"
+      }
+    },
+    "price_ratio": null
+  },
   "fallbacks": {
-    "batch": "not-needed",
+    "batch": "triggered",
     "zdr": "not-needed"
   }
 }
@@ -233,3 +264,4 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
 - **Credits, as observed:** account balance $25.00, plus a separate $1.00 trial credit on a 29 day period. Expected total $50 (a $25 promo credit plus a $25 Builders Program credit) has not fully landed; the Builders Program application is still under review. Balance reconciliation is left open.
 - **Catalogue:** 4 `nvidia/*` models found on each of the two hosts queried (docs: `api.tokenfactory.nebius.com`; regional: `api.tokenfactory.us-central1.nebius.com`), 8 entries total, both hosts serving an identical 4-model set. The `supported_features` vocabulary observed across all 4 models is `reasoning, tools` only: no explicit JSON-mode tag exists in the catalogue, so JSON-mode support is a measured property (Pitfall 10/A5), not a catalogue fact.
 - **One real structured-output call:** Lightning (`nvidia/Nemotron-3_5-Lightning`), `response_format: json_schema`, `chat_template_kwargs.enable_thinking: false`, `max_tokens: 300`: status 200, `finish_reason: stop`, reply validated by zod, 14 completion tokens. With thinking left on (measured once, not recorded above), the same call exhausted `max_tokens: 200` on chain-of-thought text before emitting JSON (`finish_reason: length`), confirming the harness must set `enable_thinking: false` for a parseable reply on this model.
+- **Task 3, Batch API round trip (measured, not left console-unknown):** submitted for all 3 candidate models (Ultra, Super, Lightning). The files endpoint accepted each 10-line JSONL upload (purpose batch, status 200), but batch creation itself returned HTTP 403 "Creating new batch job is temporarily unavailable" for all 3, identically, on the same submitted file ids. This is an account/service-level rejection at the `/batches` endpoint, not a per-model entitlement difference (the endpoint takes no model parameter; the rejection occurs before any per-line model is considered), so Pitfall 5's "batch access requires separate model entitlements" question resolves to: the service itself is unavailable for this account right now, upstream of any per-model check. All 3 submissions are therefore already terminal (rejected), `batch.final_status` is `rejected`, and `fallbacks.batch` is `triggered`: per D-17, Phase 2 falls back to real-time calls with p-limit under the rate limits, and the STACK.md Batch-at-50% budget line does not apply. `poll` was run once and read back the same 3 rejections (exit 0, nothing pending).

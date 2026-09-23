@@ -63,7 +63,8 @@ export function createLimiter(concurrency = 4) {
 }
 
 /**
- * client.request(path, { method, body, headers }) -> { status, headers, json, latencyMs }
+ * client.request(path, { method, body, headers }) -> { status, headers, json, text, latencyMs }
+ * (`text` is the raw response body; `json` is its JSON.parse, or null when it does not parse.)
  *
  * - `body` is JSON-serialized unless it is a FormData/Blob instance (the files
  *   upload endpoint), in which case it is sent as-is with no content-type
@@ -113,7 +114,7 @@ export function createClient({ baseUrl, apiKey, fetchImpl = fetch, maxRetries = 
         } catch {
           json = null;
         }
-        return { status: res.status, ok: res.ok, headers: rateHeaders, json, latencyMs, attempts: attempt };
+        return { status: res.status, ok: res.ok, headers: rateHeaders, json, text, latencyMs, attempts: attempt };
       }
     });
   }
