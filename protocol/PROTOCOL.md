@@ -1,10 +1,10 @@
 # PRISM Protocol v1
 
-**Status:** DRAFT. Not signed off, not tagged. Section 13 lists every item that is still a proposal.
+**Status:** SIGNED. Every row of the section 13 register is signed. The commit that introduces this text is tagged `protocol-v1`; that commit's date is the pre-registration timestamp.
 
 ## 0. Status and pre-registration
 
-- Version: 1 (draft dated 2026-09-20 UTC).
+- Version: 1 (drafted 2026-09-20 UTC; signed 2026-09-23 UTC).
 - Gate tag: `v0.1.0-rc.1`
 - Gate commit: `d8ffa8be1436dd9a36ebf91e10ca548bce82edcb`
 - The gate tag and commit above are the pinned claim gate recorded in `vendor/ai-output-to-value/PIN.json`.
@@ -48,8 +48,10 @@ Every exclusion records one reason code, and the codes are the PRISMA counts:
 | `dataset` | a dataset |
 | `ai-adjacent` | AI is used only around the edges (for example, a chatbot was used only to write copy) |
 | `demo-no-site` | a demo with no website |
+| `duplicate` | the same project was already included from an earlier post |
+| `unreachable-at-screening` | the site or repository could not be reached at the time of screening |
 
-Two operational codes are proposed: `duplicate` and `unreachable-at-screening`. They are PROPOSED (register row R13) until signed.
+Two operational codes, `duplicate` and `unreachable-at-screening`, are added to the five classes above (register row R13, signed).
 
 ## 3. Check states, claimed rule and missing data
 
@@ -84,11 +86,11 @@ Collection recall (D-05). Helen gathers evidence for about 10 projects, drawn wi
 
 Second-model agreement (D-06). A model from a different family codes about 100 projects drawn with the second-model seed. Its agreement is a reported robustness figure. It is NOT a gate; correctness is gated by human labels only.
 
-Estimators (proposed, register rows R06 and R07):
+Estimators (register rows R06 and R07, signed):
 
 - Proportions carry Wilson intervals.
 - Agreement statistics carry percentile bootstrap intervals over projects, with 2,000 resamples. The resampling draws the i-th uniform number from the SHA-256 of `<seed>:bootstrap:<i>`, using the seed of the sample being analysed, so every interval is reproducible.
-- Gwet's AC1 for two raters is (pa - pe) / (1 - pe), where pa is the observed proportion of agreement and pe is the chance-agreement term. For a binary outcome, pe = 2 pi (1 - pi), with pi the mean of the two raters' proportions of `pass`. The primary figure treats each check as binary, `pass` against not-`pass`, because `pass` is what is published. The four-state figure is secondary. Verify this formula against Gwet 2008 before sign-off (row R06).
+- Gwet's AC1 for two raters is (pa - pe) / (1 - pe), where pa is the observed proportion of agreement and pe is the chance-agreement term. For a binary outcome, pe = 2 pi (1 - pi), with pi the mean of the two raters' proportions of `pass`. The primary figure treats each check as binary, `pass` against not-`pass`, because `pass` is what is published. The four-state figure is secondary. This formula was verified against Gwet (2008) and a maintained implementation's documentation (the irrCAC package), which agree that at k = 2 categories the general form pe = [1/(k-1)] sum(pi_j (1 - pi_j)) reduces to pe = 2 pi (1 - pi); a worked toy example (pi = 0.55, pe = 0.495, pa = 0.8, AC1 ~= 0.60) confirms the reduction (row R06, signed).
 - Pass precision is the number of model-proposed passes that Helen's blind label also marks `pass`, divided by the number of model-proposed passes, on the gold subset.
 
 ## 5. Gold-label sample design
@@ -108,7 +110,7 @@ The rule is implemented and tested in `protocol/disclosure/audit.mjs`, and this 
 7. **Small PRISMA reasons.** Any exclusion reason with fewer than 10 projects is merged into "other", and if "other" is still under 10 it is merged upward into the nearest larger reason.
 8. **The inclusion list is never published.**
 
-The reference fixtures show the rule working in both directions: a release where two counts can be narrowed to 4 values each fails, and the same release passes after one further tuple is suppressed. Whether the released table may reveal which suppressed cells are complementary is proposed in row R02; the audit can be run with the stricter assumption that it does.
+The reference fixtures show the rule working in both directions: a release where two counts can be narrowed to 4 values each fails, and the same release passes after one further tuple is suppressed. Register row R02 (signed) sets the minimum feasible values per suppressed cell to 5, and the audit is additionally run under the stricter assumption that the released table may reveal which suppressed cells are complementary.
 
 ## 7. Launch cohorts and interpretation limits
 
@@ -122,7 +124,7 @@ There are exactly three confirmatory hypotheses. Everything else is labelled exp
 - **H2.** The per-check share of projects with evidence differs by source (Show HN, Reddit, GitHub-only).
 - **H3.** The share of launches evidencing at least one `rely`-decision check is below 50%.
 
-Proposed tests (row R08): a one-sided exact binomial test for H1 (null: share at most 0.5) and for H3 (null: share at least 0.5), and a permutation test of an omnibus statistic for H2, reported with Cramér's V. H2 is tested only when each compared group has at least 30 included projects; otherwise it is reported descriptively and the correction is applied across the remaining tests.
+Tests (row R08, signed): a one-sided exact binomial test for H1 (null: share at most 0.5) and for H3 (null: share at least 0.5), and a permutation test of an omnibus statistic for H2, reported with Cramér's V. H2 is tested only when each compared group has at least 30 included projects; otherwise it is reported descriptively and the correction is applied across the remaining tests.
 
 Multiplicity: Holm across the three, at a family-wise level of 0.05.
 
@@ -134,13 +136,13 @@ Decision date: 2026-09-30, from the pilot's measured confirmation load.
 
 Projected confirmation hours = (mean number of `pass` plus `claimed` states per project in the pilot) x N x (measured mean seconds per confirmation) / 3600.
 
-Budget H = to be supplied by Helen (hours). See register row R11.
+Budget H = 30 hours (register row R11, signed).
 
 If the projected hours exceed H, N is reduced from about 300 to 200 by keeping the first 50 projects per quarter in seed order and dropping the rest. The choice of which projects are dropped is fixed here, before the pilot runs.
 
 ## 10. Reddit trigger
 
-On the same decision date and from the same measured load: if the projected hours exceed H, Reddit picks stop entering any statistic and become context only, and only if the projected hours still exceed H is the rule in section 9 applied. The order follows the descope order in the roadmap. See register row R12.
+On the same decision date and from the same measured load: if the projected hours exceed H, Reddit picks stop entering any statistic and become context only, and only if the projected hours still exceed H is the rule in section 9 applied. The order follows the descope order in the roadmap (register row R12, signed).
 
 ## 11. Well-known company rule
 
@@ -152,22 +154,22 @@ After tagging, a change is made only by appending a dated addendum below this se
 
 ## 13. Sign-off register
 
-Every row is PROPOSED in this draft. A row records the options considered with the criterion that eliminates each, then the recommendation. Rows are resolved with Helen before the tag.
+Every row below is signed. A row records the options considered with the criterion that eliminates each, then the recommendation, then Helen's signed value. Helen signed every row at its recommended value, with no amendments (resume signal: `sign-as-drafted bulk_n_hours_budget=30`).
 
 | ID | Item | Options considered | Recommended | Status | Signed value |
 |---|---|---|---|---|---|
-| R01 | Complement clause of the cell floor | (a) count only: eliminated by PUB-03, since the cohort size is public and 70 of 75 discloses that 5 did not (the complement-floor fixture); (b) count, complement and cohort size under 10: meets PUB-03; (c) do nothing beyond the count rule: eliminated by PUB-03 | (b) | PROPOSED | |
-| R02 | Minimum feasible values in the audit, and whether the table reveals which suppressed cells are complementary | Minimum: 3 (eliminated: the planted release has 4 feasible values per cell and would pass, but the test requires it to fail); 5 (fails the planted release, passes after one further suppression); 8 (not eliminated by the fixtures, costs more complementary suppression, amount not measured); exact recovery only (eliminated: a window of 4 values on a count under 10 still reveals whether it is 0 or 3, which the floor exists to hide). Display: distinguish complementary cells (audit with the stricter prior, closure fixture leaves 6 feasible values against the minimum of 5); make them indistinguishable (default prior) | 5; audit under the stricter prior as well | PROPOSED | |
-| R03 | Strata | Window-aligned quarters (matches the window, equal 75 per quarter); calendar quarters (eliminated: the window starts on 1 September, so the first quarter would hold one month); monthly strata (eliminated: about 25 per month puts more tuples under the floor of 10 and breaks the quarterly cohort framing) | Window-aligned quarters | PROPOSED | |
-| R04 | The five seeds | Accept as generated; re-roll before any draw exists (allowed, never after the first draw); choose memorable numbers (eliminated: not random) | Accept as generated | PROPOSED | |
-| R05 | Gold-sample design | (a) plain seeded random of about 30 (unbiased, may leave some checks not estimable); (b) oversample projects the model flags as likely passes, with weights (eliminated: it needs model output before labelling, which breaks blind labelling, and it puts weights into every metric); (c) random 30 plus a separately reported positives-enriched batch (feasible, costs extra labelling hours that are not yet measured) | (a) | PROPOSED | |
-| R06 | AC1 categories and formula | Binary `pass` against not-`pass` as primary with four-state secondary; four-state as primary (eliminated: `pass` is what is published, and sparse states make it unstable); kappa as the gate (eliminated by D-01). The formula in section 4 is from the literature and is verified against the source before signing | Binary primary, four-state secondary | PROPOSED | |
-| R07 | Interval estimators | Wilson for proportions with a percentile bootstrap over projects (2,000 resamples, seeded); exact (Clopper-Pearson) intervals, wider and not eliminated; a bias-corrected bootstrap (eliminated: more machinery than about 30 gold projects support) | Wilson plus percentile bootstrap | PROPOSED | |
-| R08 | Hypothesis wording, tests, definition of source and minimum group size | Wording and tests as in section 8; "source" defined as the channel through which the launch was found (Show HN, Reddit pick, or GitHub-only when a repository is the only own source); a minimum of 30 included projects per group; fewer groups or no H2 (eliminated by D-13, which fixes three hypotheses) | As in section 8 | PROPOSED | |
-| R09 | "At least X of N" wording and the recall-bound sensitivity rule | Word every check-level finding "at least X of N" because published shares are lower bounds when evidence is missed; apply the measured collection recall as a bound in the adverse direction and require a hypothesis to hold in both analyses; report the primary analysis alone (eliminated: H1 and H3 are pushed by missed evidence in the same direction) | "At least X of N", with the bound analysis | PROPOSED | |
-| R10 | Checks that are not estimable (under about 10 gold passes) | Publish labelled "validated by confirmation only; agreement not estimable"; withhold (safe, drops every rare check); publish unlabelled (eliminated by VAL-03) | Publish labelled | PROPOSED | |
-| R11 | Bulk-N hours budget and reduction rule | Keep N at about 300 whatever the load (eliminated by the roadmap's schedule risk: Helen confirms every positive, COD-08); reduce to 200 by the first 50 per quarter (recommended); stop confirming (eliminated by COD-08). The budget H is a number only Helen can supply; nothing has been measured yet | Reduce to 200 by the first 50 per quarter; H from Helen | PROPOSED | |
-| R12 | Reddit trigger | Same measured load and date as R11; cut Reddit picks to context only first (recommended, second in the descope order); shrink to a cap (needs a number from Helen); keep whatever the load (eliminated by the roadmap's schedule risk) | Cut to context only first | PROPOSED | |
-| R13 | Extra reason codes | Add `duplicate` and `unreachable-at-screening` to the five classes; only the five classes (eliminated: a duplicate or unreachable candidate would otherwise be counted under a reason that is not true) | Add both | PROPOSED | |
-| R14 | Tag timing relative to the spikes | Tag after sign-off and before any `src/pipeline` file, spike numbers allowed to come first because spike inputs are outside the frame; hold spike numbers until after the tag (safe, slows the spikes); tag before the spikes (eliminated: the collector spike has already run, and the tag waits on sign-off) | Tag after sign-off and before any `src/pipeline` file | PROPOSED | |
-| R15 | Confirmation of the locked thresholds D-01 to D-06 | Confirm as locked: AC1 at least 0.70 and pass precision at least 0.85 per check, screening audit of 50 with error at most 10%, collection recall at least 70%, second-model agreement reported and not a gate; change any of them (eliminated: locked in the phase context) | Confirm as locked | PROPOSED | |
+| R01 | Complement clause of the cell floor | (a) count only: eliminated by PUB-03, since the cohort size is public and 70 of 75 discloses that 5 did not (the complement-floor fixture); (b) count, complement and cohort size under 10: meets PUB-03; (c) do nothing beyond the count rule: eliminated by PUB-03 | (b) | SIGNED | (b) count, complement and cohort-size-under-10 |
+| R02 | Minimum feasible values in the audit, and whether the table reveals which suppressed cells are complementary | Minimum: 3 (eliminated: the planted release has 4 feasible values per cell and would pass, but the test requires it to fail); 5 (fails the planted release, passes after one further suppression); 8 (not eliminated by the fixtures, costs more complementary suppression, amount not measured); exact recovery only (eliminated: a window of 4 values on a count under 10 still reveals whether it is 0 or 3, which the floor exists to hide). Display: distinguish complementary cells (audit with the stricter prior, closure fixture leaves 6 feasible values against the minimum of 5); make them indistinguishable (default prior) | 5; audit under the stricter prior as well | SIGNED | Minimum feasible values = 5; the audit is also run under the stricter (complementary-cells-distinguishable) prior |
+| R03 | Strata | Window-aligned quarters (matches the window, equal 75 per quarter); calendar quarters (eliminated: the window starts on 1 September, so the first quarter would hold one month); monthly strata (eliminated: about 25 per month puts more tuples under the floor of 10 and breaks the quarterly cohort framing) | Window-aligned quarters | SIGNED | Window-aligned quarters |
+| R04 | The five seeds | Accept as generated; re-roll before any draw exists (allowed, never after the first draw); choose memorable numbers (eliminated: not random) | Accept as generated | SIGNED | Accept the five seeds as generated; no re-roll |
+| R05 | Gold-sample design | (a) plain seeded random of about 30 (unbiased, may leave some checks not estimable); (b) oversample projects the model flags as likely passes, with weights (eliminated: it needs model output before labelling, which breaks blind labelling, and it puts weights into every metric); (c) random 30 plus a separately reported positives-enriched batch (feasible, costs extra labelling hours that are not yet measured) | (a) | SIGNED | (a) plain seeded random of about 30 |
+| R06 | AC1 categories and formula | Binary `pass` against not-`pass` as primary with four-state secondary; four-state as primary (eliminated: `pass` is what is published, and sparse states make it unstable); kappa as the gate (eliminated by D-01). The formula in section 4 is from the literature and is verified against the source before signing | Binary primary, four-state secondary | SIGNED | Binary primary, four-state secondary. Verified against Gwet (2008) and the irrCAC package's documentation (metricgate.com), which confirm the k-category chance-agreement term pe = [1/(k-1)] sum(pi_j(1-pi_j)) reduces to pe = 2 pi(1-pi) at k = 2, matching section 4 exactly; worked toy example pi = 0.55, pe = 0.495, pa = 0.8, AC1 ~= 0.60 |
+| R07 | Interval estimators | Wilson for proportions with a percentile bootstrap over projects (2,000 resamples, seeded); exact (Clopper-Pearson) intervals, wider and not eliminated; a bias-corrected bootstrap (eliminated: more machinery than about 30 gold projects support) | Wilson plus percentile bootstrap | SIGNED | Wilson intervals for proportions; percentile bootstrap (2,000 resamples, seeded) for agreement statistics |
+| R08 | Hypothesis wording, tests, definition of source and minimum group size | Wording and tests as in section 8; "source" defined as the channel through which the launch was found (Show HN, Reddit pick, or GitHub-only when a repository is the only own source); a minimum of 30 included projects per group; fewer groups or no H2 (eliminated by D-13, which fixes three hypotheses) | As in section 8 | SIGNED | As written in section 8; source = the channel the launch was found through (Show HN, Reddit pick, or GitHub-only); minimum 30 included projects per group |
+| R09 | "At least X of N" wording and the recall-bound sensitivity rule | Word every check-level finding "at least X of N" because published shares are lower bounds when evidence is missed; apply the measured collection recall as a bound in the adverse direction and require a hypothesis to hold in both analyses; report the primary analysis alone (eliminated: H1 and H3 are pushed by missed evidence in the same direction) | "At least X of N", with the bound analysis | SIGNED | "At least X of N" wording, with the recall-bound sensitivity analysis required |
+| R10 | Checks that are not estimable (under about 10 gold passes) | Publish labelled "validated by confirmation only; agreement not estimable"; withhold (safe, drops every rare check); publish unlabelled (eliminated by VAL-03) | Publish labelled | SIGNED | Publish labelled "not estimable" for checks with fewer than about 10 gold passes |
+| R11 | Bulk-N hours budget and reduction rule | Keep N at about 300 whatever the load (eliminated by the roadmap's schedule risk: Helen confirms every positive, COD-08); reduce to 200 by the first 50 per quarter (recommended); stop confirming (eliminated by COD-08). The budget H is a number only Helen can supply; nothing has been measured yet | Reduce to 200 by the first 50 per quarter; H from Helen | SIGNED | Budget H = 30 hours; if exceeded, reduce N to 200 by the first 50 projects per quarter in seed order (section 9) |
+| R12 | Reddit trigger | Same measured load and date as R11; cut Reddit picks to context only first (recommended, second in the descope order); shrink to a cap (needs a number from Helen); keep whatever the load (eliminated by the roadmap's schedule risk) | Cut to context only first | SIGNED | Cut Reddit picks to context-only first, on the same trigger date and measured load as R11 (section 10) |
+| R13 | Extra reason codes | Add `duplicate` and `unreachable-at-screening` to the five classes; only the five classes (eliminated: a duplicate or unreachable candidate would otherwise be counted under a reason that is not true) | Add both | SIGNED | Add `duplicate` and `unreachable-at-screening` (section 2) |
+| R14 | Tag timing relative to the spikes | Tag after sign-off and before any `src/pipeline` file, spike numbers allowed to come first because spike inputs are outside the frame; hold spike numbers until after the tag (safe, slows the spikes); tag before the spikes (eliminated: the collector spike has already run, and the tag waits on sign-off) | Tag after sign-off and before any `src/pipeline` file | SIGNED | Tag after sign-off, before any `src/pipeline` file; spike numbers from plans 01-06/01-07/01-10 stand, consistent with this rule, not an exception to it |
+| R15 | Confirmation of the locked thresholds D-01 to D-06 | Confirm as locked: AC1 at least 0.70 and pass precision at least 0.85 per check, screening audit of 50 with error at most 10%, collection recall at least 70%, second-model agreement reported and not a gate; change any of them (eliminated: locked in the phase context) | Confirm as locked | SIGNED | D-01 through D-06 confirmed as locked, unchanged |
