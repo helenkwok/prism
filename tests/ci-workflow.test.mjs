@@ -86,6 +86,14 @@ test("protocol-order requires the tag and runs the protocol tests in final mode"
   assert.match(text, /run:\s*PROTOCOL_FINAL=1 node --test tests\/protocol\.test\.mjs\s*$/m);
 });
 
+test("protocol-order installs dependencies before running node tests (tests/protocol.test.mjs imports highs)", () => {
+  const jobStart = text.indexOf("\n  protocol-order:");
+  const jobEnd = text.indexOf("\n  spike-records:");
+  assert.ok(jobStart >= 0 && jobEnd > jobStart);
+  const job = text.slice(jobStart, jobEnd);
+  assert.match(job, /run:\s*npm ci\s*$/m, "protocol-order must run npm ci before node --test");
+});
+
 test("spike-records requires every record to be final", () => {
   assert.match(text, /run:\s*node scripts\/check-spike-records\.mjs --require-final\s*$/m);
 });

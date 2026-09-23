@@ -130,6 +130,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      - run: npm ci
       - name: The protocol-v1 tag exists and is respected
         run: node scripts/check-protocol-order.mjs --require-tag
       - name: Protocol tests in final mode
