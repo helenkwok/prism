@@ -256,7 +256,38 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
   "fallbacks": {
     "batch": "triggered",
     "zdr": "not-needed"
-  }
+  },
+  "gate_file": {
+    "path": "vendor/ai-output-to-value/schemas/v1/decision-gates.json",
+    "sha256": "8d54a2f6cc3a19bb3c02a13bc28a92ac0f95cb2f7072a9f573f845be845d3881",
+    "check_ids_count": 24
+  },
+  "matrix": [
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_schema",
+      "thinking": "off",
+      "n": 3,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 1,
+      "span_resolve_rate": 1,
+      "schema_valid_rate": 1,
+      "retry_rate": 0,
+      "finish_reasons": {
+        "stop": 3
+      },
+      "latency_ms": {
+        "p50": 3147,
+        "p95": 3265
+      },
+      "tokens": {
+        "in": 4374,
+        "out": 1807
+      },
+      "cost_usd": 0.000696,
+      "status": "measured"
+    }
+  ]
 }
 ```
 
