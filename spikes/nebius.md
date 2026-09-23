@@ -264,28 +264,347 @@ Status: pending. The 12-config matrix, escape probe, pinned model and the zdr fa
   },
   "matrix": [
     {
-      "model": "nvidia/Nemotron-3_5-Lightning",
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
       "output_mode": "json_schema",
       "thinking": "off",
-      "n": 3,
+      "n": 25,
       "json_parse_rate": 1,
       "zod_valid_rate": 1,
       "span_resolve_rate": 1,
       "schema_valid_rate": 1,
       "retry_rate": 0,
       "finish_reasons": {
-        "stop": 3
+        "stop": 25
       },
       "latency_ms": {
-        "p50": 3147,
-        "p95": 3265
+        "p50": 3707,
+        "p95": 5496
       },
       "tokens": {
-        "in": 4374,
-        "out": 1807
+        "in": 54511,
+        "out": 21837
       },
-      "cost_usd": 0.000696,
+      "cost_usd": 0.120022,
       "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "output_mode": "json_schema",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 0.88,
+      "zod_valid_rate": 0.88,
+      "span_resolve_rate": 0.88,
+      "schema_valid_rate": 0.88,
+      "retry_rate": 0.2,
+      "finish_reasons": {
+        "stop": 22,
+        "length": 3
+      },
+      "latency_ms": {
+        "p50": 9029,
+        "p95": 11931
+      },
+      "tokens": {
+        "in": 69845,
+        "out": 87798
+      },
+      "cost_usd": 0.333239,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "output_mode": "json_object",
+      "thinking": "off",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 0.92,
+      "span_resolve_rate": 0.92,
+      "schema_valid_rate": 0.92,
+      "retry_rate": 0.08,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 3278,
+        "p95": 4572
+      },
+      "tokens": {
+        "in": 63727,
+        "out": 21719
+      },
+      "cost_usd": 0.128884,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "output_mode": "json_object",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 0.96,
+      "zod_valid_rate": 0.88,
+      "span_resolve_rate": 0.84,
+      "schema_valid_rate": 0.84,
+      "retry_rate": 0.24,
+      "finish_reasons": {
+        "stop": 24,
+        "length": 1
+      },
+      "latency_ms": {
+        "p50": 8428,
+        "p95": 12612
+      },
+      "tokens": {
+        "in": 71127,
+        "out": 80676
+      },
+      "cost_usd": 0.313155,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_schema",
+      "thinking": "off",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 1,
+      "span_resolve_rate": 1,
+      "schema_valid_rate": 1,
+      "retry_rate": 0,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 3148,
+        "p95": 4323
+      },
+      "tokens": {
+        "in": 54511,
+        "out": 16937
+      },
+      "cost_usd": 0.031597,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_schema",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 0.96,
+      "zod_valid_rate": 0.96,
+      "span_resolve_rate": 0.96,
+      "schema_valid_rate": 0.96,
+      "retry_rate": 0.04,
+      "finish_reasons": {
+        "stop": 23,
+        "length": 2
+      },
+      "latency_ms": {
+        "p50": 11875,
+        "p95": 21582
+      },
+      "tokens": {
+        "in": 59281,
+        "out": 60455
+      },
+      "cost_usd": 0.072194,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_object",
+      "thinking": "off",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 1,
+      "span_resolve_rate": 1,
+      "schema_valid_rate": 1,
+      "retry_rate": 0,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 3136,
+        "p95": 5209
+      },
+      "tokens": {
+        "in": 54511,
+        "out": 16912
+      },
+      "cost_usd": 0.031574,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_object",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 1,
+      "span_resolve_rate": 1,
+      "schema_valid_rate": 1,
+      "retry_rate": 0,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 11889,
+        "p95": 18115
+      },
+      "tokens": {
+        "in": 54511,
+        "out": 53015
+      },
+      "cost_usd": 0.064067,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_schema",
+      "thinking": "off",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 1,
+      "span_resolve_rate": 1,
+      "schema_valid_rate": 1,
+      "retry_rate": 0,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 3627,
+        "p95": 6051
+      },
+      "tokens": {
+        "in": 54511,
+        "out": 16572
+      },
+      "cost_usd": 0.007248,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_schema",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 0.08,
+      "zod_valid_rate": 0.08,
+      "span_resolve_rate": 0.08,
+      "schema_valid_rate": 0.08,
+      "retry_rate": 1,
+      "finish_reasons": {
+        "length": 23,
+        "stop": 2
+      },
+      "latency_ms": {
+        "p50": 25851,
+        "p95": 29592
+      },
+      "tokens": {
+        "in": 109022,
+        "out": 203886
+      },
+      "cost_usd": 0.055474,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_object",
+      "thinking": "off",
+      "n": 25,
+      "json_parse_rate": 1,
+      "zod_valid_rate": 0.6,
+      "span_resolve_rate": 0.6,
+      "schema_valid_rate": 0.6,
+      "retry_rate": 0.52,
+      "finish_reasons": {
+        "stop": 25
+      },
+      "latency_ms": {
+        "p50": 3300,
+        "p95": 3826
+      },
+      "tokens": {
+        "in": 83914,
+        "out": 23900
+      },
+      "cost_usd": 0.010771,
+      "status": "measured"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_object",
+      "thinking": "on",
+      "n": 25,
+      "json_parse_rate": 0.04,
+      "zod_valid_rate": 0.04,
+      "span_resolve_rate": 0.04,
+      "schema_valid_rate": 0.04,
+      "retry_rate": 1,
+      "finish_reasons": {
+        "length": 24,
+        "stop": 1
+      },
+      "latency_ms": {
+        "p50": 22822,
+        "p95": 24658
+      },
+      "tokens": {
+        "in": 109022,
+        "out": 204360
+      },
+      "cost_usd": 0.055588,
+      "status": "measured"
+    }
+  ],
+  "escape_probe": [
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "output_mode": "json_schema",
+      "survived": true,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
+    },
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "output_mode": "json_object",
+      "survived": true,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_schema",
+      "survived": true,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
+    },
+    {
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "output_mode": "json_object",
+      "survived": true,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_schema",
+      "survived": false,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
+    },
+    {
+      "model": "nvidia/Nemotron-3_5-Lightning",
+      "output_mode": "json_object",
+      "survived": false,
+      "json_parses": true,
+      "finish_reason": "stop",
+      "checked_on": "2026-09-23"
     }
   ]
 }
