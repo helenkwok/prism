@@ -152,7 +152,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -219,12 +219,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-assumptions-catalogued",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -291,12 +291,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-intended-use-defined",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -368,7 +368,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -440,7 +440,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -512,7 +512,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -579,12 +579,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-limitations-stated",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -656,7 +656,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -728,7 +728,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -800,7 +800,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -872,7 +872,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -944,7 +944,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1016,7 +1016,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1088,7 +1088,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "partial",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1106,69 +1106,71 @@ confirmation (COD-08), not an automated check.
     "outcome-measure-defined": {
       "decision": "measure-outcome",
       "label": "The outcome measure is defined.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The outcome measure is defined.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for outcome-measure-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for outcome-measure-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for outcome-measure-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for outcome-measure-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names the specific outcome measure used to judge the initiative, stated before or alongside its claim that the outcome changed — not an output metric (what the system produced) but an outcome (the real-world result the initiative was meant to cause).",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, exactly which outcome measure it tracks (for example a named metric, its unit, and how it is captured), with a linked artefact (a dashboard, report, or methodology note) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no outcome measure was settled on, or that the measure used was later disavowed as the wrong one to have tracked.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts an outcome was achieved (for example \"this made a real difference\") without ever naming the specific measure used to judge it.",
+      "notApplicableNote": "No legitimate not-applicable case: a project presenting any outcome claim has, by definition, something in mind that it is measuring — absence of a stated measure is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for outcome-measure-defined not yet authored."
+          "We judge this initiative's success by the drop in median first-response time, tracked through our existing support-desk analytics.",
+          "The outcome measure is 30-day retention of users who completed onboarding, pulled from our product analytics the same way both before and after rollout."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for outcome-measure-defined not yet authored."
+          "We're still figuring out the right way to measure whether this actually helped.",
+          "Customers tell us it's made a real difference."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-outcome-measure-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for outcome-measure-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for outcome-measure-defined not yet authored."
+            "source_id": "iso-42001-clause-9-outcome-measure-defined",
+            "title": "ISO/IEC 42001:2023, Clause 9 — Performance evaluation",
+            "locator": "Clause 9",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Performance evaluation covers naming what is monitored and measured."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-outcome-measure-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for outcome-measure-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-objectives-outcome-measure-defined",
+            "title": "GAICC AIMS — Objectives",
+            "locator": "AIMS artefact: Objectives",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for outcome-measure-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-outcome-measure-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for outcome-measure-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-measure-1-outcome-measure-defined",
+            "title": "NIST AI RMF 1.0, MEASURE 1 — Appropriate methods and metrics are identified and applied",
+            "locator": "MEASURE 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for outcome-measure-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-outcome-measure-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for outcome-measure-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-72-outcome-measure-defined",
+            "title": "Regulation (EU) 2024/1689, Article 72 — Post-market monitoring",
+            "locator": "Article 72",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for outcome-measure-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-outcome-measure-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for outcome-measure-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-wellbeing-outcome-measure-defined",
+            "title": "OECD AI Principles — Inclusive growth, sustainable development and well-being",
+            "locator": "Principle 1.1",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for outcome-measure-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1176,69 +1178,71 @@ confirmation (COD-08), not an automated check.
     "baseline-defined": {
       "decision": "measure-outcome",
       "label": "A comparable baseline or counterfactual is defined.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: A comparable baseline or counterfactual is defined.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for baseline-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for baseline-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for baseline-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for baseline-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states what the outcome measure's value was, or would have been, before or absent the initiative — a comparable prior period, a control group, or another explicit counterfactual — against which the after-measurement is judged.",
+      "passRule": "Coded pass when the project's own page or repository gives, in a verbatim quotable sentence, the baseline value or counterfactual used (for example a stated pre-launch metric, a held-out control group, or a prior period's figure), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no baseline or counterfactual was captured before comparing against the outcome measure.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts an improvement over \"before\" without stating what the before value actually was.",
+      "notApplicableNote": "No legitimate not-applicable case: any before/after outcome comparison requires something to compare against — a genuinely new metric with no prior period is still a form of baseline (zero, or undefined), which should be stated rather than left unaddressed.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for baseline-defined not yet authored."
+          "Before this change, average checkout time was 4.2 minutes across the prior quarter; that is the baseline this release is compared against.",
+          "We held out 10% of traffic as a control group that did not receive the new flow, giving us a concurrent baseline rather than a prior-period one."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for baseline-defined not yet authored."
+          "We didn't track this metric before, so there's no real baseline to compare to, but it feels better now.",
+          "Users are more engaged than before."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-baseline-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for baseline-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-clause-6-baseline-defined",
+            "title": "ISO/IEC 42001:2023, Clause 6 — Planning",
+            "locator": "Clause 6",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for baseline-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-baseline-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for baseline-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-scope-baseline-defined",
+            "title": "GAICC AIMS — Scope",
+            "locator": "AIMS artefact: Scope",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for baseline-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-baseline-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for baseline-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-map-1-baseline-defined",
+            "title": "NIST AI RMF 1.0, MAP 1 — Context is established and understood",
+            "locator": "MAP 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for baseline-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-baseline-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for baseline-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-baseline-defined",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for baseline-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-baseline-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for baseline-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-baseline-defined",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for baseline-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1246,69 +1250,71 @@ confirmation (COD-08), not an automated check.
     "outcome-measured": {
       "decision": "measure-outcome",
       "label": "The outcome was measured after the intervention.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The outcome was measured after the intervention.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for outcome-measured not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for outcome-measured not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for outcome-measured not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for outcome-measured not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was actually captured after the initiative ran — not merely defined in advance, but recorded with a real value once the intervention had time to take effect.",
+      "passRule": "Coded pass when the project's own page or repository states, with a verbatim quotable sentence, a specific after-the-fact value for the outcome measure, with a linked artefact (a report, dashboard snapshot, or dataset) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states the outcome was never actually re-measured after launch, despite stating an intent to.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the outcome improved without giving any post-intervention figure for the measure it defined.",
+      "notApplicableNote": "No legitimate not-applicable case: a project claiming to know whether the initiative worked has, by definition, measured something after the fact — an unmeasured outcome is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for outcome-measured not yet authored."
+          "Three months after rollout, median first-response time had fallen to 2.1 minutes, measured the same way as our pre-launch baseline.",
+          "Our Q3 cohort analysis (linked below) shows day-30 retention at 42%, captured through the same analytics pipeline used for the baseline."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for outcome-measured not yet authored."
+          "We never went back and checked the numbers after launch.",
+          "It's clearly working better now."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-outcome-measured-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for outcome-measured not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for outcome-measured not yet authored."
+            "source_id": "iso-42001-annex-a-6.2.8-outcome-measured",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.8 — Recording of event logs",
+            "locator": "Annex A.6.2.8",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Event-log recording is the basis for an actual post-intervention measurement."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-outcome-measured-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for outcome-measured not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-evidence-of-implementation-outcome-measured",
+            "title": "GAICC AIMS — Evidence of implementation",
+            "locator": "AIMS artefact: Evidence of implementation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for outcome-measured not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-outcome-measured-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for outcome-measured not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for outcome-measured not yet authored."
+            "source_id": "nist-ai-rmf-measure-3-outcome-measured",
+            "title": "NIST AI RMF 1.0, MEASURE 3 — Mechanisms for tracking identified AI risks over time are in place",
+            "locator": "MEASURE 3",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Tracking mechanisms over time directly support an actual after-the-fact measurement."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-outcome-measured-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for outcome-measured not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for outcome-measured not yet authored.",
-            "informational": true
+            "source_id": "eu-ai-act-article-72-outcome-measured",
+            "title": "Regulation (EU) 2024/1689, Article 72 — Post-market monitoring",
+            "locator": "Article 72",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
+            "relation_type": "addresses",
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-outcome-measured-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for outcome-measured not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-wellbeing-outcome-measured",
+            "title": "OECD AI Principles — Inclusive growth, sustainable development and well-being",
+            "locator": "Principle 1.1",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for outcome-measured not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1316,69 +1322,71 @@ confirmation (COD-08), not an automated check.
     "measurement-definition-consistent": {
       "decision": "measure-outcome",
       "label": "Before/after measurements use the same relevant definition.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Before/after measurements use the same relevant definition.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for measurement-definition-consistent not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for measurement-definition-consistent not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for measurement-definition-consistent not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for measurement-definition-consistent not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was defined and captured the same way both before and after the initiative — the same metric, unit, population, and collection method — so the comparison is not comparing two different things.",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, that the before and after figures used the same definition, method, or population (for example naming an unchanged analytics query or cohort definition), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states the before and after measurements used different definitions, populations, or methods (for example a metric redefinition mid-comparison, or comparing a sampled cohort to a full population).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the comparison is apples-to-apples without describing how the measurement method stayed the same.",
+      "notApplicableNote": "No legitimate not-applicable case: any before/after comparison either used a consistent definition or did not — this is always an answerable question about the comparison's own method, not one that can be sidestepped as not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for measurement-definition-consistent not yet authored."
+          "Both the pre- and post-launch figures use the identical cohort definition and the same 30-day retention query against our production database.",
+          "We re-ran the exact same support-ticket query, unchanged since before the rollout, to produce both numbers."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for measurement-definition-consistent not yet authored."
+          "We changed how we calculate this metric partway through, so the before and after numbers aren't directly comparable, but the trend still looks good.",
+          "The new number looks better than the old one."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-measurement-definition-consistent-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for measurement-definition-consistent not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-annex-a-6.2.8-measurement-definition-consistent",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.8 — Recording of event logs",
+            "locator": "Annex A.6.2.8",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for measurement-definition-consistent not yet authored."
+            "qualification": "[CITED] Consistent event-log recording is what keeps a before/after definition comparable."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-measurement-definition-consistent-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for measurement-definition-consistent not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-operational-documentation-measurement-definition-consistent",
+            "title": "GAICC AIMS — Operational documentation",
+            "locator": "AIMS artefact: Operational documentation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for measurement-definition-consistent not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-measurement-definition-consistent-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for measurement-definition-consistent not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-measure-1-measurement-definition-consistent",
+            "title": "NIST AI RMF 1.0, MEASURE 1 — Appropriate methods and metrics are identified and applied",
+            "locator": "MEASURE 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for measurement-definition-consistent not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-measurement-definition-consistent-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for measurement-definition-consistent not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-12-measurement-definition-consistent",
+            "title": "Regulation (EU) 2024/1689, Article 12 — Record-keeping",
+            "locator": "Article 12",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for measurement-definition-consistent not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-measurement-definition-consistent-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for measurement-definition-consistent not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-transparency-measurement-definition-consistent",
+            "title": "OECD AI Principles — Transparency and explainability",
+            "locator": "Principle 1.3",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for measurement-definition-consistent not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1386,69 +1394,71 @@ confirmation (COD-08), not an automated check.
     "important-confounds-named": {
       "decision": "measure-outcome",
       "label": "Material confounds, uncertainty, or attribution limits are named.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Material confounds, uncertainty, or attribution limits are named.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for important-confounds-named not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for important-confounds-named not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for important-confounds-named not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for important-confounds-named not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names the other factors that could plausibly explain the measured change besides the initiative itself (seasonality, a concurrent change, a different user mix) — or otherwise states the uncertainty or attribution limits of the comparison, rather than presenting a single number as unambiguous proof the initiative caused it.",
+      "passRule": "Coded pass when the project's own page or repository names, in a verbatim quotable sentence, at least one plausible confound, caveat, or attribution limit relevant to the comparison (for example a concurrent marketing campaign, a seasonal effect, or a stated confidence interval), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states that no other explanation was considered despite a known concurrent change that could plausibly account for the result.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the result is \"definitely caused by\" the initiative with no acknowledgement that anything else could have contributed.",
+      "notApplicableNote": "Legitimately not-applicable when the project's own page states the comparison used a randomized controlled or held-out design specifically built to rule out confounds, making a separate confounds discussion unnecessary — one of the two checks among these ten where a genuine not-applicable state plausibly exists, distinct from the gate's own decision-level derivation.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for important-confounds-named not yet authored."
+          "This quarter also coincided with a seasonal traffic increase, so some of the retention gain may not be attributable to the new onboarding flow alone.",
+          "Our 95% confidence interval on the measured improvement is ±3 percentage points, reflecting the sample size available."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for important-confounds-named not yet authored."
+          "This number is definitely caused by the redesign and nothing else.",
+          "Retention went up 10% after launch."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-important-confounds-named-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for important-confounds-named not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for important-confounds-named not yet authored."
+            "source_id": "iso-42001-annex-a-5.3-important-confounds-named",
+            "title": "ISO/IEC 42001:2023 Annex A.5.3 — Documentation of AI system impact assessments",
+            "locator": "Annex A.5.3",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-important-confounds-named-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for important-confounds-named not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-ai-risk-assessment-important-confounds-named",
+            "title": "GAICC AIMS — AI risk assessment",
+            "locator": "AIMS artefact: AI risk assessment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for important-confounds-named not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-important-confounds-named-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for important-confounds-named not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for important-confounds-named not yet authored."
+            "source_id": "nist-ai-rmf-measure-4-important-confounds-named",
+            "title": "NIST AI RMF 1.0, MEASURE 4 — Feedback about efficacy of measurement is gathered and assessed",
+            "locator": "MEASURE 4",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Assessing measurement efficacy covers naming what else could explain the result."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-important-confounds-named-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for important-confounds-named not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-important-confounds-named",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for important-confounds-named not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-important-confounds-named-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for important-confounds-named not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-transparency-important-confounds-named",
+            "title": "OECD AI Principles — Transparency and explainability",
+            "locator": "Principle 1.3",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for important-confounds-named not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1456,69 +1466,71 @@ confirmation (COD-08), not an automated check.
     "outcome-evidence-available": {
       "decision": "scale-renew-stop",
       "label": "Outcome evidence relevant to the decision is available.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Outcome evidence relevant to the decision is available.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for outcome-evidence-available not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for outcome-evidence-available not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for outcome-evidence-available not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for outcome-evidence-available not yet authored.",
+      "operationalDefinition": "Whether, at the point of deciding to scale, renew, expand, or stop, the project's own page or repository still has the outcome evidence from the measure-outcome decision available and referenced — not that the outcome itself was necessarily positive, but that the evidence a scale/stop decision needs has not gone missing or stale.",
+      "passRule": "Coded pass when the project's own page or repository references or links the specific outcome evidence (the measured result and its baseline) it is relying on for this scale/renew/stop decision, with a verbatim quotable sentence.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states the outcome evidence it would need for this decision is no longer available (for example a report that was lost, a dashboard that was discontinued, or a measurement window that was never completed).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the decision is \"backed by the data\" without linking or quoting the actual outcome evidence being relied on.",
+      "notApplicableNote": "No legitimate not-applicable case: a scale/renew/stop decision always rests on some outcome evidence, even if that evidence is thin — thin or missing evidence is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for outcome-evidence-available not yet authored."
+          "This expansion decision is based on the retention results linked in our Q3 report, the same figures referenced in our outcome-measurement update.",
+          "We're renewing this program on the strength of the cost-per-resolution data published last quarter, still current as of this review."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for outcome-evidence-available not yet authored."
+          "The team that ran the original measurement has since left and we don't have the original report anymore, but we're moving ahead anyway.",
+          "The data supports this."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-outcome-evidence-available-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for outcome-evidence-available not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-clause-9-outcome-evidence-available",
+            "title": "ISO/IEC 42001:2023, Clause 9 — Performance evaluation",
+            "locator": "Clause 9",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for outcome-evidence-available not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-outcome-evidence-available-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for outcome-evidence-available not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-evidence-of-implementation-outcome-evidence-available",
+            "title": "GAICC AIMS — Evidence of implementation",
+            "locator": "AIMS artefact: Evidence of implementation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for outcome-evidence-available not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-outcome-evidence-available-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for outcome-evidence-available not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-measure-1-outcome-evidence-available",
+            "title": "NIST AI RMF 1.0, MEASURE 1 — Appropriate methods and metrics are identified and applied",
+            "locator": "MEASURE 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for outcome-evidence-available not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-outcome-evidence-available-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for outcome-evidence-available not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-72-outcome-evidence-available",
+            "title": "Regulation (EU) 2024/1689, Article 72 — Post-market monitoring",
+            "locator": "Article 72",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for outcome-evidence-available not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-outcome-evidence-available-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for outcome-evidence-available not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-outcome-evidence-available",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for outcome-evidence-available not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1526,69 +1538,71 @@ confirmation (COD-08), not an automated check.
     "full-cost-accounted": {
       "decision": "scale-renew-stop",
       "label": "The full relevant cost boundary is accounted for.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The full relevant cost boundary is accounted for.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for full-cost-accounted not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for full-cost-accounted not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for full-cost-accounted not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for full-cost-accounted not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states a cost figure for the decision that covers the relevant cost boundary — not just the headline or most visible cost, but the other material costs a scale/renew/stop decision should weigh (for example ongoing compute, support staffing, or maintenance, alongside the upfront build cost).",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, a cost figure that explicitly names more than one component of the relevant cost boundary (for example build cost plus ongoing operating cost), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states a known material cost component was left out of the figure used for this decision (for example \"this total excludes our support costs\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the initiative is \"cheap to run\" or \"cost-effective\" without stating what cost components were actually counted.",
+      "notApplicableNote": "No legitimate not-applicable case: a scale/renew/stop decision always implies some cost boundary, even a narrow one — a narrow or undisclosed boundary is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for full-cost-accounted not yet authored."
+          "Our total cost of ownership figure includes both the one-time migration cost and the ongoing monthly compute and support-staff time, broken down in the linked spreadsheet.",
+          "The $40k figure quoted above covers build, hosting, and the first year of maintenance; it does not include sales cost, which is tracked separately."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for full-cost-accounted not yet authored."
+          "This only cost us $500 to build.",
+          "It's basically free to run."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-full-cost-accounted-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for full-cost-accounted not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for full-cost-accounted not yet authored."
+            "source_id": "iso-42001-annex-a-4.2-full-cost-accounted",
+            "title": "ISO/IEC 42001:2023 Annex A.4.2 — Resource documentation",
+            "locator": "Annex A.4.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-full-cost-accounted-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for full-cost-accounted not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-management-review-full-cost-accounted",
+            "title": "GAICC AIMS — Management review",
+            "locator": "AIMS artefact: Management review",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for full-cost-accounted not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-full-cost-accounted-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for full-cost-accounted not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for full-cost-accounted not yet authored."
+            "source_id": "nist-ai-rmf-map-3-full-cost-accounted",
+            "title": "NIST AI RMF 1.0, MAP 3 — AI capabilities, targeted usage, goals, benefits/costs vs. benchmarks are understood",
+            "locator": "MAP 3",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-full-cost-accounted-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for full-cost-accounted not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-17-full-cost-accounted",
+            "title": "Regulation (EU) 2024/1689, Article 17 — Quality management system",
+            "locator": "Article 17",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for full-cost-accounted not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-full-cost-accounted-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for full-cost-accounted not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-full-cost-accounted",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for full-cost-accounted not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1596,69 +1610,71 @@ confirmation (COD-08), not an automated check.
     "risk-tradeoffs-assessed": {
       "decision": "scale-renew-stop",
       "label": "Material risks and trade-offs are assessed.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Material risks and trade-offs are assessed.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for risk-tradeoffs-assessed not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for risk-tradeoffs-assessed not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for risk-tradeoffs-assessed not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for risk-tradeoffs-assessed not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names the material risks or trade-offs of scaling, renewing, expanding, or stopping — not just the expected benefit, but what could go wrong, what is given up, or what gets harder at a larger scale.",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, at least one material risk or trade-off considered as part of this decision (for example a stated scaling risk, an opportunity cost, or a dependency that gets riskier at volume), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states a known material risk was identified but was not factored into the scale/renew/stop decision.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the decision was \"carefully risk-assessed\" without naming any specific risk or trade-off considered.",
+      "notApplicableNote": "No legitimate not-applicable case: scaling, renewing, expanding, or stopping always carries some risk or trade-off, even if judged small — an unexamined decision is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for risk-tradeoffs-assessed not yet authored."
+          "Scaling this to our full user base risks overloading our current support team, which is why we're phasing the rollout over two quarters.",
+          "Stopping this program frees budget but means giving up the retention gains documented in our outcome report — we judged the trade-off worth it given the cost."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for risk-tradeoffs-assessed not yet authored."
+          "We thought it through carefully and decided to scale.",
+          "There's no real downside to expanding this."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-risk-tradeoffs-assessed-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for risk-tradeoffs-assessed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for risk-tradeoffs-assessed not yet authored."
+            "source_id": "iso-42001-annex-a-5.2-risk-tradeoffs-assessed",
+            "title": "ISO/IEC 42001:2023 Annex A.5.2 — AI system impact assessment process",
+            "locator": "Annex A.5.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] The impact assessment process directly covers weighing material risks and trade-offs."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-risk-tradeoffs-assessed-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for risk-tradeoffs-assessed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-ai-risk-assessment-risk-tradeoffs-assessed",
+            "title": "GAICC AIMS — AI risk assessment",
+            "locator": "AIMS artefact: AI risk assessment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for risk-tradeoffs-assessed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-risk-tradeoffs-assessed-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for risk-tradeoffs-assessed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for risk-tradeoffs-assessed not yet authored."
+            "source_id": "nist-ai-rmf-map-5-risk-tradeoffs-assessed",
+            "title": "NIST AI RMF 1.0, MAP 5 — Impacts to individuals, groups, communities, organizations, society are characterized",
+            "locator": "MAP 5",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Characterizing impacts is the basis for naming material risks and trade-offs."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-risk-tradeoffs-assessed-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for risk-tradeoffs-assessed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for risk-tradeoffs-assessed not yet authored.",
-            "informational": true
+            "source_id": "eu-ai-act-article-9-risk-tradeoffs-assessed",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
+            "relation_type": "addresses",
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-risk-tradeoffs-assessed-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for risk-tradeoffs-assessed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-risk-tradeoffs-assessed",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for risk-tradeoffs-assessed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1666,69 +1682,71 @@ confirmation (COD-08), not an automated check.
     "alternatives-compared": {
       "decision": "scale-renew-stop",
       "label": "Reasonable alternatives or the status quo are compared.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Reasonable alternatives or the status quo are compared.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for alternatives-compared not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for alternatives-compared not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for alternatives-compared not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for alternatives-compared not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository shows that scaling, renewing, expanding, or stopping was compared against at least one reasonable alternative — including simply continuing the status quo — rather than being the only option considered.",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, a specific alternative that was considered and why it was not chosen (for example staying at current scale, a different vendor, or a cheaper rollout path), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no alternative to the chosen path was considered.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it \"evaluated the options\" without naming any specific alternative that was actually considered.",
+      "notApplicableNote": "No legitimate not-applicable case: continuing the status quo is itself always an available alternative to compare against — there is no scale/renew/stop decision with zero alternatives, even when the comparison concludes the chosen path is clearly best.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for alternatives-compared not yet authored."
+          "We considered keeping the current manual process instead of scaling this tool, but the support-ticket backlog data made the status quo clearly worse.",
+          "A cheaper, lower-accuracy vendor was evaluated and rejected because its error rate would have doubled our support load."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for alternatives-compared not yet authored."
+          "We looked at our options and this was the clear winner.",
+          "There wasn't really another way to do this."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-alternatives-compared-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for alternatives-compared not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for alternatives-compared not yet authored."
+            "source_id": "iso-42001-annex-a-5.2-alternatives-compared",
+            "title": "ISO/IEC 42001:2023 Annex A.5.2 — AI system impact assessment process",
+            "locator": "Annex A.5.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-alternatives-compared-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for alternatives-compared not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-risk-treatment-alternatives-compared",
+            "title": "GAICC AIMS — Risk treatment",
+            "locator": "AIMS artefact: Risk treatment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for alternatives-compared not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-alternatives-compared-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for alternatives-compared not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-manage-2-alternatives-compared",
+            "title": "NIST AI RMF 1.0, MANAGE 2 — Strategies to maximize benefits and minimize negative impacts",
+            "locator": "MANAGE 2",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for alternatives-compared not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-alternatives-compared-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for alternatives-compared not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-alternatives-compared",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for alternatives-compared not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-alternatives-compared-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for alternatives-compared not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-alternatives-compared",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for alternatives-compared not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1736,69 +1754,71 @@ confirmation (COD-08), not an automated check.
     "value-rule-explicit": {
       "decision": "scale-renew-stop",
       "label": "The rule for scale, renew, expand, or stop is explicit.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The rule for scale, renew, expand, or stop is explicit.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for value-rule-explicit not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for value-rule-explicit not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for value-rule-explicit not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for value-rule-explicit not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states the actual rule or threshold used to decide between scaling, renewing, expanding, or stopping — not just that a decision was made, but what outcome or cost level would have triggered a different choice.",
+      "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, the specific rule or threshold applied (for example \"we scale if retention stays above 35%\" or a pre-registered stop condition), with a linked artefact where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no rule or threshold was set before the decision was made — the outcome was judged after the fact with no pre-stated criterion.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts the decision followed \"clear criteria\" without stating what those criteria actually were.",
+      "notApplicableNote": "No legitimate not-applicable case: every scale/renew/expand/stop decision implies some rule, even an informal or after-the-fact one — an unstated rule is coded fail or unknown, not not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for value-rule-explicit not yet authored."
+          "We set the rule in advance: if day-30 retention stayed above 35% after the pilot, we would scale to all regions; it came in at 38%, so we scaled.",
+          "Our pre-registered stop condition was a cost-per-resolution above $12; it landed at $9.50, so we renewed."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for value-rule-explicit not yet authored."
+          "We decided it was worth continuing based on how things felt overall.",
+          "The results were good enough to scale."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-value-rule-explicit-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for value-rule-explicit not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-clause-9-value-rule-explicit",
+            "title": "ISO/IEC 42001:2023, Clause 9 — Performance evaluation",
+            "locator": "Clause 9",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for value-rule-explicit not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-value-rule-explicit-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for value-rule-explicit not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-management-review-value-rule-explicit",
+            "title": "GAICC AIMS — Management review",
+            "locator": "AIMS artefact: Management review",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for value-rule-explicit not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-value-rule-explicit-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for value-rule-explicit not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-govern-1-value-rule-explicit",
+            "title": "NIST AI RMF 1.0, GOVERN 1 — Policies, processes, procedures, and practices",
+            "locator": "GOVERN 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for value-rule-explicit not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-value-rule-explicit-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for value-rule-explicit not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-17-value-rule-explicit",
+            "title": "Regulation (EU) 2024/1689, Article 17 — Quality management system",
+            "locator": "Article 17",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for value-rule-explicit not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-value-rule-explicit-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for value-rule-explicit not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-value-rule-explicit",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for value-rule-explicit not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
