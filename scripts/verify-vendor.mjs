@@ -29,8 +29,10 @@ export const UPSTREAM_URL = "https://github.com/AlreadyOpen/ai-output-to-value";
 
 /**
  * The vendored set, at upstream's own relative paths. The gate resolves its schemas
- * from its parent folder, so the layout is part of the contract. Only the Python
- * evaluator is vendored for runtime use; the JS gate is not.
+ * from its parent folder, so the layout is part of the contract. The Python evaluator
+ * is the sole runtime evaluator (D-19); packages/mcp/src/core.mjs is a second,
+ * independently-sourced evaluator vendored for CI conformance checking only — never
+ * imported by the runtime pipeline (enforced by tests/vendor-pin.test.mjs).
  */
 export const VENDORED_PATHS = [
   "LICENSE",
@@ -39,6 +41,9 @@ export const VENDORED_PATHS = [
   "schemas/v1/decision-gates.json",
   "scripts/claim_gate.py",
   "tests/fixtures/claim-gate-conformance.json",
+  "packages/mcp/src/core.mjs",
+  "packages/mcp/schemas/v1/claim.schema.json",
+  "packages/mcp/schemas/v1/decision-gates.json",
 ];
 
 const SHA_RE = /^[0-9a-f]{40}$/;

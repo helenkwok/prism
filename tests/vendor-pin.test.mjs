@@ -27,6 +27,9 @@ const EXPECTED_SET = [
   "schemas/v1/decision-gates.json",
   "scripts/claim_gate.py",
   "tests/fixtures/claim-gate-conformance.json",
+  "packages/mcp/src/core.mjs",
+  "packages/mcp/schemas/v1/claim.schema.json",
+  "packages/mcp/schemas/v1/decision-gates.json",
 ];
 
 const scratch = [];
@@ -70,8 +73,20 @@ describe("committed vendor folder", () => {
     }
   });
 
-  test("only the Python evaluator is vendored for runtime use", () => {
-    assert.ok(!VENDORED_PATHS.some((p) => p.endsWith(".mjs") || p.startsWith("packages/")));
+  test("exactly one .mjs file is vendored: the CI-only Node conformance oracle", () => {
+    const mjsFiles = VENDORED_PATHS.filter((p) => p.endsWith(".mjs"));
+    assert.deepEqual(mjsFiles, ["packages/mcp/src/core.mjs"]);
+  });
+
+  test("core.mjs is vendored but never imported by the runtime pipeline", () => {
+    const res = spawnSync("git", ["-C", root, "ls-files", "--", "src/pipeline"], { encoding: "utf8" });
+    assert.equal(res.status, 0, res.stderr);
+    const files = res.stdout.split("\n").filter(Boolean);
+    const offenders = files.filter((f) => {
+      const text = fs.readFileSync(path.join(root, f), "utf8");
+      return text.includes("packages/mcp") || text.includes("core.mjs");
+    });
+    assert.deepEqual(offenders, [], "no src/pipeline file may import the CI-only Node evaluator");
   });
 });
 
