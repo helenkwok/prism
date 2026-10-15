@@ -10,6 +10,7 @@
 //
 // Node 24 strips this file's types natively.
 
+import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -456,11 +457,23 @@ if (invokedDirectly) {
 
     const tavily = process.env.TAVILY_API_KEY;
     const nebius = process.env.NEBIUS_API_KEY;
-    const github = process.env.GITHUB_TOKEN;
+    // GITHUB_TOKEN in the environment wins when set; otherwise fall back to
+    // the `gh` CLI's own stored auth (`gh auth token`) rather than requiring
+    // a separate credential in .env — this machine's `gh` is already
+    // authenticated with `repo` scope, which is all github.ts's read-only
+    // evidence calls need.
+    let github = process.env.GITHUB_TOKEN;
+    if (!github) {
+      try {
+        github = execFileSync("gh", ["auth", "token"], { encoding: "utf8" }).trim() || undefined;
+      } catch {
+        github = undefined;
+      }
+    }
     const missing = [
       !tavily ? "TAVILY_API_KEY" : null,
       !nebius ? "NEBIUS_API_KEY" : null,
-      !github ? "GITHUB_TOKEN" : null,
+      !github ? "GITHUB_TOKEN (and `gh auth token` also failed — run `gh auth login` or set GITHUB_TOKEN)" : null,
     ].filter((v): v is string => v !== null);
     if (missing.length > 0) {
       process.stderr.write(`run.ts: missing required env var(s): ${missing.join(", ")}\n`);
