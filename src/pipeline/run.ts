@@ -21,6 +21,7 @@ import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImp
 import { redactText } from "./evidence/redact.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
+import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
 import { createClient, buildChatBody, PINNED_MODEL, PINNED_BASE_URL, type FetchImpl as NebiusFetchImpl } from "./coding/nebius-client.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
@@ -68,9 +69,11 @@ function githubSecurityPath(info: { path: string | null } | { failed: true } | n
   return "SECURITY.md";
 }
 
-/** Nebius coding prompt, modeled on scripts/spikes/nebius-matrix.mjs's buildCodingPrompt. */
-function buildCodingMessages(checkIds: string[], checkLabels: Record<string, string>, jsonSchema: unknown, spans: { id: string; text: string }[]) {
-  const checklist = checkIds.map((id, i) => `${i + 1}. ${id} — ${checkLabels[id]}`).join("\n");
+/** Nebius coding prompt, modeled on scripts/spikes/nebius-matrix.mjs's buildCodingPrompt.
+ * The per-check checklist text is sourced from codebook.md (CDB-01, D-31) via
+ * checkPromptText — never a second hardcoded copy of the codebook's own field text. */
+export function buildCodingMessages(checkIds: string[], codebook: Codebook, jsonSchema: unknown, spans: { id: string; text: string }[]) {
+  const checklist = checkIds.map((id) => checkPromptText(codebook, id)).join("\n\n");
   const spanText = spans.map((s) => `${s.id}: ${s.text}`).join("\n\n");
   const system =
     "You are coding evidence for a fixed set of decision-gate checks, from a project's own pages and repository, " +
@@ -88,12 +91,12 @@ function buildCodingMessages(checkIds: string[], checkLabels: Record<string, str
   ];
 }
 
-function makeNebiusCallOnce(checkLabels: Record<string, string>, spansById: Map<string, string>, fetchImpl?: NebiusFetchImpl): CallOnce {
+function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, fetchImpl?: NebiusFetchImpl): CallOnce {
   return async (client: any, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
     const body = buildChatBody({
       model: PINNED_MODEL,
-      messages: buildCodingMessages(checkIds, checkLabels, jsonSchema, spans),
+      messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans),
       mode: "json_schema",
       schema: { name: "gate_checks", schema: jsonSchema, strict: true },
       thinking: false,
@@ -147,10 +150,11 @@ async function processProject(
     db: ReturnType<typeof getDb>;
     gateFile: GateFile;
     contract: ReturnType<typeof buildContract>;
+    codebook: Codebook;
     overrides: Overrides;
   },
 ): Promise<ProjectOutcome> {
-  const { apiKeys, cacheDir, dataDir, db, gateFile, contract, overrides } = ctx;
+  const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides } = ctx;
   const projectId = String(project.hn_id);
 
   // 1. boundary — cheap, cached anyway for a uniform resume story.
@@ -243,7 +247,7 @@ async function processProject(
     }
     const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
     const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
-    const callOnce = makeNebiusCallOnce(gateFile.checkLabels, spansById);
+    const callOnce = makeNebiusCallOnce(codebook, spansById);
     return codeProjectWithRetry({ client, cfg: {}, contract, spanIds, callOnce });
   });
   const codingResult: any = codeStage.value;
@@ -374,6 +378,7 @@ export async function runPipeline({
   await ensurePipelineSchema(resolvedDb);
   const gateFile = loadGateFile(resolveGatesPath(gatesPath));
   const contract = buildContract(gateFile.checkIds);
+  const codebook = loadCodebook(path.join(process.cwd(), "codebook.md"));
   const resolvedCacheDir = cacheDir ?? defaultCacheDir();
 
   const limit = pLimit(concurrency);
@@ -388,6 +393,7 @@ export async function runPipeline({
             db: resolvedDb,
             gateFile,
             contract,
+            codebook,
             overrides,
           });
         } catch (err) {

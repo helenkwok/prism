@@ -38,6 +38,8 @@ jobs:
         run: node scripts/check-protocol-order.mjs
       - name: Spike record lint
         run: node scripts/check-spike-records.mjs
+      - name: Codebook lint
+        run: node scripts/check-codebook-lint.mjs
       - name: Vendored gate matches its pin (offline)
         run: node scripts/verify-vendor.mjs
 
