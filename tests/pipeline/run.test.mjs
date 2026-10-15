@@ -125,6 +125,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       apiKeys: { tavily: "fake-tavily-key", nebius: "fake-nebius-key", github: "fake-github-token" },
       concurrency: 3,
       cacheDir,
+      dataDir,
       db,
       gatesPath,
       overrides: { tavilyFetchImpl, githubFetchImpl, nebiusFetchImpl, ...gateOverrides },
@@ -189,6 +190,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       sliceProjectsPath,
       apiKeys: { tavily: "fake-tavily-key", nebius: "fake-nebius-key", github: "fake-github-token" },
       cacheDir,
+      dataDir,
       db: db1,
       gatesPath,
       overrides: { tavilyFetchImpl, nebiusFetchImpl: makeThrowingNebiusFetch(nebiusCounter), ...gateOverrides },
@@ -207,6 +209,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       sliceProjectsPath,
       apiKeys: { tavily: "fake-tavily-key", nebius: "fake-nebius-key", github: "fake-github-token" },
       cacheDir, // same cache directory — the whole point of this test
+      dataDir,
       db: db2,
       gatesPath,
       overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },

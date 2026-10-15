@@ -143,13 +143,14 @@ async function processProject(
   ctx: {
     apiKeys: { tavily: string; nebius: string; github: string };
     cacheDir: string;
+    dataDir: string;
     db: ReturnType<typeof getDb>;
     gateFile: GateFile;
     contract: ReturnType<typeof buildContract>;
     overrides: Overrides;
   },
 ): Promise<ProjectOutcome> {
-  const { apiKeys, cacheDir, db, gateFile, contract, overrides } = ctx;
+  const { apiKeys, cacheDir, dataDir, db, gateFile, contract, overrides } = ctx;
   const projectId = String(project.hn_id);
 
   // 1. boundary — cheap, cached anyway for a uniform resume story.
@@ -285,6 +286,33 @@ async function processProject(
       checkStates,
       claims: storeClaims,
     });
+
+    // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
+    // counts and visibility. results.ts's schema (plan 02-06, not re-
+    // architected here) stores only snapshot hashes, not URLs — this file is
+    // what scripts/phase2-acceptance.sh re-checks withinBoundary against.
+    const manifestDir = path.join(dataDir, "pipeline", "manifests");
+    fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(
+      path.join(manifestDir, `${project.n}.json`),
+      JSON.stringify(
+        {
+          projectN: project.n,
+          hnId: projectId,
+          boundary,
+          snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
+            url: s.url,
+            visibility: "provider-extracted",
+            redactionCounts: s.counts,
+          })),
+          snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
+        },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+
     return { recorded: true };
   });
 
@@ -309,6 +337,7 @@ export async function runPipeline({
   apiKeys,
   concurrency = 2,
   cacheDir,
+  dataDir,
   db,
   gatesPath,
   projectFilter,
@@ -318,12 +347,15 @@ export async function runPipeline({
   apiKeys: { tavily: string; nebius: string; github: string };
   concurrency?: number;
   cacheDir?: string;
+  /** Where the per-project manifest sidecar is written; defaults to PRISM_DATA_DIR. Tests must override this. */
+  dataDir?: string;
   db?: ReturnType<typeof getDb>;
   gatesPath?: string;
   projectFilter?: number;
   overrides?: Overrides;
 }): Promise<RunAccounting> {
-  const resolvedSliceProjectsPath = sliceProjectsPath ?? path.join(resolveDataDir(), "pipeline", "slice-projects.json");
+  const resolvedDataDir = dataDir ?? resolveDataDir();
+  const resolvedSliceProjectsPath = sliceProjectsPath ?? path.join(resolvedDataDir, "pipeline", "slice-projects.json");
   const allProjects: SliceEntryLike[] = JSON.parse(fs.readFileSync(resolvedSliceProjectsPath, "utf8"));
   const projects = projectFilter === undefined ? allProjects : allProjects.filter((p) => p.n === projectFilter);
 
@@ -338,7 +370,15 @@ export async function runPipeline({
     projects.map((project) =>
       limit(async (): Promise<ProjectOutcome> => {
         try {
-          return await processProject(project, { apiKeys, cacheDir: resolvedCacheDir, db: resolvedDb, gateFile, contract, overrides });
+          return await processProject(project, {
+            apiKeys,
+            cacheDir: resolvedCacheDir,
+            dataDir: resolvedDataDir,
+            db: resolvedDb,
+            gateFile,
+            contract,
+            overrides,
+          });
         } catch (err) {
           return { n: project.n, hnId: String(project.hn_id), status: "failed", error: err instanceof Error ? err.message : String(err) };
         }
