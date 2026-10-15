@@ -1,8 +1,12 @@
 // COD-06/D-29/D-30: the one-command orchestrator, proven against 10
-// synthetic projects with every external call faked. No real network or
-// subprocess call happens in this file.
+// synthetic projects with every external call faked. No real network call
+// happens in this file. The last describe block (03-09) spawns run.ts's own
+// CLI as a subprocess, but its one synthetic project carries a malformed
+// final_url so boundary derivation fails before any network call is ever
+// attempted — that test asserts CLI wiring, never a live run.
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -333,5 +337,75 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
     const rowZeroPages = await db.selectFrom("pipeline_project_results").select(["missing_data"]).where("project_n", "=", 302).executeTakeFirst();
     assert.equal(rowHasPage.missing_data, 0, "a project with at least one collected page must record missing_data=0, even though every check is unknown");
     assert.equal(rowZeroPages.missing_data, 1, "a project whose Tavily collection returns zero pages must record missing_data=1");
+  });
+});
+
+describe("run.ts's --slice flag (03-09)", () => {
+  test("runPipeline({sliceProjectsPath}) reads from exactly that path, not the default slice-projects.json", async () => {
+    const cacheDir = tempDir("prism-run-slice-cache-");
+    const dataDir = tempDir("prism-run-slice-data-");
+    const db = freshDb();
+
+    const project = { n: 1, hn_id: "hn-slice-1", title: "Slice project", final_url: "https://sliceproj.example.test/" };
+    const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+
+    const tavilyFetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith("/map")) return jsonResponse({ results: [body.url], usage: { credits: 1 } });
+      return jsonResponse({
+        results: body.urls.map((u) => ({ url: u, raw_content: `# ${u}\n\nEnough real content to pass the minimum-length extraction threshold.` })),
+        usage: { credits: 1 },
+      });
+    };
+    const nebiusFetchImpl = makeAllUnknownNebiusFetch({ calls: 0 });
+
+    const accounting = await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "fake-tavily-key", nebius: "fake-nebius-key", github: "fake-github-token" },
+      cacheDir,
+      dataDir,
+      db,
+      gatesPath,
+      overrides: { tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides },
+    });
+
+    assert.equal(accounting.ranProjects, 1, "runPipeline must read exactly the project(s) named in sliceProjectsPath, not the default slice file");
+    assert.equal(accounting.succeeded, 1);
+  });
+
+  test("CLI: node run.ts --slice <path> does not hit the missing-env-var branch when all three vars are set", () => {
+    const dataDir = tempDir("prism-run-cli-slice-data-");
+    // Deliberately malformed final_url: boundary derivation throws
+    // synchronously, before any Tavily/Nebius/GitHub network call is ever
+    // attempted — a full live run is out of scope for this unit test.
+    const project = { n: 1, hn_id: "hn-cli-slice-1", title: "CLI slice project", final_url: "not-a-valid-url" };
+    const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+
+    const env = {
+      ...process.env,
+      PRISM_DATA_DIR: dataDir,
+      TAVILY_API_KEY: "fake-tavily-key",
+      NEBIUS_API_KEY: "fake-nebius-key",
+      GITHUB_TOKEN: "fake-github-token",
+    };
+
+    let stdout = "";
+    let stderr = "";
+    let threw = false;
+    try {
+      stdout = execFileSync("node", [path.join(root, "src/pipeline/run.ts"), "--slice", sliceProjectsPath], {
+        cwd: root,
+        env,
+        encoding: "utf8",
+      });
+    } catch (err) {
+      threw = true;
+      stdout = err.stdout ?? "";
+      stderr = err.stderr ?? "";
+    }
+
+    assert.doesNotMatch(stderr, /missing required env var/, "with all three env vars set, run.ts must never reach the missing-env-var branch");
+    assert.ok(!threw, "run.ts must exit 0 once --slice reaches a project whose only failure is its own malformed URL, not a CLI wiring error");
+    assert.match(stdout, /ACCOUNTING:/, "the CLI must still print its ACCOUNTING line — proof --slice reached runPipeline");
   });
 });
