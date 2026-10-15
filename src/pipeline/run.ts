@@ -25,10 +25,18 @@ import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-
 import { createClient, buildChatBody, PINNED_MODEL, PINNED_BASE_URL, type FetchImpl as NebiusFetchImpl } from "./coding/nebius-client.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
+import { detectInjection } from "./coding/injection-flag.ts";
 import { buildClaimsForProject } from "./claims/build-claims.ts";
 import { runGate, type SpawnImpl } from "./gate/run-gate.ts";
 import { withStageCache, defaultCacheDir } from "./cache/stage-cache.ts";
-import { ensurePipelineSchema, recordProjectResult, type CheckStateRecord, type ClaimRecord as StoreClaimRecord } from "./store/results.ts";
+import {
+  ensurePipelineSchema,
+  recordProjectResult,
+  recordInjectionFlags,
+  recordMissingData,
+  type CheckStateRecord,
+  type ClaimRecord as StoreClaimRecord,
+} from "./store/results.ts";
 import { printTally } from "./tally.ts";
 
 const CODEBOOK_VERSION = "v0";
@@ -121,6 +129,7 @@ export interface ProjectOutcome {
   evidenceFromCache?: boolean;
   redactFromCache?: boolean;
   segmentFromCache?: boolean;
+  injectionFromCache?: boolean;
   codeFromCache?: boolean;
   filterFromCache?: boolean;
   claimsFromCache?: boolean;
@@ -240,6 +249,13 @@ async function processProject(
   const segmented = segmentStage.value;
   const spanIds = segmented.spans.map((s: { id: string }) => s.id);
 
+  // EVD-06: injection-pattern detection — cached, metadata-only, never read by
+  // any later stage (D-39/D-40/D-41). Must not influence codeChecks, filteredChecks or claims.
+  const injectionStage = await withStageCache(cacheDir, projectId, "injection", { spans: segmented.spans }, async () =>
+    detectInjection(segmented.spans),
+  );
+  const injectionResult = injectionStage.value;
+
   // 5. code — skip the live Nemotron call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   const codeStage = await withStageCache(cacheDir, projectId, "code", { spanIds, hasSpans: spanIds.length > 0 }, async () => {
     if (spanIds.length === 0) {
@@ -301,6 +317,8 @@ async function processProject(
       checkStates,
       claims: storeClaims,
     });
+    await recordInjectionFlags(db, project.n, injectionResult.spanIds.map((spanId) => ({ spanId })));
+    await recordMissingData(db, project.n, evidence.tavily.pages.length === 0);
 
     // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
     // counts and visibility. results.ts's schema (plan 02-06, not re-
@@ -339,6 +357,7 @@ async function processProject(
     evidenceFromCache: evidenceStage.fromCache,
     redactFromCache: redactStage.fromCache,
     segmentFromCache: segmentStage.fromCache,
+    injectionFromCache: injectionStage.fromCache,
     codeFromCache: codeStage.fromCache,
     filterFromCache: filterStage.fromCache,
     claimsFromCache: claimsStage.fromCache,
