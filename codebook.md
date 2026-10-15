@@ -98,69 +98,71 @@ confirmation (COD-08), not an automated check.
     "output-reproducible": {
       "decision": "explore",
       "label": "The artefact or action can be reproduced or inspected.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The artefact or action can be reproduced or inspected.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for output-reproducible not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for output-reproducible not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for output-reproducible not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for output-reproducible not yet authored.",
+      "operationalDefinition": "Whether a party other than the project's own team can reproduce the artefact's reported behaviour or inspect how it works, using only what the project itself has published.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence plus a linked, usable artefact — published source code with build/run instructions, a public live demo, or published model weights/data — that lets an independent party run or inspect the same artefact.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states the artefact cannot be reproduced or inspected by outsiders (for example source withheld, demo access restricted to paying customers only, no public endpoint).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts reproducibility or openness (for example an \"Open Source\" badge or a bare \"fully reproducible\" statement) with no linked repository, demo, or artefact a reader can actually use.",
+      "notApplicableNote": "No legitimate not-applicable case: every project that publishes an artefact or action makes reproducibility a coded question, even if the answer is unknown rather than not-applicable.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for output-reproducible not yet authored."
+          "Our full source code and a step-by-step setup guide are published at our public repository under an MIT licence, and a live demo at demo.example.com requires no signup.",
+          "The trained model checkpoint and the evaluation notebook we used to produce our reported numbers are both published on a public model hub."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for output-reproducible not yet authored."
+          "Our underlying model and pipeline are proprietary and are not shared with the public under any circumstances.",
+          "API access is granted only to enterprise customers after a signed NDA; there is no public demo or endpoint."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-output-reproducible-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for output-reproducible not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-annex-a-6.2.7-output-reproducible",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.7 — Technical documentation",
+            "locator": "Annex A.6.2.7",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for output-reproducible not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-output-reproducible-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for output-reproducible not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-operational-documentation-output-reproducible",
+            "title": "GAICC AIMS — Operational documentation",
+            "locator": "AIMS artefact: Operational documentation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for output-reproducible not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-output-reproducible-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for output-reproducible not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-govern-1-output-reproducible",
+            "title": "NIST AI RMF 1.0, GOVERN 1 — Policies, processes, procedures, and practices",
+            "locator": "GOVERN 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for output-reproducible not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-output-reproducible-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for output-reproducible not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-11-output-reproducible",
+            "title": "Regulation (EU) 2024/1689, Article 11 — Technical documentation",
+            "locator": "Article 11",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for output-reproducible not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-output-reproducible-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for output-reproducible not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-transparency-output-reproducible",
+            "title": "OECD AI Principles — Transparency and explainability",
+            "locator": "Principle 1.3",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for output-reproducible not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -168,69 +170,71 @@ confirmation (COD-08), not an automated check.
     "assumptions-catalogued": {
       "decision": "explore",
       "label": "Important supplied context, assumptions, and inferences are visible.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Important supplied context, assumptions, and inferences are visible.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for assumptions-catalogued not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for assumptions-catalogued not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for assumptions-catalogued not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for assumptions-catalogued not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository makes visible the context it was given, the assumptions it made, and the inferences it drew, rather than leaving them implicit.",
+      "passRule": "Coded pass when the project's own page or repository names, with a verbatim quotable sentence, a specific assumption, input context, or inference it relied on (for example stated data assumptions, scope assumptions, or model-behaviour inferences), with a linked artefact where one exists (a design doc, model card, or README section).",
+      "failRule": "Coded fail when the project's own page or repository explicitly disclaims having catalogued its assumptions (for example stating assumptions are undocumented or were not tracked).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts its assumptions are documented (for example \"we document all our assumptions\") with no visible list, model card, or linked artefact naming any specific assumption.",
+      "notApplicableNote": "No legitimate not-applicable case: any project built on some input or context has assumptions a reader could ask about, even if none are visible.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for assumptions-catalogued not yet authored."
+          "Our model card states the training data assumes English-language text only, and that user queries are assumed to be well-formed sentences, not fragments.",
+          "Section 4 of our design document lists the three inferences we made about typical usage volume and flags them as assumptions to revisit."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for assumptions-catalogued not yet authored."
+          "We don't publish our internal assumptions about user behaviour; they're considered proprietary.",
+          "No assumptions document exists for this release."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-assumptions-catalogued-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for assumptions-catalogued not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for assumptions-catalogued not yet authored."
+            "source_id": "iso-42001-annex-a-6.2.3-assumptions-catalogued",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.3 — Documentation of design and development",
+            "locator": "Annex A.6.2.3",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control covers documenting design/development assumptions and context."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-assumptions-catalogued-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for assumptions-catalogued not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-scope-assumptions-catalogued",
+            "title": "GAICC AIMS — Scope",
+            "locator": "AIMS artefact: Scope",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for assumptions-catalogued not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-assumptions-catalogued-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for assumptions-catalogued not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-map-1-assumptions-catalogued",
+            "title": "NIST AI RMF 1.0, MAP 1 — Context is established and understood",
+            "locator": "MAP 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for assumptions-catalogued not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-assumptions-catalogued-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for assumptions-catalogued not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-13-assumptions-catalogued",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "locator": "Article 13",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for assumptions-catalogued not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-assumptions-catalogued-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for assumptions-catalogued not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-transparency-assumptions-catalogued",
+            "title": "OECD AI Principles — Transparency and explainability",
+            "locator": "Principle 1.3",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for assumptions-catalogued not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -238,69 +242,71 @@ confirmation (COD-08), not an automated check.
     "intended-use-defined": {
       "decision": "rely",
       "label": "The intended use and boundaries are explicit.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The intended use and boundaries are explicit.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for intended-use-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for intended-use-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for intended-use-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for intended-use-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states, for the specific use it is promoted for, what that use is and where its boundaries lie.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming the intended use and its boundaries (for example named supported use cases, explicitly excluded use cases, or a stated target user/domain), with a linked artefact (a docs page or README section) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states it has not defined an intended use or boundary (for example \"use at your own discretion for any purpose\" framed as an explicit absence of scoping).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it has a defined intended use (for example \"built for enterprise workflows\") with no further detail on what that use is or where its boundaries lie.",
+      "notApplicableNote": "No legitimate not-applicable case: any project promoted for some use has an intended use a reader could ask about, even if none is stated.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for intended-use-defined not yet authored."
+          "This tool is intended for drafting internal meeting summaries from recorded audio; it is not intended for medical, legal, or financial transcription.",
+          "Our docs page states the assistant is designed for customer-support ticket triage only and should not be used for making final refund decisions without human review."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for intended-use-defined not yet authored."
+          "You can use this for anything you like.",
+          "No stated use case; the README only lists installation steps."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-intended-use-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for intended-use-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for intended-use-defined not yet authored."
+            "source_id": "iso-42001-annex-a-9.4-intended-use-defined",
+            "title": "ISO/IEC 42001:2023 Annex A.9.4 — Intended use of the AI system",
+            "locator": "Annex A.9.4",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control directly addresses stating the AI system's intended use."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-intended-use-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for intended-use-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for intended-use-defined not yet authored."
+            "source_id": "gaicc-aims-scope-intended-use-defined",
+            "title": "GAICC AIMS — Scope",
+            "locator": "AIMS artefact: Scope",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-intended-use-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for intended-use-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-map-3-intended-use-defined",
+            "title": "NIST AI RMF 1.0, MAP 3 — AI capabilities, targeted usage, goals, benefits/costs vs. benchmarks are understood",
+            "locator": "MAP 3",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for intended-use-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-intended-use-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for intended-use-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-13-intended-use-defined",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "locator": "Article 13",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for intended-use-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-intended-use-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for intended-use-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-intended-use-defined",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for intended-use-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -308,69 +314,71 @@ confirmation (COD-08), not an automated check.
     "acceptance-criteria-defined": {
       "decision": "rely",
       "label": "Acceptance criteria are explicit and testable enough for the use.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Acceptance criteria are explicit and testable enough for the use.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for acceptance-criteria-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for acceptance-criteria-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for acceptance-criteria-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for acceptance-criteria-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states acceptance criteria for its stated use that are specific and testable, rather than a vague claim of quality.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific, testable acceptance criterion for its stated use (for example a named metric with a numeric threshold, a pass/fail test suite, or a named benchmark), with a linked artefact (a spec, test file, or benchmark page) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states it has no defined acceptance criteria (for example \"we have not set a formal bar for this release\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it has acceptance criteria (for example \"meets our quality bar\") with no named metric, threshold, or test that a reader could check.",
+      "notApplicableNote": "No legitimate not-applicable case: any project claiming fitness for a use implies some bar for that fitness, even if the bar is never stated.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for acceptance-criteria-defined not yet authored."
+          "We require at least 95% exact-match accuracy on our published 500-document test set before a release ships; the current build scores 96.2%.",
+          "Our acceptance test suite (linked below) defines 42 pass/fail scenarios that a release must clear before deployment."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for acceptance-criteria-defined not yet authored."
+          "We hold ourselves to a high quality bar.",
+          "The team is confident in the results."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-acceptance-criteria-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for acceptance-criteria-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for acceptance-criteria-defined not yet authored."
+            "source_id": "iso-42001-annex-a-6.2.2-acceptance-criteria-defined",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.2 — AI system requirements and specification",
+            "locator": "Annex A.6.2.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control covers specifying testable requirements, the closest fit here."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-acceptance-criteria-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for acceptance-criteria-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for acceptance-criteria-defined not yet authored."
+            "source_id": "gaicc-aims-objectives-acceptance-criteria-defined",
+            "title": "GAICC AIMS — Objectives",
+            "locator": "AIMS artefact: Objectives",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-acceptance-criteria-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for acceptance-criteria-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-measure-1-acceptance-criteria-defined",
+            "title": "NIST AI RMF 1.0, MEASURE 1 — Appropriate methods and metrics are identified and applied",
+            "locator": "MEASURE 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for acceptance-criteria-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-acceptance-criteria-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for acceptance-criteria-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-acceptance-criteria-defined",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for acceptance-criteria-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-acceptance-criteria-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for acceptance-criteria-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-acceptance-criteria-defined",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for acceptance-criteria-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -450,69 +458,71 @@ confirmation (COD-08), not an automated check.
     "failure-modes-tested": {
       "decision": "rely",
       "label": "Relevant failure modes and fallback behaviour were evaluated.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Relevant failure modes and fallback behaviour were evaluated.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for failure-modes-tested not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for failure-modes-tested not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for failure-modes-tested not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for failure-modes-tested not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository shows that it identified plausible failure modes for its stated use and evaluated how the system behaves under them.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific failure mode it tested (for example adversarial inputs, edge cases, malformed data, or a named failure scenario) and states the observed behaviour, with a linked report or test log where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states a known failure mode was identified but not evaluated, or that evaluation surfaced a failure that remains unresolved.",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it tests for failure modes (for example \"robust to edge cases\") with no named failure mode or linked report describing what was tested.",
+      "notApplicableNote": "No legitimate not-applicable case: any deployed system has at least plausible failure modes a reader could ask whether were tested.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for failure-modes-tested not yet authored."
+          "We tested the parser against 200 deliberately malformed documents and our failure log (linked below) shows it degrades to a clear error message rather than a silent wrong answer.",
+          "Our red-team report documents five adversarial prompt categories we evaluated and how the assistant responded to each."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for failure-modes-tested not yet authored."
+          "The system is robust and handles edge cases gracefully.",
+          "We haven't gotten around to stress-testing unusual inputs yet."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-failure-modes-tested-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for failure-modes-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-annex-a-6.2.4-failure-modes-tested",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.4 — Verification and validation",
+            "locator": "Annex A.6.2.4",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for failure-modes-tested not yet authored."
+            "qualification": "[CITED] This control covers verifying behaviour under tested conditions, including failures."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-failure-modes-tested-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for failure-modes-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for failure-modes-tested not yet authored."
+            "source_id": "gaicc-aims-ai-risk-assessment-failure-modes-tested",
+            "title": "GAICC AIMS — AI risk assessment",
+            "locator": "AIMS artefact: AI risk assessment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-failure-modes-tested-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for failure-modes-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for failure-modes-tested not yet authored."
+            "source_id": "nist-ai-rmf-measure-2-failure-modes-tested",
+            "title": "NIST AI RMF 1.0, MEASURE 2 — AI systems are evaluated for trustworthy characteristics",
+            "locator": "MEASURE 2",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Evaluation for trustworthy characteristics includes tested failure-mode behaviour."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-failure-modes-tested-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for failure-modes-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-failure-modes-tested",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for failure-modes-tested not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-failure-modes-tested-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for failure-modes-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-failure-modes-tested",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for failure-modes-tested not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -520,69 +530,71 @@ confirmation (COD-08), not an automated check.
     "limitations-stated": {
       "decision": "rely",
       "label": "Known limitations and out-of-scope conditions are stated.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Known limitations and out-of-scope conditions are stated.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for limitations-stated not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for limitations-stated not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for limitations-stated not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for limitations-stated not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names known limitations or conditions under which the system should not be relied on, rather than presenting the system as limitation-free.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific limitation or out-of-scope condition (for example unsupported languages, data types, scale limits, or known failure conditions), with a linked artefact (a docs page or model card) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly denies having any limitations (for example a statement that the system works correctly in all conditions with no exceptions named).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts limitations are documented (for example \"see our limitations section\") with no visible limitation actually named.",
+      "notApplicableNote": "No legitimate not-applicable case: any real system has some boundary condition a reader could ask whether was disclosed.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for limitations-stated not yet authored."
+          "Our model card states the summarizer is not suitable for documents longer than 50 pages and may omit minority viewpoints in multi-author texts.",
+          "The docs note this integration does not support non-Latin scripts in its current release."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for limitations-stated not yet authored."
+          "This solution works reliably in every scenario.",
+          "No limitations section is published for this product."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-limitations-stated-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for limitations-stated not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for limitations-stated not yet authored."
+            "source_id": "iso-42001-annex-a-8.2-limitations-stated",
+            "title": "ISO/IEC 42001:2023 Annex A.8.2 — System documentation and information for users",
+            "locator": "Annex A.8.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control covers informing users of system limitations in documentation."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-limitations-stated-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for limitations-stated not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-statement-of-applicability-limitations-stated",
+            "title": "GAICC AIMS — Statement of Applicability",
+            "locator": "AIMS artefact: Statement of Applicability",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for limitations-stated not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-limitations-stated-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for limitations-stated not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-measure-4-limitations-stated",
+            "title": "NIST AI RMF 1.0, MEASURE 4 — Feedback about efficacy of measurement is gathered and assessed",
+            "locator": "MEASURE 4",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for limitations-stated not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-limitations-stated-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for limitations-stated not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-13-limitations-stated",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "locator": "Article 13",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for limitations-stated not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-limitations-stated-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for limitations-stated not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for limitations-stated not yet authored."
+            "source_id": "oecd-ai-principle-transparency-limitations-stated",
+            "title": "OECD AI Principles — Transparency and explainability",
+            "locator": "Principle 1.3",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
