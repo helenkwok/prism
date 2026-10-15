@@ -3,8 +3,10 @@
 //   boundary -> evidence (tavily + github) -> redact -> segment -> code
 //   (+retry) -> filter -> claims+gate -> record -> tally.
 //
-//   node src/pipeline/run.ts              run all 10 projects
-//   node src/pipeline/run.ts --project 3   run only project n=3
+//   node src/pipeline/run.ts                          run all 10 projects (default slice-projects.json)
+//   node src/pipeline/run.ts --project 3               run only project n=3
+//   node src/pipeline/run.ts --slice <path>            run the project list at <path> instead of the default
+//                                                       pipeline/slice-projects.json (03-09: the pilot draw)
 //
 // Node 24 strips this file's types natively.
 
@@ -449,6 +451,8 @@ if (invokedDirectly) {
     const args = process.argv.slice(2);
     const projectIdx = args.indexOf("--project");
     const projectFilter = projectIdx >= 0 ? Number(args[projectIdx + 1]) : undefined;
+    const sliceIdx = args.indexOf("--slice");
+    const sliceProjectsPath = sliceIdx >= 0 ? args[sliceIdx + 1] : undefined;
 
     const tavily = process.env.TAVILY_API_KEY;
     const nebius = process.env.NEBIUS_API_KEY;
@@ -463,7 +467,7 @@ if (invokedDirectly) {
       process.exit(1);
     }
 
-    const accounting = await runPipeline({ apiKeys: { tavily: tavily!, nebius: nebius!, github: github! }, projectFilter });
+    const accounting = await runPipeline({ apiKeys: { tavily: tavily!, nebius: nebius!, github: github! }, projectFilter, sliceProjectsPath });
     for (const o of accounting.outcomes) {
       if (o.status === "failed") process.stderr.write(`project n=${o.n}: FAILED: ${o.error}\n`);
     }
