@@ -49,7 +49,27 @@ export async function ensurePipelineSchema(db: Kysely<any>): Promise<void> {
     .addColumn("snapshot_hashes_json", "text")
     .addColumn("coding_attempts", "integer")
     .addColumn("coding_all_unknown", "integer")
+    .addColumn("missing_data", "integer")
     .addColumn("completed_at", "text")
+    .execute();
+
+  // D-41: per-span injection-detection flags, so a future confirmation queue
+  // can point at the exact triggering span without Helen re-reading the page.
+  await db.schema
+    .createTable("pipeline_injection_flags")
+    .ifNotExists()
+    .addColumn("project_n", "integer")
+    .addColumn("span_id", "text")
+    .addPrimaryKeyConstraint("pipeline_injection_flags_pk", ["project_n", "span_id"])
+    .execute();
+
+  // D-45: confirmation-timing log (one row per project's confirmation pass).
+  await db.schema
+    .createTable("pipeline_confirmation_log")
+    .ifNotExists()
+    .addColumn("project_n", "integer", (col) => col.primaryKey())
+    .addColumn("started_at", "text")
+    .addColumn("ended_at", "text")
     .execute();
 
   await db.schema
@@ -118,6 +138,42 @@ export async function recordProjectResult(db: Kysely<any>, input: ProjectResultI
         .execute();
     }
   });
+}
+
+/** EVD-05/CDB-02: set (or clear) the project-level missing-data flag. */
+export async function recordMissingData(db: Kysely<any>, projectN: number, missingData: boolean): Promise<void> {
+  await db
+    .updateTable("pipeline_project_results")
+    .set({ missing_data: missingData ? 1 : 0 })
+    .where("project_n", "=", projectN)
+    .execute();
+}
+
+/** D-41: replace a project's flagged spans with exactly `flags` (never accumulates across re-runs). */
+export async function recordInjectionFlags(db: Kysely<any>, projectN: number, flags: { spanId: string }[]): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await trx.deleteFrom("pipeline_injection_flags").where("project_n", "=", projectN).execute();
+    for (const f of flags) {
+      await trx.replaceInto("pipeline_injection_flags").values({ project_n: projectN, span_id: f.spanId }).execute();
+    }
+  });
+}
+
+/** D-45: open a confirmation-timing window for a project. */
+export async function startConfirmation(db: Kysely<any>, projectN: number): Promise<void> {
+  await db
+    .replaceInto("pipeline_confirmation_log")
+    .values({ project_n: projectN, started_at: new Date().toISOString(), ended_at: null })
+    .execute();
+}
+
+/** D-45: close the confirmation-timing window, leaving started_at untouched. */
+export async function endConfirmation(db: Kysely<any>, projectN: number): Promise<void> {
+  await db
+    .updateTable("pipeline_confirmation_log")
+    .set({ ended_at: new Date().toISOString() })
+    .where("project_n", "=", projectN)
+    .execute();
 }
 
 export type TallyCounts = { pass: number; fail: number; unknown: number; claimed: number };

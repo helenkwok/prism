@@ -14,7 +14,15 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
-import { ensurePipelineSchema, readTally, recordProjectResult } from "../../src/pipeline/store/results.ts";
+import {
+  endConfirmation,
+  ensurePipelineSchema,
+  readTally,
+  recordInjectionFlags,
+  recordMissingData,
+  recordProjectResult,
+  startConfirmation,
+} from "../../src/pipeline/store/results.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -39,6 +47,115 @@ describe("ensurePipelineSchema / recordProjectResult / readTally (COD-06)", () =
     const db = freshDb();
     await ensurePipelineSchema(db);
     await assert.doesNotReject(() => ensurePipelineSchema(db));
+  });
+
+  test("ensurePipelineSchema's three new structures exist after the first call", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+
+    // missing_data column: an insert naming it (via a direct update after a
+    // recordProjectResult row exists) must not throw "no such column".
+    await recordProjectResult(db, {
+      projectN: 1,
+      hnId: "h1",
+      modelId: "m",
+      promptHash: "p",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: [],
+      claims: [],
+    });
+    await assert.doesNotReject(() => recordMissingData(db, 1, true));
+
+    await assert.doesNotReject(() => recordInjectionFlags(db, 1, [{ spanId: "p1-s003" }]));
+    await assert.doesNotReject(() => startConfirmation(db, 1));
+  });
+
+  test("recordMissingData sets missing_data=1 for the touched project; an untouched project reads back falsy", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+
+    await recordProjectResult(db, {
+      projectN: 1,
+      hnId: "h1",
+      modelId: "m",
+      promptHash: "p1",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: [],
+      claims: [],
+    });
+    await recordProjectResult(db, {
+      projectN: 2,
+      hnId: "h2",
+      modelId: "m",
+      promptHash: "p2",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: [],
+      claims: [],
+    });
+
+    await recordMissingData(db, 1, true);
+
+    const rows = await db.selectFrom("pipeline_project_results").select(["project_n", "missing_data"]).orderBy("project_n").execute();
+    assert.equal(rows.find((r) => r.project_n === 1).missing_data, 1);
+    assert.ok(!rows.find((r) => r.project_n === 2).missing_data, "an untouched project must read back 0/null, never throw");
+  });
+
+  test("recordInjectionFlags replaces a project's rows on each call, never accumulating duplicates", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+
+    await recordInjectionFlags(db, 1, [{ spanId: "p1-s001" }, { spanId: "p1-s002" }]);
+    await recordInjectionFlags(db, 1, [{ spanId: "p1-s003" }]);
+
+    const rows = await db.selectFrom("pipeline_injection_flags").select(["project_n", "span_id"]).where("project_n", "=", 1).execute();
+    assert.deepEqual(
+      rows.map((r) => r.span_id),
+      ["p1-s003"],
+      "only the second call's flags must remain",
+    );
+  });
+
+  test("recordInjectionFlags with an empty array clears a project that no longer has any flagged span", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+
+    await recordInjectionFlags(db, 1, [{ spanId: "p1-s001" }]);
+    await recordInjectionFlags(db, 1, []);
+
+    const rows = await db.selectFrom("pipeline_injection_flags").select(["span_id"]).where("project_n", "=", 1).execute();
+    assert.deepEqual(rows, []);
+  });
+
+  test("startConfirmation then endConfirmation leaves one row with both timestamps set; started_at unchanged by endConfirmation", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+
+    await startConfirmation(db, 1);
+    const afterStart = await db
+      .selectFrom("pipeline_confirmation_log")
+      .select(["started_at", "ended_at"])
+      .where("project_n", "=", 1)
+      .executeTakeFirst();
+    assert.ok(afterStart.started_at, "started_at must be set");
+    assert.equal(afterStart.ended_at, null);
+
+    await endConfirmation(db, 1);
+    const rows = await db.selectFrom("pipeline_confirmation_log").select(["project_n", "started_at", "ended_at"]).execute();
+    assert.equal(rows.length, 1, "exactly one row for the project");
+    assert.equal(rows[0].started_at, afterStart.started_at, "started_at must not change");
+    assert.ok(rows[0].ended_at, "ended_at must be set");
   });
 
   test("readTally over 2 synthetic projects matches hand-computed totals, in the gate file's own canonical order", async () => {

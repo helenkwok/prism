@@ -70,4 +70,86 @@ describe("collectProjectPages (EVD-02)", () => {
     assert.ok(result.creditsSpent <= result.creditsSpent, "sanity");
     assert.ok(result.calls.some((c) => c.refused === true), "expected a refused call to be recorded");
   });
+
+  test("EVD-05: every extract attempt (basic and the advanced retry) fails for both URLs — both surface in missingUrls, pages is empty", async () => {
+    const boundary = { host: "example.com" };
+    const fetchImpl = async (url) => {
+      if (url.includes("/map")) {
+        return jsonResponse({ results: ["https://example.com/a", "https://example.com/b"], usage: { credits: 1 } });
+      }
+      // every /extract attempt (basic and the retry) fails
+      return errorResponse(500, { "retry-after": "0.001" });
+    };
+
+    const result = await collectProjectPages({
+      boundary,
+      startUrl: "https://example.com/",
+      apiKey: "test-key",
+      fetchImpl,
+      mapLimit: 10,
+      extractCap: 5,
+    });
+
+    assert.equal(result.pages.length, 0);
+    assert.ok(result.missingUrls.includes("https://example.com/a"));
+    assert.ok(result.missingUrls.includes("https://example.com/b"));
+  });
+
+  test("EVD-05: the basic attempt succeeds for every URL — missingUrls is empty, no retry needed", async () => {
+    const boundary = { host: "example.com" };
+    const fetchImpl = async (url) => {
+      if (url.includes("/map")) {
+        return jsonResponse({ results: ["https://example.com/a"], usage: { credits: 1 } });
+      }
+      return jsonResponse({
+        results: [{ url: "https://example.com/a", raw_content: "x".repeat(200) }],
+        usage: { credits: 1 },
+      });
+    };
+
+    const result = await collectProjectPages({
+      boundary,
+      startUrl: "https://example.com/",
+      apiKey: "test-key",
+      fetchImpl,
+      mapLimit: 10,
+      extractCap: 5,
+    });
+
+    assert.equal(result.missingUrls.length, 0);
+    assert.equal(result.pages.length, 1);
+  });
+
+  test("EVD-05: the basic attempt fails for a URL but the advanced retry succeeds — that URL is in pages, not missingUrls", async () => {
+    const boundary = { host: "example.com" };
+    const fetchImpl = async (url, opts) => {
+      if (url.includes("/map")) {
+        return jsonResponse({ results: ["https://example.com/a"], usage: { credits: 1 } });
+      }
+      const body = JSON.parse(opts.body);
+      if (body.extract_depth === "advanced") {
+        return jsonResponse({
+          results: [{ url: "https://example.com/a", raw_content: "y".repeat(200) }],
+          usage: { credits: 2 },
+        });
+      }
+      // basic attempt: empty content, below the EMPTY_BELOW_CHARS threshold
+      return jsonResponse({ results: [{ url: "https://example.com/a", raw_content: "" }], usage: { credits: 1 } });
+    };
+
+    const result = await collectProjectPages({
+      boundary,
+      startUrl: "https://example.com/",
+      apiKey: "test-key",
+      fetchImpl,
+      mapLimit: 10,
+      extractCap: 5,
+    });
+
+    assert.deepEqual(
+      result.pages.map((p) => p.url),
+      ["https://example.com/a"],
+    );
+    assert.equal(result.missingUrls.length, 0);
+  });
 });
