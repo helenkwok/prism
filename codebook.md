@@ -152,7 +152,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -219,12 +219,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-assumptions-catalogued",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -291,12 +291,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-intended-use-defined",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -368,7 +368,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -440,7 +440,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -512,7 +512,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -579,12 +579,12 @@ confirmation (COD-08), not an automated check.
         "euAiAct": [
           {
             "source_id": "eu-ai-act-article-13-limitations-stated",
-            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and information to users",
+            "title": "Regulation (EU) 2024/1689, Article 13 — Transparency and provision of information to deployers",
             "locator": "Article 13",
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -656,7 +656,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -728,7 +728,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -800,7 +800,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -872,7 +872,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -944,7 +944,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1016,7 +1016,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1088,7 +1088,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "partial",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1160,7 +1160,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1232,7 +1232,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1304,7 +1304,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "addresses",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1376,7 +1376,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1448,7 +1448,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1520,7 +1520,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1592,7 +1592,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1664,7 +1664,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "addresses",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1736,7 +1736,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
@@ -1808,7 +1808,7 @@ confirmation (COD-08), not an automated check.
             "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
             "informational": true,
-            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
+            "qualification": "[CONFIRMED] Checked against artificialintelligenceact.eu's current, Omnibus-updated text; article not renumbered."
           }
         ],
         "oecd": [
