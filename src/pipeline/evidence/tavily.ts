@@ -172,6 +172,8 @@ export interface CollectProjectPagesResult {
   mapUrlCount: number;
   offBoundaryCount: number;
   calls: CollectCallResult[];
+  /** EVD-05: URLs still empty/failed after the one advanced retry. */
+  missingUrls: string[];
 }
 
 const EMPTY_BELOW_CHARS = 100;
@@ -212,7 +214,7 @@ export async function collectProjectPages({
   const projectedMap = mapCredits(mapLimit);
   if (!budget.allows(projectedMap)) {
     calls.push({ pages: [], refused: true, reason: "map call would exceed the credit ceiling" });
-    return { pages: [], creditsSpent: budget.tally, mapUrlCount: 0, offBoundaryCount: 0, calls };
+    return { pages: [], creditsSpent: budget.tally, mapUrlCount: 0, offBoundaryCount: 0, calls, missingUrls: [] };
   }
   try {
     const mapBody = { url: startUrl, max_depth: mapDepth, limit: mapLimit, allow_external: false, include_usage: true, ...sel };
@@ -276,6 +278,10 @@ export async function collectProjectPages({
   }
 
   const pages: CollectedPage[] = toExtract.filter((u) => byUrl.has(u)).map((u) => ({ url: u, rawText: byUrl.get(u)! }));
+  // EVD-05: failedUrls at this point holds exactly what the advanced retry's own
+  // doExtract call populated (it was reset to length 0 immediately before that
+  // call ran) — or is still empty when the basic attempt never needed a retry.
+  const missingUrls = [...new Set(failedUrls)];
 
   return {
     pages,
@@ -283,5 +289,6 @@ export async function collectProjectPages({
     mapUrlCount: mapUrls.length,
     offBoundaryCount: offBoundary.length,
     calls,
+    missingUrls,
   };
 }
