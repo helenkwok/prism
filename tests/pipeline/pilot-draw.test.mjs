@@ -11,7 +11,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
-import { PILOT_DRAW_SEED, selectPilotProjects } from "../../src/pipeline/select/pilot-draw.ts";
+import { PILOT_DRAW_SEED, selectPilotProjects, sortPilotCandidates } from "../../src/pipeline/select/pilot-draw.ts";
 import { floorEffectReport } from "../../src/pipeline/store/floor-effect.ts";
 import { ensurePipelineSchema, recordProjectResult } from "../../src/pipeline/store/results.ts";
 
@@ -57,6 +57,22 @@ describe("selectPilotProjects (D-42)", () => {
     const a = selectPilotProjects({ candidates: pool(25) });
     const b = selectPilotProjects({ candidates: pool(25), seed: "deadbeefdeadbeef" });
     assert.notDeepEqual(a, b);
+  });
+
+  test("sortPilotCandidates returns the full pool, unordered subset matches selectPilotProjects's first 20", () => {
+    const candidates = pool(25);
+    const ordered = sortPilotCandidates(candidates);
+    assert.equal(ordered.length, 25);
+    const drawn = selectPilotProjects({ candidates });
+    assert.deepEqual(ordered.slice(0, 20), drawn);
+  });
+
+  test("sortPilotCandidates lets a caller walk past the first 20 when some are skipped — same order every call", () => {
+    const candidates = pool(30);
+    const a = sortPilotCandidates(candidates);
+    const b = sortPilotCandidates(candidates);
+    assert.deepEqual(a, b);
+    assert.equal(a.length, 30);
   });
 
   test("PILOT_DRAW_SEED is distinct from Phase 2's SLICE_DRAW_SEED and the protocol's five official seeds", () => {

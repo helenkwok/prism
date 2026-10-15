@@ -19,6 +19,16 @@ function sortKey(seed: string, id: string): string {
   return crypto.createHash("sha256").update(`${seed}:${id}`).digest("hex");
 }
 
+// The full pool in deterministic draw order — same seed, same pool, same
+// order, every call. Exported (rather than only the capped top-N below) so a
+// caller that needs to skip candidates that fail some out-of-band check
+// (e.g. preflight reachability, which this module deliberately has no I/O
+// to perform itself) can walk further down the same order instead of
+// re-seeding or accepting a short draw.
+export function sortPilotCandidates<T extends { id: string }>(candidates: T[], seed: string = PILOT_DRAW_SEED): T[] {
+  return [...candidates].sort((a, b) => (sortKey(seed, a.id) < sortKey(seed, b.id) ? -1 : 1));
+}
+
 export function selectPilotProjects({
   candidates,
   seed = PILOT_DRAW_SEED,
@@ -28,7 +38,7 @@ export function selectPilotProjects({
   seed?: string;
   targetN?: number;
 }): { id: string }[] {
-  const sorted = [...candidates].sort((a, b) => (sortKey(seed, a.id) < sortKey(seed, b.id) ? -1 : 1));
+  const sorted = sortPilotCandidates(candidates, seed);
 
   if (sorted.length < targetN) {
     throw new Error(`exhausted the pilot draw pool with only ${candidates.length} of ${targetN} candidates`);

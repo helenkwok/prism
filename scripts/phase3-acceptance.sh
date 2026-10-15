@@ -88,16 +88,24 @@ run_check "C2: screenFrame + selectPilotProjects (D-42) draw and preflight 20 pi
   const frame = JSON.parse(fs.readFileSync(framePath, 'utf8'));
 
   const { screenFrame } = require('./src/pipeline/select/screen.ts');
-  const { selectPilotProjects } = require('./src/pipeline/select/pilot-draw.ts');
+  const { sortPilotCandidates } = require('./src/pipeline/select/pilot-draw.ts');
   const { preflightCandidate } = require('./scripts/spikes/pick-projects.mjs');
+
+  const TARGET_N = 20;
 
   (async () => {
     const screened = screenFrame(frame);
-    const picked = selectPilotProjects({ candidates: screened.included });
+    // Walk the full deterministic draw order (same seed, same pool, same
+    // order every run) past the first 20 ranks when some fail preflight,
+    // rather than re-seeding or accepting a short draw. Fully reproducible:
+    // re-running against the same frame.json always walks the same ranks.
+    const ordered = sortPilotCandidates(screened.included);
     const byId = new Map(screened.included.map((p) => [p.id, p]));
 
     const entries = [];
-    for (const { id } of picked) {
+    let ranksWalked = 0;
+    for (const { id } of ordered) {
+      ranksWalked += 1;
       const post = byId.get(id);
       const p = await preflightCandidate({ id: post.id, title: post.title, url: post.url, created_at: post.created_at });
       if (!p || p.preflight.robots_blocked || !p.preflight.boundary_ok) continue;
@@ -110,17 +118,19 @@ run_check "C2: screenFrame + selectPilotProjects (D-42) draw and preflight 20 pi
         boundary: p.boundary,
         type_class: p.type_class,
         created_at: post.created_at,
+        draw_rank: ranksWalked,
       });
+      if (entries.length === TARGET_N) break;
     }
 
     const pipelineDir = path.join(dataDir, 'pipeline');
     fs.mkdirSync(pipelineDir, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(pipelineDir, 'pilot-projects.json'), JSON.stringify(entries, null, 2), { mode: 0o600 });
 
-    if (entries.length !== 20) {
-      throw new Error('expected 20 preflight-passing pilot projects (D-42), got ' + entries.length + ' of ' + picked.length + ' drawn — widen the draw pool or re-seed before 03-10');
+    if (entries.length !== TARGET_N) {
+      throw new Error('expected ' + TARGET_N + ' preflight-passing pilot projects (D-42), got ' + entries.length + ' after walking the entire ' + ordered.length + '-candidate screened pool — the pool is genuinely exhausted');
     }
-    console.log('screened included', screened.counts.included, 'pilot drawn', picked.length, 'preflighted', entries.length);
+    console.log('screened included', screened.counts.included, 'ranks walked', ranksWalked, 'preflighted', entries.length);
   })().catch((err) => { console.error(err.message); process.exitCode = 1; });
 "
 
