@@ -23,7 +23,7 @@ import { sleep, spikeDirs } from "./lib/paths.mjs";
 
 export const SPIKE_START_EPOCH = 1788220800; // 2026-09-01T00:00:00Z
 const ALGOLIA = "https://hn.algolia.com/api/v1/search_by_date";
-const AI_TITLE = /\b(ai|a\.i\.|llm|llms|agent|agents|agentic|rag|chatbot|neural|diffusion|embedding|embeddings|transformer|inference|prompt|prompts|assistant|ml|gen ?ai|generative)\b/i;
+export const AI_TITLE = /\b(ai|a\.i\.|llm|llms|agent|agents|agentic|rag|chatbot|neural|diffusion|embedding|embeddings|transformer|inference|prompt|prompts|assistant|ml|gen ?ai|generative)\b/i;
 
 export async function fetchCandidates(nowEpoch = Math.floor(Date.now() / 1000)) {
   const out = new Map();
