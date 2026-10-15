@@ -204,7 +204,13 @@ async function processProject(
   const redacted = redactStage.value;
 
   // 4. segment — one combined, page-index-prefixed span list for the whole project (EVD-04).
+  //    Each snapshot is ALSO persisted content-addressed by its own hash
+  //    (criterion 3: "every stored page is a content-addressed snapshot")
+  //    so scripts/phase2-acceptance.sh can recompute sha256 over the stored,
+  //    already-redacted text and compare it to the hash results.ts records.
+  const snapshotsDir = path.join(dataDir, "pipeline", "snapshots");
   const segmentStage = await withStageCache(cacheDir, projectId, "segment", redacted, async () => {
+    fs.mkdirSync(snapshotsDir, { recursive: true, mode: 0o700 });
     const retrievedAt = new Date().toISOString();
     const spanUrls: Record<string, string> = {};
     const spans: { id: string; text: string }[] = [];
@@ -214,6 +220,11 @@ async function processProject(
       pageIndex += 1;
       const snapshot = buildSnapshot(src.url, retrievedAt, src.text);
       snapshotHashesInCollectionOrder.push(snapshot.snapshotHash);
+      fs.writeFileSync(
+        path.join(snapshotsDir, `${snapshot.snapshotHash}.json`),
+        JSON.stringify({ ...snapshot, redactedText: src.text, redactionCounts: src.counts }),
+        { mode: 0o600 },
+      );
       for (const span of snapshot.spans) {
         const prefixed = `p${pageIndex}-${span.id}`;
         spanUrls[prefixed] = src.url;
