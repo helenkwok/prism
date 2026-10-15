@@ -602,69 +602,71 @@ confirmation (COD-08), not an automated check.
     "deliverable-gate-passed": {
       "decision": "operate",
       "label": "The Deliverable gate for the intended use has passed.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The Deliverable gate for the intended use has passed.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for deliverable-gate-passed not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for deliverable-gate-passed not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for deliverable-gate-passed not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for deliverable-gate-passed not yet authored.",
+      "operationalDefinition": "Whether the project's own rely-decision gate result (PASS / BLOCKED / INSUFFICIENT_EVIDENCE) carries forward to operate. This check's value is never independently coded by Nemotron for the operate decision: it is overridden in code from the rely decision's own gate outcome (src/pipeline/claims/build-claims.ts's buildClaimsForProject), so a reader should not expect this entry's pass/fail/claimed rules to describe span-based evidence the way the other 23 checks' rules do.",
+      "passRule": "Means the rely decision's gate result was PASS — every one of rely's five required checks (intended-use-defined, acceptance-criteria-defined, acceptance-criteria-met, failure-modes-tested, limitations-stated) was coded pass. Set by code (buildClaimsForProject), not proposed by Nemotron for the operate decision.",
+      "failRule": "Means the rely decision's gate result was BLOCKED — at least one of rely's five required checks was coded fail. Set by code, not proposed by Nemotron.",
+      "claimedRule": "Not applicable to this check: because its value is overridden from rely's gate result rather than coded from evidence, there is no self-claim case for deliverable-gate-passed.",
+      "notApplicableNote": "Coded not-applicable when the rely decision's gate result was INSUFFICIENT_EVIDENCE — at least one of rely's required checks was missing, unknown, or not-applicable with no explicit fail. This is the one check among these thirteen whose not-applicable state is set directly from another decision's own gate outcome, not left to the gate's own decision-level derivation.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for deliverable-gate-passed not yet authored."
+          "All five of the rely decision's required checks — intended use, acceptance criteria, evidence they were met, failure-mode testing, and stated limitations — were each coded pass from the project's own published evidence.",
+          "The rely decision's gate returned PASS: no required check failed and none was missing or unknown."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for deliverable-gate-passed not yet authored."
+          "The rely decision's gate returned BLOCKED because the project's own page explicitly stated an acceptance criterion was not met.",
+          "The rely decision's gate returned INSUFFICIENT_EVIDENCE because no acceptance criteria could be found on the project's published pages."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-deliverable-gate-passed-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for deliverable-gate-passed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-clause-9-deliverable-gate-passed",
+            "title": "ISO/IEC 42001:2023, Clause 9 — Performance evaluation",
+            "locator": "Clause 9",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for deliverable-gate-passed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-deliverable-gate-passed-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for deliverable-gate-passed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-management-review-deliverable-gate-passed",
+            "title": "GAICC AIMS — Management review",
+            "locator": "AIMS artefact: Management review",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for deliverable-gate-passed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-deliverable-gate-passed-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for deliverable-gate-passed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-govern-1-deliverable-gate-passed",
+            "title": "NIST AI RMF 1.0, GOVERN 1 — Policies, processes, procedures, and practices",
+            "locator": "GOVERN 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for deliverable-gate-passed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-deliverable-gate-passed-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for deliverable-gate-passed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-17-deliverable-gate-passed",
+            "title": "Regulation (EU) 2024/1689, Article 17 — Quality management system",
+            "locator": "Article 17",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for deliverable-gate-passed not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-deliverable-gate-passed-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for deliverable-gate-passed not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-deliverable-gate-passed",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for deliverable-gate-passed not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -672,69 +674,71 @@ confirmation (COD-08), not an automated check.
     "operational-owner-assigned": {
       "decision": "operate",
       "label": "Operational ownership is explicit.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Operational ownership is explicit.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for operational-owner-assigned not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for operational-owner-assigned not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for operational-owner-assigned not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for operational-owner-assigned not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names a specific role, team, or party responsible for operating the system day to day, rather than leaving operational responsibility unstated.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific role, team, or contact responsible for operating the system (for example a named on-call team, support contact, or operations lead), with a linked artefact (a support page or status page) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no one is responsible for ongoing operation (for example an archived project with an explicit \"unmaintained, no owner\" notice).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it has operational ownership (for example \"actively maintained\") with no named role, team, or contact.",
+      "notApplicableNote": "No legitimate not-applicable case: any system in operation has someone, even if unnamed, actually doing the operating; whether that is disclosed is always coded, not excused.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for operational-owner-assigned not yet authored."
+          "Our on-call rotation (listed on our status page) owns incident response for this service, and the support team listed in our docs handles day-to-day operation.",
+          "This repository is maintained by the Platform team; see MAINTAINERS.md for the current owner and escalation contact."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for operational-owner-assigned not yet authored."
+          "This project is actively maintained.",
+          "Archived: this repository is no longer maintained and has no assigned owner."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-operational-owner-assigned-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for operational-owner-assigned not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for operational-owner-assigned not yet authored."
+            "source_id": "iso-42001-annex-a-3.2-operational-owner-assigned",
+            "title": "ISO/IEC 42001:2023 Annex A.3.2 — AI roles and responsibilities",
+            "locator": "Annex A.3.2",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control directly addresses naming AI roles and responsibilities."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-operational-owner-assigned-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for operational-owner-assigned not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for operational-owner-assigned not yet authored."
+            "source_id": "gaicc-aims-roles-operational-owner-assigned",
+            "title": "GAICC AIMS — Roles",
+            "locator": "AIMS artefact: Roles",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-operational-owner-assigned-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for operational-owner-assigned not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for operational-owner-assigned not yet authored."
+            "source_id": "nist-ai-rmf-govern-2-operational-owner-assigned",
+            "title": "NIST AI RMF 1.0, GOVERN 2 — Accountability structures",
+            "locator": "GOVERN 2",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Accountability structures map closely to naming an operational owner."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-operational-owner-assigned-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for operational-owner-assigned not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-14-operational-owner-assigned",
+            "title": "Regulation (EU) 2024/1689, Article 14 — Human oversight",
+            "locator": "Article 14",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for operational-owner-assigned not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-operational-owner-assigned-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for operational-owner-assigned not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for operational-owner-assigned not yet authored."
+            "source_id": "oecd-ai-principle-accountability-operational-owner-assigned",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -742,69 +746,71 @@ confirmation (COD-08), not an automated check.
     "assurance-defined": {
       "decision": "operate",
       "label": "The assurance mechanism is defined for the important failure modes.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The assurance mechanism is defined for the important failure modes.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for assurance-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for assurance-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for assurance-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for assurance-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states a specific, ongoing mechanism (monitoring, review, or audit) for catching important failure modes during operation, rather than a one-time test.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific ongoing assurance mechanism (for example automated monitoring with alerting, scheduled human review, or a recurring audit) tied to a named failure mode, with a linked artefact (a runbook or monitoring description) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no ongoing assurance mechanism exists for a named failure mode (for example \"we do not currently monitor for this\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it has assurance in place (for example \"continuously monitored\") with no named mechanism or linked process document.",
+      "notApplicableNote": "No legitimate not-applicable case: any system with a stated failure mode has a coded question of whether an assurance mechanism exists for it, even if the answer is unknown.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for assurance-defined not yet authored."
+          "Our monitoring dashboard (linked below) tracks the hallucination-rate metric hourly and pages the on-call engineer when it exceeds our threshold.",
+          "A human reviewer audits a random 5% sample of outputs weekly, as described in our quality-assurance process document."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for assurance-defined not yet authored."
+          "We're confident in our system's reliability.",
+          "No monitoring is currently in place for this failure mode."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-assurance-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for assurance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for assurance-defined not yet authored."
+            "source_id": "iso-42001-annex-a-6.2.6-assurance-defined",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.6 — Operation and monitoring",
+            "locator": "Annex A.6.2.6",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] This control covers ongoing operational monitoring, the core of assurance."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-assurance-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for assurance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for assurance-defined not yet authored."
+            "source_id": "gaicc-aims-evidence-of-implementation-assurance-defined",
+            "title": "GAICC AIMS — Evidence of implementation",
+            "locator": "AIMS artefact: Evidence of implementation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-assurance-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for assurance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for assurance-defined not yet authored."
+            "source_id": "nist-ai-rmf-govern-1-assurance-defined",
+            "title": "NIST AI RMF 1.0, GOVERN 1 — Policies, processes, procedures, and practices",
+            "locator": "GOVERN 1",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Governance policies and practices map to defining an assurance mechanism."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-assurance-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for assurance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-9-assurance-defined",
+            "title": "Regulation (EU) 2024/1689, Article 9 — Risk management system",
+            "locator": "Article 9",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for assurance-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-assurance-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for assurance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-assurance-defined",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for assurance-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -812,69 +818,71 @@ confirmation (COD-08), not an automated check.
     "fallback-defined": {
       "decision": "operate",
       "label": "Fallback or escalation is defined.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Fallback or escalation is defined.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for fallback-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for fallback-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for fallback-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for fallback-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states what happens when the system cannot handle a case — a fallback path or escalation to a human — rather than leaving failure handling unspecified.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific fallback or escalation path (for example routing low-confidence outputs to a human reviewer, a documented degraded mode, or an explicit escalation contact), with a linked artefact (a runbook or support flow) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no fallback or escalation path exists (for example \"the system has no human-in-the-loop option\" stated as a known gap).",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it has fallback handling (for example \"gracefully degrades\") with no named fallback path or escalation mechanism.",
+      "notApplicableNote": "No legitimate not-applicable case: any system that can fail has a coded question of whether a fallback exists, even when none is named.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for fallback-defined not yet authored."
+          "When confidence falls below 80%, the response is routed to a human agent instead of being shown directly to the end user, as described in our escalation flow.",
+          "If the primary model endpoint is unavailable, our system falls back to a simpler rules-based responder, documented in our architecture page."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for fallback-defined not yet authored."
+          "The system handles failures gracefully.",
+          "There is currently no fallback if the model produces a low-confidence answer."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-fallback-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for fallback-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-annex-a-6.2.6-fallback-defined",
+            "title": "ISO/IEC 42001:2023 Annex A.6.2.6 — Operation and monitoring",
+            "locator": "Annex A.6.2.6",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for fallback-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-fallback-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for fallback-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for fallback-defined not yet authored."
+            "source_id": "gaicc-aims-risk-treatment-fallback-defined",
+            "title": "GAICC AIMS — Risk treatment",
+            "locator": "AIMS artefact: Risk treatment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-fallback-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for fallback-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for fallback-defined not yet authored."
+            "source_id": "nist-ai-rmf-manage-2-fallback-defined",
+            "title": "NIST AI RMF 1.0, MANAGE 2 — Strategies to maximize benefits and minimize negative impacts",
+            "locator": "MANAGE 2",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Strategies to minimize negative impacts map to defining a fallback path."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-fallback-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for fallback-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-14-fallback-defined",
+            "title": "Regulation (EU) 2024/1689, Article 14 — Human oversight",
+            "locator": "Article 14",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for fallback-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-fallback-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for fallback-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-fallback-defined",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for fallback-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -882,69 +890,71 @@ confirmation (COD-08), not an automated check.
     "recovery-tested": {
       "decision": "operate",
       "label": "Recovery or rollback has been tested where failure consequence warrants it.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Recovery or rollback has been tested where failure consequence warrants it.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for recovery-tested not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for recovery-tested not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for recovery-tested not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for recovery-tested not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository shows it actually exercised a recovery or rollback procedure, not merely that one is documented on paper.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence describing an actual recovery or rollback event or drill (for example a documented incident postmortem, a rollback log entry, or a stated disaster-recovery drill date), with a linked artefact (an incident report or changelog entry) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states recovery or rollback has never been tested despite a stated high-consequence failure mode (for example \"we have not yet tested our rollback procedure\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts recovery capability (for example \"can roll back instantly\") with no record of an actual test, drill, or incident.",
+      "notApplicableNote": "Legitimately not-applicable when the project's own page states failure consequence for this system is low enough that a recovery drill was deliberately not warranted (for example a read-only demo with no state to recover) — the one check among these thirteen where a genuine not-applicable case plausibly exists, distinct from the gate's own decision-level derivation.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for recovery-tested not yet authored."
+          "Our postmortem from the March incident (linked below) documents the rollback to the previous model version and the time it took to restore service.",
+          "We run a quarterly disaster-recovery drill restoring from backup, logged in our ops changelog."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for recovery-tested not yet authored."
+          "We have a rollback plan ready to go if needed.",
+          "Our rollback procedure has never actually been exercised, even in testing."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-recovery-tested-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for recovery-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-clause-8-recovery-tested",
+            "title": "ISO/IEC 42001:2023, Clause 8 — Operation",
+            "locator": "Clause 8",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for recovery-tested not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-recovery-tested-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for recovery-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "gaicc-aims-internal-audit-recovery-tested",
+            "title": "GAICC AIMS — Internal audit",
+            "locator": "AIMS artefact: Internal audit",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for recovery-tested not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-recovery-tested-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for recovery-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for recovery-tested not yet authored."
+            "source_id": "nist-ai-rmf-manage-4-recovery-tested",
+            "title": "NIST AI RMF 1.0, MANAGE 4 — Risk treatments, response and recovery, communication plans",
+            "locator": "MANAGE 4",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Response-and-recovery plans map directly to a tested recovery procedure."
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-recovery-tested-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for recovery-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-72-recovery-tested",
+            "title": "Regulation (EU) 2024/1689, Article 72 — Post-market monitoring",
+            "locator": "Article 72",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for recovery-tested not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-recovery-tested-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for recovery-tested not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-robustness-recovery-tested",
+            "title": "OECD AI Principles — Robustness, security and safety",
+            "locator": "Principle 1.4",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for recovery-tested not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -952,69 +962,71 @@ confirmation (COD-08), not an automated check.
     "support-maintenance-defined": {
       "decision": "operate",
       "label": "Support, maintenance, debugging, and change responsibility are defined.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: Support, maintenance, debugging, and change responsibility are defined.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for support-maintenance-defined not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for support-maintenance-defined not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for support-maintenance-defined not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for support-maintenance-defined not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository names who is responsible for ongoing support, maintenance, debugging, and making changes, rather than leaving that responsibility unstated.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific support channel, maintenance cadence, or change-approval process (for example a stated SLA, a release-cadence policy, or a named maintainer group), with a linked artefact (a support page or contributing guide) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states no support or maintenance process exists (for example \"issues will not be triaged\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts it is supported and maintained (for example \"actively supported\") with no named channel, cadence, or process.",
+      "notApplicableNote": "No legitimate not-applicable case: any system in operation implies some party does or does not maintain it, which is always a coded question even when the answer is unknown.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for support-maintenance-defined not yet authored."
+          "Bug reports go through our public issue tracker with a stated 48-hour triage SLA, and our contributing guide names the maintainer group that approves changes.",
+          "Our support page lists email and chat channels with business-hours response times, and our changelog shows a monthly release cadence."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for support-maintenance-defined not yet authored."
+          "We're here to help if you need anything.",
+          "No support channel or maintenance schedule is published."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-support-maintenance-defined-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for support-maintenance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for support-maintenance-defined not yet authored."
+            "source_id": "iso-42001-annex-a-4.6-support-maintenance-defined",
+            "title": "ISO/IEC 42001:2023 Annex A.4.6 — Human resources",
+            "locator": "Annex A.4.6",
+            "source_version": "ISO/IEC 42001:2023",
+            "relation_type": "addresses",
+            "qualification": "[CITED] Human-resource provisioning maps to staffing for support and maintenance."
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-support-maintenance-defined-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for support-maintenance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for support-maintenance-defined not yet authored."
+            "source_id": "gaicc-aims-operational-documentation-support-maintenance-defined",
+            "title": "GAICC AIMS — Operational documentation",
+            "locator": "AIMS artefact: Operational documentation",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "addresses",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-support-maintenance-defined-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for support-maintenance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-govern-6-support-maintenance-defined",
+            "title": "NIST AI RMF 1.0, GOVERN 6 — Third-party risk management",
+            "locator": "GOVERN 6",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for support-maintenance-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-support-maintenance-defined-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for support-maintenance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "eu-ai-act-article-17-support-maintenance-defined",
+            "title": "Regulation (EU) 2024/1689, Article 17 — Quality management system",
+            "locator": "Article 17",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for support-maintenance-defined not yet authored.",
-            "informational": true
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-support-maintenance-defined-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for support-maintenance-defined not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "oecd-ai-principle-accountability-support-maintenance-defined",
+            "title": "OECD AI Principles — Accountability",
+            "locator": "Principle 1.5",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for support-maintenance-defined not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
@@ -1022,69 +1034,71 @@ confirmation (COD-08), not an automated check.
     "operating-cost-known": {
       "decision": "operate",
       "label": "The relevant operating-cost boundary is known well enough for the decision.",
-      "operationalDefinition": "DRAFT PLACEHOLDER: The relevant operating-cost boundary is known well enough for the decision.",
-      "passRule": "DRAFT PLACEHOLDER: pass rule for operating-cost-known not yet authored.",
-      "failRule": "DRAFT PLACEHOLDER: fail rule for operating-cost-known not yet authored.",
-      "claimedRule": "DRAFT PLACEHOLDER: claimed rule for operating-cost-known not yet authored.",
-      "notApplicableNote": "DRAFT PLACEHOLDER: not-applicable note for operating-cost-known not yet authored.",
+      "operationalDefinition": "Whether the project's own page or repository states what it costs to keep the system running at the scale it is promoted for, rather than leaving operating cost unaddressed.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific operating-cost figure or boundary (for example a stated per-request compute cost, an infrastructure spend figure, or a pricing page tied to usage volume), with a linked artefact (a pricing or cost-transparency page) where one exists.",
+      "failRule": "Coded fail when the project's own page or repository explicitly states operating cost is unknown or has not been estimated (for example \"we don't yet know what this costs to run at scale\").",
+      "claimedRule": "Coded claimed — never pass — when the project asserts cost awareness (for example \"cost-efficient to operate\") with no named figure, boundary, or linked cost breakdown.",
+      "notApplicableNote": "No legitimate not-applicable case: any system in operation has some real resource cost, which is always a coded question even when the answer is unknown.",
       "anchors": {
         "positive": [
-          "DRAFT PLACEHOLDER: positive anchor for operating-cost-known not yet authored."
+          "Our pricing page states the inference cost is approximately $0.004 per request at our current model size, based on our published usage-based pricing tier.",
+          "Our infrastructure cost breakdown (linked below) shows monthly hosting spend scales roughly linearly with active users."
         ],
         "negative": [
-          "DRAFT PLACEHOLDER: negative anchor for operating-cost-known not yet authored."
+          "Our pricing is designed to be cost-effective for everyone.",
+          "We haven't calculated what it costs us to run this at scale."
         ]
       },
       "crosswalk": {
         "iso42001": [
           {
-            "source_id": "draft-placeholder-operating-cost-known-iso42001",
-            "title": "DRAFT PLACEHOLDER: iso42001 crosswalk title for operating-cost-known not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "iso-42001-annex-a-4.5-operating-cost-known",
+            "title": "ISO/IEC 42001:2023 Annex A.4.5 — System and computing resources",
+            "locator": "Annex A.4.5",
+            "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: iso42001 crosswalk qualification for operating-cost-known not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "gaicc": [
           {
-            "source_id": "draft-placeholder-operating-cost-known-gaicc",
-            "title": "DRAFT PLACEHOLDER: gaicc crosswalk title for operating-cost-known not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: gaicc crosswalk qualification for operating-cost-known not yet authored."
+            "source_id": "gaicc-aims-ai-risk-assessment-operating-cost-known",
+            "title": "GAICC AIMS — AI risk assessment",
+            "locator": "AIMS artefact: AI risk assessment",
+            "source_version": "GAICC 12-Week Challenge AIMS artefact list",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "nistAiRmf": [
           {
-            "source_id": "draft-placeholder-operating-cost-known-nistAiRmf",
-            "title": "DRAFT PLACEHOLDER: nistAiRmf crosswalk title for operating-cost-known not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
+            "source_id": "nist-ai-rmf-map-3-operating-cost-known",
+            "title": "NIST AI RMF 1.0, MAP 3 — AI capabilities, targeted usage, goals, benefits/costs vs. benchmarks are understood",
+            "locator": "MAP 3",
+            "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: nistAiRmf crosswalk qualification for operating-cost-known not yet authored."
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ],
         "euAiAct": [
           {
-            "source_id": "draft-placeholder-operating-cost-known-euAiAct",
-            "title": "DRAFT PLACEHOLDER: euAiAct crosswalk title for operating-cost-known not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: euAiAct crosswalk qualification for operating-cost-known not yet authored.",
-            "informational": true
+            "source_id": "eu-ai-act-article-17-operating-cost-known",
+            "title": "Regulation (EU) 2024/1689, Article 17 — Quality management system",
+            "locator": "Article 17",
+            "source_version": "Regulation (EU) 2024/1689, consolidated text of 2026-07-27",
+            "relation_type": "partial",
+            "informational": true,
+            "qualification": "[ASSUMED] article numbering not verified against the 2026-07-27 consolidated text (03-RESEARCH.md Open Question 2)"
           }
         ],
         "oecd": [
           {
-            "source_id": "draft-placeholder-operating-cost-known-oecd",
-            "title": "DRAFT PLACEHOLDER: oecd crosswalk title for operating-cost-known not yet authored",
-            "locator": "DRAFT PLACEHOLDER: locator not yet authored",
-            "source_version": "DRAFT PLACEHOLDER: source version not yet authored",
-            "relation_type": "supports",
-            "qualification": "DRAFT PLACEHOLDER: oecd crosswalk qualification for operating-cost-known not yet authored."
+            "source_id": "oecd-ai-principle-inclusive-growth-operating-cost-known",
+            "title": "OECD AI Principles — Inclusive growth, sustainable development and well-being",
+            "locator": "Principle 1.1",
+            "source_version": "OECD Recommendation on AI, as updated May 2024",
+            "relation_type": "partial",
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
           }
         ]
       }
