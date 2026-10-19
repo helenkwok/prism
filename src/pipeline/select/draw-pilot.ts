@@ -68,10 +68,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const i = process.argv.indexOf(name);
     return i >= 0 ? process.argv[i + 1] : undefined;
   };
-  const r = await drawPilot({ targetN: Number(arg("--target") ?? 20), out: arg("--out") ?? "pilot-projects.json" });
-  console.log("PRISMA:", JSON.stringify(r.counts));
-  if (r.entries.length < Number(arg("--target") ?? 20)) {
-    console.error(`frame exhausted: ${r.entries.length} included`);
-    process.exitCode = 1;
-  }
+  // No top-level await: the acceptance script require()s this module.
+  drawPilot({ targetN: Number(arg("--target") ?? 20), out: arg("--out") ?? "pilot-projects.json" })
+    .then((r) => {
+      console.log("PRISMA:", JSON.stringify(r.counts));
+      if (r.entries.length < Number(arg("--target") ?? 20)) {
+        console.error(`frame exhausted: ${r.entries.length} included`);
+        process.exitCode = 1;
+      }
+    })
+    .catch((err) => {
+      console.error(err?.stack ?? err);
+      process.exitCode = 1;
+    });
 }

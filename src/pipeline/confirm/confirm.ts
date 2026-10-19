@@ -167,7 +167,7 @@ export async function confirmWithModel(client: any, codebook: Codebook, p: Posit
   throw new Error(`confirmer gave no valid reply in ${attempts} attempts: ${(last as Error)?.message}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+async function main() {
   const { readKey } = await import("../run.ts");
   const dataDir = resolveDataDir();
   const db = getDb();
@@ -197,4 +197,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const tally = after.reduce((a: Record<string, number>, s) => ((a[s.decision ?? s.state] = (a[s.decision ?? s.state] ?? 0) + 1), a), {});
   console.log(`CONFIRMATION: ${JSON.stringify({ positives: positives.length, attempted: todo.length, failed, ...tally })}`);
   if (failed) process.exitCode = 1;
+}
+
+// No top-level await, so the module can be require()d.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    process.stderr.write(`${err?.stack ?? err}\n`);
+    process.exitCode = 1;
+  });
 }
