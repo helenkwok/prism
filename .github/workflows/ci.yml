@@ -40,6 +40,9 @@ jobs:
         run: node scripts/check-spike-records.mjs
       - name: Codebook lint
         run: node scripts/check-codebook-lint.mjs
+      # CDB-05: once codebook-v1.0 exists, its tagged text may only be appended to.
+      - name: Codebook freeze guard
+        run: node scripts/check-codebook-order.mjs
       - name: Vendored gate matches its pin (offline)
         run: node scripts/verify-vendor.mjs
 
