@@ -23,6 +23,7 @@ import { deriveBoundary, hostClass, type Boundary } from "./evidence/boundary.ts
 import { collectProjectPages, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
 import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImpl, type RepoEvidence } from "./evidence/github.ts";
 import { redactText } from "./evidence/redact.ts";
+import { findSiteRepos } from "./evidence/site-repos.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
@@ -225,17 +226,33 @@ async function processProject(
   );
   const evidence = evidenceStage.value;
 
+  // 2b. site repos — a site-first launch's own GitHub repositories (evidence/site-repos.ts).
+  const siteReposStage = githubOwnerRepo
+    ? { value: [] as { owner: string; repo: string; evidence: RepoEvidence }[], fromCache: false }
+    : await withStageCache(cacheDir, projectId, "site-repos", { pages: evidence.tavily.pages.map((p: { url: string }) => p.url), boundary, rule: 1 }, async () =>
+        findSiteRepos({
+          pageTexts: evidence.tavily.pages.map((p: { rawText: string }) => p.rawText),
+          boundary,
+          client: createGithubClient({ token: apiKeys.github, fetchImpl: overrides.githubFetchImpl }),
+        }),
+      );
+  const siteRepos = siteReposStage.value;
+
   // 3. redact — every third-party text, GitHub README/SECURITY.md base64-decoded first (EVD-07).
-  const redactStage = await withStageCache(cacheDir, projectId, "redact", evidence, async () => {
+  // Projects without site repos keep their earlier cache key.
+  const redactStage = await withStageCache(cacheDir, projectId, "redact", siteRepos.length ? { evidence, siteRepos } : evidence, async () => {
     const sources: Source[] = evidence.tavily.pages.map((p) => ({ url: p.url, rawText: p.rawText }));
-    const gh = evidence.github;
-    if (gh && githubOwnerRepo) {
-      const readmeText = decodeGithubText(gh.readme);
-      if (readmeText) sources.push({ url: `https://github.com/${githubOwnerRepo.owner}/${githubOwnerRepo.repo}#readme`, rawText: readmeText });
-      const securityText = decodeGithubText(gh.securityMd);
+    const repos = [
+      ...(evidence.github && githubOwnerRepo ? [{ ...githubOwnerRepo, evidence: evidence.github as RepoEvidence }] : []),
+      ...siteRepos,
+    ];
+    for (const { owner, repo, evidence: gh } of repos) {
+      const readmeText = decodeGithubText(gh.readme as any);
+      if (readmeText) sources.push({ url: `https://github.com/${owner}/${repo}#readme`, rawText: readmeText });
+      const securityText = decodeGithubText(gh.securityMd as any);
       if (securityText) {
-        const p = githubSecurityPath(gh.securityMd);
-        sources.push({ url: `https://github.com/${githubOwnerRepo.owner}/${githubOwnerRepo.repo}/blob/HEAD/${p}`, rawText: securityText });
+        const p = githubSecurityPath(gh.securityMd as any);
+        sources.push({ url: `https://github.com/${owner}/${repo}/blob/HEAD/${p}`, rawText: securityText });
       }
     }
     return { sources: sources.map((s) => ({ url: s.url, ...redactText(s.rawText) })) };
@@ -410,6 +427,8 @@ async function processProject(
           hnId: projectId,
           boundary,
           homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
+          // A site-first launch's own repositories, each its own boundary (evidence/site-repos.ts).
+          repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
           snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
             url: s.url,
             visibility: "provider-extracted",

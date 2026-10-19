@@ -125,7 +125,8 @@ run_check "SC2: every project has a recorded result, and no recorded snapshot UR
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     for (const snap of manifest.snapshots) {
       checkedSnapshots += 1;
-      if (!withinBoundary(snap.url, boundary) && !(manifest.homepageBoundary && withinBoundary(snap.url, manifest.homepageBoundary))) {
+      const extra = [manifest.homepageBoundary, ...(manifest.repoBoundaries ?? [])].filter(Boolean);
+      if (!withinBoundary(snap.url, boundary) && !extra.some((b) => withinBoundary(snap.url, b))) {
         throw new Error('project ' + row.project_n + ': snapshot URL ' + snap.url + ' falls OUTSIDE its own boundary');
       }
     }
