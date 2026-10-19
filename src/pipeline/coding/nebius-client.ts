@@ -7,7 +7,7 @@
 // scrubs it from any thrown error text.
 //
 // Coding is pinned to D-15's configuration (spikes/nebius.md), with the model
-// moved on 2026-10-19 to "nvidia/Nemotron-3.5-Super-VL" (see PINNED_MODEL), baseUrl "https://api.tokenfactory.nebius.com/v1", mode "json_schema",
+// moved on 2026-10-19 (see PINNED_MODEL and SECOND_CODER_MODEL), baseUrl "https://api.tokenfactory.nebius.com/v1", mode "json_schema",
 // thinking false.
 
 import { scrubSecrets } from "../evidence/redact.ts";
@@ -197,8 +197,10 @@ export function buildChatBody({
   };
 }
 
-/** D-15's pinned coding configuration (spikes/nebius.md). The model moved from
- * Nemotron-3-Ultra-550b-a55b on 2026-10-19: on the 20-project pilot, 18 of Super-VL's
- * 22 positives were supported by their cited spans against 11 of Ultra's 47. */
-export const PINNED_MODEL = "nvidia/Nemotron-3.5-Super-VL";
+/** D-15's pinned coding configuration (spikes/nebius.md). Primary coder since 2026-10-19:
+ * the cheapest model that codes reliably (Helen's rule), chosen on 21 projects x 24 checks
+ * (precision 0.74, pooled recall 0.71, $0.0057 per project). Nemotron is the second coder. */
+export const PINNED_MODEL = "deepseek-ai/DeepSeek-V4-Flash-0731";
+/** The NVIDIA second coder (hackathon rule: at least one NVIDIA open model): highest precision (0.88). */
+export const SECOND_CODER_MODEL = "nvidia/Nemotron-3.5-Super-VL";
 export const PINNED_BASE_URL = "https://api.tokenfactory.nebius.com/v1";

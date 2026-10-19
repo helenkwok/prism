@@ -138,7 +138,7 @@ async function fetchSecurityMd(client: GithubClient, owner: string, repo: string
     const j = first.json as any;
     return { content: j.content ?? null, encoding: j.encoding ?? null, path: j.path ?? null };
   }
-  // community/profile does not report SECURITY.md (CLAUDE.md) — the dotfile
+  // community/profile does not report SECURITY.md (stack research §5.2) — the dotfile
   // path is the only way to learn whether a repo has it there instead.
   const second = await client.request(`/repos/${owner}/${repo}/contents/.github/SECURITY.md`);
   if (second.rateLimited) return RATE_LIMITED;

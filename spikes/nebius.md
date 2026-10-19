@@ -641,3 +641,14 @@ Status: final. Plan 01-10 completed the 12-config matrix, the escape probe, the 
   | 3.5-Super-VL | 22 | 18 | 82% |
 
   Ultra cited a median of 11 spans per non-empty check and up to 61, often the same page dump for every check. Super-VL cited 1 to 7 spans, and needed 1 attempt for each of the 17 projects with spans. **Open: recall.** Super-VL coded no `fail` states and may miss real positives. Its recall is measured against the gold labels (section 5).
+- **2026-10-19, the primary coder becomes `deepseek-ai/DeepSeek-V4-Flash-0731`; Nemotron is the second coder.** Helen's rule: use the cheapest model that codes well as primary, with Nemotron screening and acting as second coder. Five models coded the 20 pilot projects plus ArtCraft (21 projects x 24 checks), chunked, on cached evidence. Every positive was judged against its spans by a single confirmer that was none of the models. Pooled recall is measured against 69 supported (project, check) pairs.
+
+  | Model | Positives | Precision | Pooled recall | $ per project |
+  |---|---|---|---|---|
+  | Nemotron-3.5-Super-VL | 41 | 0.88 | 0.52 | 0.0137 |
+  | Qwen3-235B-2507 | 90 | 0.60 | 0.78 | 0.0089 |
+  | DeepSeek-V4-Pro | 69 | 0.75 | 0.75 | 0.0714 |
+  | Qwen3-30B-2507 | 79 | 0.47 | 0.54 | 0.0060 (2 projects failed) |
+  | DeepSeek-V4-Flash-0731 | 66 | 0.74 | 0.71 | 0.0057 |
+
+  DS-Flash and Super-VL agree 0.946 raw on pass versus not-pass (Gwet AC1 0.934). Together they recall 0.73, and leave about 22 unsupported positives per 21 projects for confirmation to reject. These are single-confirmer judgements, not gold labels.
