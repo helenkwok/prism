@@ -199,3 +199,21 @@ Changed rule: section 3's "Both `pass` and `claimed` are confirmed by Helen befo
 - Helen signs off the protocol, its amendments and the published findings.
 
 Reason: one standard for work by people and AI, judged by its process and evidence, not by who produced it (Helen's AI Output to Value stance). Requiring one named person to confirm every positive made her the bottleneck for every run, and the evidence that measures accuracy already exists independently of her confirmations.
+
+## Addendum 2026-10-19 (A3, A4)
+
+Signed by Helen on 2026-10-19. Results seen when this was written: ArtCraft's coding by several models, and aggregate activity statistics from its GitHub organization. The pilot results noted under A1/A2 had also been seen. No gold label existed.
+
+### A3. ArtCraft as a worked case outside the statistics
+
+ArtCraft (Show HN item 46838772, 2026-01-31, inside the frame) is analysed as a purposive worked case. It is used to calibrate the codebook, the collector, the coders and confirmation against a launch with plentiful public evidence. It enters no confirmatory statistic, estimate or agreement figure as a worked case. If a seeded sample draw selects it, it is included in that draw like any other project. If the gold-label draw selects it, the next project in gold-label seed order replaces it, because Helen has already seen its coding and so cannot label it blind.
+
+Reason: the random pilot contained few launches with enough public evidence to test the harder checks. A case chosen for its rich evidence tests the method, but its being chosen means it can stand for nothing in a statistic.
+
+### A4. A community layer from every channel (exploratory)
+
+Coded check states continue to come only from a project's own sources: its own website and its own repository. Separately, comments about a project from every public channel are consolidated into a per-project community layer. The channels are its repository's issues and pull requests, Hacker News, Reddit, Discord and others. This layer is set against what the launch claims, for example a support claim against how often people get a reply. It is exploratory: it enters no confirmatory statistic, and it is reported in aggregate only, with no usernames or other personal data.
+
+Each channel is used only within its own terms: official APIs where they exist (GitHub, the Hacker News Algolia API); for Reddit, the Data API once approved, otherwise manual or pasted context; for Discord, existing aggregate syntheses only, with no new automated collection unless Helen decides otherwise.
+
+Reason: people comment about a launch everywhere, so any one channel gives a partial picture of what it delivers.
