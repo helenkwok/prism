@@ -5,11 +5,11 @@
 # line per check so every result is visible in one pass. Modeled on
 # scripts/phase2-acceptance.sh.
 #
-#   TAVILY_API_KEY=... NEBIUS_API_KEY=... GITHUB_TOKEN=... bash scripts/phase3-acceptance.sh
+#   bash scripts/phase3-acceptance.sh   (keys: env vars, else ~/Library/Application Support/prism/{tavily,nebius}.key; GitHub: gh auth token)
 #
-# This script does NOT read .env itself — load the three required
-# credentials into the environment before invoking it (e.g.
-# `set -a; source .env; set +a` in your own shell, never inside this file).
+# This script never reads .env. run.ts loads the Tavily and Nebius keys from
+# the environment or from those mode-600 key files, and the GitHub token from
+# the environment or `gh auth token`, so an agent can run it end to end.
 # Criterion 3 makes the one REAL, live-credentialed invocation of
 # `node src/pipeline/run.ts` this run (over the pilot-drawn 20 projects, via
 # --slice, never touching Phase 2's 10-project slice file). Without the three

@@ -13,6 +13,7 @@
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import pLimit from "p-limit";
@@ -439,6 +440,26 @@ export async function runPipeline({
   return accounting;
 }
 
+// ---- credentials -------------------------------------------------------------
+
+/** Where the CLI's key files live: PRISM_KEY_DIR, else ~/Library/Application Support/prism. */
+export function keyDir(env: NodeJS.ProcessEnv = process.env): string {
+  return env.PRISM_KEY_DIR || path.join(os.homedir(), "Library", "Application Support", "prism");
+}
+
+/**
+ * A credential from the environment, else from <keyDir>/<file> (mode 600, filled from the clipboard).
+ * Returns undefined when neither exists. Errors name the file path only, never its content.
+ */
+export function readKey(envName: string, file: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
+  if (env[envName]) return env[envName];
+  const p = path.join(keyDir(env), file);
+  if (!fs.existsSync(p)) return undefined;
+  if ((fs.statSync(p).mode & 0o077) !== 0) throw new Error(`${p}: readable by group or others; run chmod 600 on it`);
+  const value = fs.readFileSync(p, "utf8").trim();
+  return value || undefined;
+}
+
 // ---- CLI -------------------------------------------------------------------
 
 const invokedDirectly =
@@ -455,8 +476,8 @@ if (invokedDirectly) {
     const sliceIdx = args.indexOf("--slice");
     const sliceProjectsPath = sliceIdx >= 0 ? args[sliceIdx + 1] : undefined;
 
-    const tavily = process.env.TAVILY_API_KEY;
-    const nebius = process.env.NEBIUS_API_KEY;
+    const tavily = readKey("TAVILY_API_KEY", "tavily.key");
+    const nebius = readKey("NEBIUS_API_KEY", "nebius.key");
     // GITHUB_TOKEN in the environment wins when set; otherwise fall back to
     // the `gh` CLI's own stored auth (`gh auth token`) rather than requiring
     // a separate credential in .env — this machine's `gh` is already
@@ -471,8 +492,8 @@ if (invokedDirectly) {
       }
     }
     const missing = [
-      !tavily ? "TAVILY_API_KEY" : null,
-      !nebius ? "NEBIUS_API_KEY" : null,
+      !tavily ? `TAVILY_API_KEY (or ${path.join(keyDir(), "tavily.key")})` : null,
+      !nebius ? `NEBIUS_API_KEY (or ${path.join(keyDir(), "nebius.key")})` : null,
       !github ? "GITHUB_TOKEN (and `gh auth token` also failed — run `gh auth login` or set GITHUB_TOKEN)" : null,
     ].filter((v): v is string => v !== null);
     if (missing.length > 0) {
