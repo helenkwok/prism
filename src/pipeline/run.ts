@@ -286,9 +286,10 @@ async function processProject(
   // 5. code — skip the live Nemotron call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
+  const chunks = chunkSpans(segmented.spans as { id: string; text: string }[]);
   const codingRequestHash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages: buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, segmented.spans) }))
+    .update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c)) }))
     .digest("hex");
   const codeStage = await withStageCache(
     cacheDir,
@@ -297,15 +298,28 @@ async function processProject(
     { spanIds, hasSpans: spanIds.length > 0, codingRequestHash },
     async () => {
       if (spanIds.length === 0) {
-        return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds) };
+        return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds), chunks: 0, failedChunks: 0 };
       }
       const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
       const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
       const callOnce = makeNebiusCallOnce(codebook, spansById);
-      return codeProjectWithRetry({ client, cfg: {}, contract, spanIds, callOnce });
+      const results: any[] = [];
+      for (const chunk of chunks) {
+        results.push(await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
+      }
+      const perChunk: CheckEntry[][] = results.map((r) => r.checks ?? r.data?.checks ?? []);
+      const failedChunks = results.filter((r) => r.allUnknown === true).length;
+      return {
+        valid: failedChunks < results.length,
+        attempts: results.reduce((a, r) => a + (r.attempts ?? 0), 0),
+        allUnknown: failedChunks === results.length,
+        checks: mergeChunkCodings(contract.checkIds, perChunk),
+        chunks: results.length,
+        failedChunks,
+      };
     },
-    // A retry-exhausted fallback is not cached, so the next run tries the project again.
-    (result: any) => !(result.allUnknown === true && result.attempts > 0),
+    // A coding with any retry-exhausted chunk is not cached, so the next run tries the project again.
+    (result: any) => !(result.attempts > 0 && result.failedChunks > 0),
   );
   const codingResult: any = codeStage.value;
   const codeChecks: CheckEntry[] = codingResult.checks ?? codingResult.data?.checks ?? [];
@@ -478,6 +492,70 @@ export async function runPipeline({
     outcomes,
   };
   return accounting;
+}
+
+// ---- chunked coding ----------------------------------------------------------
+
+/** About 10k tokens of span text per coding call: on a 41-page launch an ~82k-token prompt lost evidence
+ * the same model found when given the relevant pages alone (ArtCraft, 2026-10-19). */
+export const CODING_CHUNK_CHARS = 40_000;
+
+/** Group spans into chunks of whole pages (span ids are `p<k>-...`), each under `limit` characters where a
+ * page allows; a single page over the limit is split at span boundaries. */
+export function chunkSpans<T extends { id: string; text: string }>(spans: T[], limit = CODING_CHUNK_CHARS): T[][] {
+  const pages: T[][] = [];
+  for (const s of spans) {
+    const page = s.id.split("-")[0];
+    const last = pages[pages.length - 1];
+    if (last && last[0].id.split("-")[0] === page) last.push(s);
+    else pages.push([s]);
+  }
+  const chunks: T[][] = [];
+  let cur: T[] = [];
+  let curChars = 0;
+  const flush = () => {
+    if (cur.length) chunks.push(cur);
+    cur = [];
+    curChars = 0;
+  };
+  for (const page of pages) {
+    const pageChars = page.reduce((a, s) => a + s.text.length, 0);
+    if (curChars + pageChars <= limit) {
+      cur.push(...page);
+      curChars += pageChars;
+      continue;
+    }
+    flush();
+    for (const s of page) {
+      if (curChars + s.text.length > limit) flush();
+      cur.push(s);
+      curChars += s.text.length;
+    }
+  }
+  flush();
+  return chunks;
+}
+
+const STATE_RANK: Record<string, number> = { pass: 3, claimed: 2, fail: 1, unknown: 0 };
+
+/** Merge per-chunk codings: the strongest state across chunks wins (pass > claimed > fail > unknown), with the
+ * union of the span ids every chunk cited for that winning state. */
+export function mergeChunkCodings(checkIds: string[], perChunk: CheckEntry[][]): CheckEntry[] {
+  return checkIds.map((checkId) => {
+    let state: CheckEntry["proposedState"] = "unknown";
+    let spans: string[] = [];
+    for (const entries of perChunk) {
+      const e = entries.find((c) => c.checkId === checkId);
+      if (!e) continue;
+      if (STATE_RANK[e.proposedState] > STATE_RANK[state]) {
+        state = e.proposedState;
+        spans = [...e.spanIds];
+      } else if (e.proposedState === state) {
+        spans.push(...e.spanIds);
+      }
+    }
+    return { checkId, proposedState: state, spanIds: state === "unknown" ? [] : [...new Set(spans)] };
+  });
 }
 
 /** The repository's declared homepage when it is a separate http(s) site, else null. */
