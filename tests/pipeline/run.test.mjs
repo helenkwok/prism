@@ -18,6 +18,7 @@ import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
 import { runPipeline } from "../../src/pipeline/run.ts";
+import { PINNED_MODEL, SECOND_CODER_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -63,8 +64,10 @@ const gateOverrides = { gateSpawnImpl: fakeGateSpawnImpl, pythonPath: "fake-pyth
 
 /** Always replies with every check "unknown", spanIds: [] — trivially schema-valid. */
 function makeAllUnknownNebiusFetch(counter) {
-  return async () => {
+  return async (_url, init) => {
     counter.calls += 1;
+    const model = JSON.parse(init.body).model;
+    counter.byModel = { ...counter.byModel, [model]: (counter.byModel?.[model] ?? 0) + 1 };
     const checks = gateFile.checkIds.map((checkId) => ({ checkId, proposedState: "unknown", spanIds: [] }));
     return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks }) } }] });
   };
@@ -151,7 +154,14 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
 
     // Project 9's code stage must skip the live Nebius call (D-29/D-30): the
     // Nebius fake must have been called for every succeeding project EXCEPT 9.
-    assert.equal(nebiusCounter.calls, 8, "nebius must be called once per non-thin, non-failed project (8), never for the thin one");
+    assert.deepEqual(
+      nebiusCounter.byModel,
+      { [PINNED_MODEL]: 8, [SECOND_CODER_MODEL]: 8 },
+      "each coder must be called once per non-thin, non-failed project (8), never for the thin one",
+    );
+    const second = await db.selectFrom("pipeline_second_coder_states").select(["project_n", "model_id"]).execute();
+    assert.equal(second.length, 9 * gateFile.checkIds.length, "every succeeding project records a full second-coder row set");
+    assert.ok(second.every((r) => r.model_id === SECOND_CODER_MODEL));
 
     // Project 9's record must exist with every required check present, not missing.
     const rows9 = await db.selectFrom("pipeline_check_states").select(["check_id", "filtered_state"]).where("project_n", "=", 9).execute();
@@ -233,7 +243,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
     assert.equal(secondOutcome.filterFromCache, false);
     assert.equal(secondOutcome.claimsFromCache, false);
     assert.equal(secondOutcome.recordFromCache, false);
-    assert.equal(nebiusCounter.calls, 2, "the code stage must be attempted again on the resumed run (1 failed attempt + 1 successful attempt)");
+    assert.equal(nebiusCounter.calls, 3, "the code stage must be attempted again on the resumed run (1 failed attempt, then one call per coder)");
 
     const rows = await db2.selectFrom("pipeline_project_results").select(["project_n"]).execute();
     assert.equal(rows.length, 1, "the resumed run must record the project it completes");

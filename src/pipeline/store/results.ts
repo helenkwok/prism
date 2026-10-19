@@ -90,6 +90,20 @@ export async function ensurePipelineSchema(db: Kysely<any>): Promise<void> {
     .addPrimaryKeyConstraint("pipeline_check_states_pk", ["project_n", "check_id"])
     .execute();
 
+  // The second coder's states (VAL agreement). Never read by the gate path.
+  await db.schema
+    .createTable("pipeline_second_coder_states")
+    .ifNotExists()
+    .addColumn("project_n", "integer")
+    .addColumn("check_id", "text")
+    .addColumn("model_id", "text")
+    .addColumn("proposed_state", "text")
+    .addColumn("filtered_state", "text")
+    .addColumn("span_ids_json", "text")
+    .addColumn("coding_all_unknown", "integer")
+    .addPrimaryKeyConstraint("pipeline_second_coder_states_pk", ["project_n", "check_id"])
+    .execute();
+
   await db.schema
     .createTable("pipeline_claims")
     .ifNotExists()
@@ -141,6 +155,31 @@ export async function recordProjectResult(db: Kysely<any>, input: ProjectResultI
           decision_id: claim.decisionId,
           claim_json: JSON.stringify(claim.claimJson),
           gate_status: claim.gateStatus,
+        })
+        .execute();
+    }
+  });
+}
+
+/** Replace a project's second-coder states with exactly `input.checkStates`. */
+export async function recordSecondCoding(
+  db: Kysely<any>,
+  projectN: number,
+  input: { modelId: string; allUnknown: boolean; checkStates: CheckStateRecord[] },
+): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await trx.deleteFrom("pipeline_second_coder_states").where("project_n", "=", projectN).execute();
+    for (const c of input.checkStates) {
+      await trx
+        .insertInto("pipeline_second_coder_states")
+        .values({
+          project_n: projectN,
+          check_id: c.checkId,
+          model_id: input.modelId,
+          proposed_state: c.proposedState,
+          filtered_state: c.filteredState,
+          span_ids_json: JSON.stringify(c.spanIds),
+          coding_all_unknown: input.allUnknown ? 1 : 0,
         })
         .execute();
     }

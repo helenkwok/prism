@@ -26,7 +26,7 @@ import { redactText } from "./evidence/redact.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
-import { createClient, buildChatBody, PINNED_MODEL, PINNED_BASE_URL, type FetchImpl as NebiusFetchImpl } from "./coding/nebius-client.ts";
+import { createClient, buildChatBody, PINNED_MODEL, SECOND_CODER_MODEL, PINNED_BASE_URL, type FetchImpl as NebiusFetchImpl } from "./coding/nebius-client.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
@@ -38,6 +38,7 @@ import {
   recordProjectResult,
   recordInjectionFlags,
   recordMissingData,
+  recordSecondCoding,
   type CheckStateRecord,
   type ClaimRecord as StoreClaimRecord,
 } from "./store/results.ts";
@@ -106,11 +107,11 @@ export function buildCodingMessages(checkIds: string[], codebook: Codebook, json
 // 4096 truncated replies on pages with many spans (finish_reason=length on the 20-project pilot).
 export const CODING_MAX_TOKENS = 16384;
 
-function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, fetchImpl?: NebiusFetchImpl): CallOnce {
+function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, model: string = PINNED_MODEL): CallOnce {
   return async (client: any, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
     const body = buildChatBody({
-      model: PINNED_MODEL,
+      model,
       messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans),
       mode: "json_schema",
       schema: { name: "gate_checks", schema: jsonSchema, strict: true },
@@ -123,9 +124,6 @@ function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, 
     if (typeof content !== "string") throw new Error("nebius response is missing choices[0].message.content");
     return content;
   };
-  // `fetchImpl` is threaded through the client the caller builds, not here —
-  // kept as a parameter only for signature symmetry with the other call-once builders.
-  void fetchImpl;
 }
 
 export interface ProjectOutcome {
@@ -139,6 +137,7 @@ export interface ProjectOutcome {
   segmentFromCache?: boolean;
   injectionFromCache?: boolean;
   codeFromCache?: boolean;
+  code2FromCache?: boolean;
   filterFromCache?: boolean;
   claimsFromCache?: boolean;
   recordFromCache?: boolean;
@@ -283,44 +282,53 @@ async function processProject(
   );
   const injectionResult = injectionStage.value;
 
-  // 5. code — skip the live Nemotron call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
+  // 5. code — skip the live model call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
   const chunks = chunkSpans(segmented.spans as { id: string; text: string }[]);
-  const codingRequestHash = crypto
-    .createHash("sha256")
-    .update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c)) }))
-    .digest("hex");
-  const codeStage = await withStageCache(
-    cacheDir,
-    projectId,
-    "code",
-    { spanIds, hasSpans: spanIds.length > 0, codingRequestHash },
-    async () => {
-      if (spanIds.length === 0) {
-        return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds), chunks: 0, failedChunks: 0 };
-      }
-      const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
-      const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
-      const callOnce = makeNebiusCallOnce(codebook, spansById);
-      const results: any[] = [];
-      for (const chunk of chunks) {
-        results.push(await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
-      }
-      const perChunk: CheckEntry[][] = results.map((r) => r.checks ?? r.data?.checks ?? []);
-      const failedChunks = results.filter((r) => r.allUnknown === true).length;
-      return {
-        valid: failedChunks < results.length,
-        attempts: results.reduce((a, r) => a + (r.attempts ?? 0), 0),
-        allUnknown: failedChunks === results.length,
-        checks: mergeChunkCodings(contract.checkIds, perChunk),
-        chunks: results.length,
-        failedChunks,
-      };
-    },
-    // A coding with any retry-exhausted chunk is not cached, so the next run tries the project again.
-    (result: any) => !(result.attempts > 0 && result.failedChunks > 0),
-  );
+  const codeWith = (model: string, stage: string) => {
+    const codingRequestHash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify({ model, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c)) }))
+      .digest("hex");
+    return withStageCache(
+      cacheDir,
+      projectId,
+      stage,
+      { spanIds, hasSpans: spanIds.length > 0, codingRequestHash },
+      async () => {
+        if (spanIds.length === 0) {
+          return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds), chunks: 0, failedChunks: 0 };
+        }
+        const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
+        const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
+        const callOnce = makeNebiusCallOnce(codebook, spansById, model);
+        const results: any[] = [];
+        for (const chunk of chunks) {
+          results.push(await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
+        }
+        const perChunk: CheckEntry[][] = results.map((r) => r.checks ?? r.data?.checks ?? []);
+        const failedChunks = results.filter((r) => r.allUnknown === true).length;
+        return {
+          valid: failedChunks < results.length,
+          attempts: results.reduce((a, r) => a + (r.attempts ?? 0), 0),
+          allUnknown: failedChunks === results.length,
+          checks: mergeChunkCodings(contract.checkIds, perChunk),
+          chunks: results.length,
+          failedChunks,
+        };
+      },
+      // A coding with any retry-exhausted chunk is not cached, so the next run tries the project again.
+      (result: any) => !(result.attempts > 0 && result.failedChunks > 0),
+    );
+  };
+  const codeStage = await codeWith(PINNED_MODEL, "code");
+  // 5b. second coder (NVIDIA, hackathon rule; VAL agreement figure). Recorded alongside, never
+  // read by filter/claims/gate: the primary coding alone decides.
+  const code2Stage = await codeWith(SECOND_CODER_MODEL, "code2");
+  const second: any = code2Stage.value;
+  const secondChecks: CheckEntry[] = second.checks ?? [];
+  const secondFiltered: CheckEntry[] = applyQuoteOrUnknownFilter(secondChecks, spanIds);
   const codingResult: any = codeStage.value;
   const codeChecks: CheckEntry[] = codingResult.checks ?? codingResult.data?.checks ?? [];
   const codingAttempts: number = codingResult.attempts ?? 0;
@@ -374,6 +382,17 @@ async function processProject(
       checkStates,
       claims: storeClaims,
     });
+    const byCode2Id = new Map(secondChecks.map((c) => [c.checkId, c]));
+    await recordSecondCoding(db, project.n, {
+      modelId: SECOND_CODER_MODEL,
+      allUnknown: second.allUnknown === true,
+      checkStates: secondFiltered.map((f) => ({
+        checkId: f.checkId,
+        proposedState: byCode2Id.get(f.checkId)?.proposedState ?? f.proposedState,
+        filteredState: f.proposedState,
+        spanIds: f.spanIds,
+      })),
+    });
     await recordInjectionFlags(db, project.n, injectionResult.spanIds.map((spanId) => ({ spanId })));
     await recordMissingData(db, project.n, evidence.tavily.pages.length === 0);
 
@@ -417,6 +436,7 @@ async function processProject(
     segmentFromCache: segmentStage.fromCache,
     injectionFromCache: injectionStage.fromCache,
     codeFromCache: codeStage.fromCache,
+    code2FromCache: code2Stage.fromCache,
     filterFromCache: filterStage.fromCache,
     claimsFromCache: claimsStage.fromCache,
     recordFromCache: recordStage.fromCache,
