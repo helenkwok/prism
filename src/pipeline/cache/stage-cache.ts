@@ -50,11 +50,13 @@ export async function withStageCache<T>(
   stage: string,
   input: unknown,
   compute: () => Promise<T>,
+  /** Return false to leave a computed value uncached (e.g. a fallback that a re-run should retry). */
+  shouldCache: (value: T) => boolean = () => true,
 ): Promise<{ value: T; fromCache: boolean }> {
   const key = stageCacheKey(projectId, stage, input);
   const cached = readCached<T>(cacheDir, key);
   if (cached.hit) return { value: cached.value, fromCache: true };
   const value = await compute();
-  writeCached(cacheDir, key, value);
+  if (shouldCache(value)) writeCached(cacheDir, key, value);
   return { value, fromCache: false };
 }

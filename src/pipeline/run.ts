@@ -103,6 +103,9 @@ export function buildCodingMessages(checkIds: string[], codebook: Codebook, json
   ];
 }
 
+// 4096 truncated replies on pages with many spans (finish_reason=length on the 20-project pilot).
+export const CODING_MAX_TOKENS = 16384;
+
 function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, fetchImpl?: NebiusFetchImpl): CallOnce {
   return async (client: any, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
@@ -112,6 +115,7 @@ function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, 
       mode: "json_schema",
       schema: { name: "gate_checks", schema: jsonSchema, strict: true },
       thinking: false,
+      maxTokens: CODING_MAX_TOKENS,
     });
     const res = await client.request("/chat/completions", { method: "POST", body });
     if (!res.ok) throw new Error(`nebius chat/completions returned status ${res.status}`);
@@ -261,15 +265,29 @@ async function processProject(
   const injectionResult = injectionStage.value;
 
   // 5. code — skip the live Nemotron call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
-  const codeStage = await withStageCache(cacheDir, projectId, "code", { spanIds, hasSpans: spanIds.length > 0 }, async () => {
-    if (spanIds.length === 0) {
-      return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds) };
-    }
-    const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
-    const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
-    const callOnce = makeNebiusCallOnce(codebook, spansById);
-    return codeProjectWithRetry({ client, cfg: {}, contract, spanIds, callOnce });
-  });
+  // The key covers everything the model sees (codebook text, schema, spans), the model and the
+  // token cap, so a reworded codebook check is re-coded rather than served from cache.
+  const codingRequestHash = crypto
+    .createHash("sha256")
+    .update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages: buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, segmented.spans) }))
+    .digest("hex");
+  const codeStage = await withStageCache(
+    cacheDir,
+    projectId,
+    "code",
+    { spanIds, hasSpans: spanIds.length > 0, codingRequestHash },
+    async () => {
+      if (spanIds.length === 0) {
+        return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds) };
+      }
+      const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
+      const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
+      const callOnce = makeNebiusCallOnce(codebook, spansById);
+      return codeProjectWithRetry({ client, cfg: {}, contract, spanIds, callOnce });
+    },
+    // A retry-exhausted fallback is not cached, so the next run tries the project again.
+    (result: any) => !(result.allUnknown === true && result.attempts > 0),
+  );
   const codingResult: any = codeStage.value;
   const codeChecks: CheckEntry[] = codingResult.checks ?? codingResult.data?.checks ?? [];
   const codingAttempts: number = codingResult.attempts ?? 0;

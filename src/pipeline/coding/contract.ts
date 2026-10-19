@@ -88,7 +88,17 @@ export function buildContract(checkIds: string[]) {
   const zodSchema = Shape.refine((v) => new Set(v.checks.map((c) => c.checkId)).size === v.checks.length, {
     message: "duplicate checkId",
   });
-  const jsonSchema: any = z.toJSONSchema(Shape);
+  // The model is asked for `checks` keyed by check id, every id required: under constrained decoding
+  // that rules out the duplicated and dropped checks a free-form array allowed (measured on the
+  // 20-project pilot). isSchemaValid converts the keyed reply back to the array form above.
+  const Keyed = z
+    .object({
+      checks: z
+        .object(Object.fromEntries(checkIds.map((id) => [id, z.object({ proposedState: z.enum(PROPOSED_STATES), spanIds: z.array(z.string()) }).strict()])))
+        .strict(),
+    })
+    .strict();
+  const jsonSchema: any = z.toJSONSchema(Keyed);
   delete jsonSchema.$schema; // response_format wants a plain JSON Schema object, not a meta-schema pointer
   return { checkIds, zodSchema, jsonSchema };
 }
@@ -128,6 +138,10 @@ export function isSchemaValid(rawText: string, spanIds: string[], zodSchema: z.Z
     parsed = JSON.parse(rawText);
   } catch {
     return { valid: false, stage: "json_parse" };
+  }
+  const checks = (parsed as any)?.checks;
+  if (checks && typeof checks === "object" && !Array.isArray(checks)) {
+    parsed = { ...(parsed as object), checks: Object.entries(checks).map(([checkId, v]) => ({ checkId, ...(v as object) })) };
   }
   const result = zodSchema.safeParse(parsed);
   if (!result.success) return { valid: false, stage: "zod" };
