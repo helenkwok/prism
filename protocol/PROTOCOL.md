@@ -173,3 +173,29 @@ Every row below is signed. A row records the options considered with the criteri
 | R13 | Extra reason codes | Add `duplicate` and `unreachable-at-screening` to the five classes; only the five classes (eliminated: a duplicate or unreachable candidate would otherwise be counted under a reason that is not true) | Add both | SIGNED | Add `duplicate` and `unreachable-at-screening` (section 2) |
 | R14 | Tag timing relative to the spikes | Tag after sign-off and before any `src/pipeline` file, spike numbers allowed to come first because spike inputs are outside the frame; hold spike numbers until after the tag (safe, slows the spikes); tag before the spikes (eliminated: the collector spike has already run, and the tag waits on sign-off) | Tag after sign-off and before any `src/pipeline` file | SIGNED | Tag after sign-off, before any `src/pipeline` file; spike numbers from plans 01-06/01-07/01-10 stand, consistent with this rule, not an exception to it |
 | R15 | Confirmation of the locked thresholds D-01 to D-06 | Confirm as locked: AC1 at least 0.70 and pass precision at least 0.85 per check, screening audit of 50 with error at most 10%, collection recall at least 70%, second-model agreement reported and not a gate; change any of them (eliminated: locked in the phase context) | Confirm as locked | SIGNED | D-01 through D-06 confirmed as locked, unchanged |
+
+## Addendum 2026-10-19 (A1, A2)
+
+Signed by Helen on 2026-10-19. Results seen when this was written: the 20-project pilot's per-check tally and floor-effect report (Phase 3). No gold label, second-model coding or bulk-sample result existed.
+
+### A1. Bulk size without a timing measurement (changes section 9 and row R11)
+
+Changed rule: the measured mean seconds per confirmation is no longer collected. Section 9's formula is evaluated at its break-even instead: the time one confirmation would have to take for the projected hours to exceed H.
+
+Break-even seconds = H x 3600 / (mean `pass` plus `claimed` per project x N). The pilot gave 17 `pass` plus `claimed` states over 20 projects, a mean of 0.85. With H = 30 and N = 300 the break-even is about 424 seconds (7 minutes) per confirmation, far above the time needed to check one state against one quoted span. N therefore stays at about 300.
+
+If a pilot re-run under the frozen codebook changes the mean, the break-even is recomputed with the same formula and recorded. N changes only by a further addendum.
+
+Reason: the timing measured one person's speed. It forecast that person's workload and was never a finding about the projects. A2 removes the premise that one person confirms every positive.
+
+### A2. Role-neutral confirmation (changes section 3, and row R11's reasoning)
+
+Changed rule: section 3's "Both `pass` and `claimed` are confirmed by Helen before publication" is replaced by:
+
+- Every `pass` and `claimed` state is confirmed before publication by a confirmer, a person or an agent. The confirmer checks the state against the codebook's rule for that check and against the quoted span it cites, and records `confirmed` or `rejected`. A rejected positive enters no statistic, and neither does an unconfirmed one.
+- A confirmer never confirms states it coded itself. The model that coded a project is not that project's confirmer.
+- Every confirmation is logged: the project, the check, the confirmer's identity and kind (person or agent, with the model id for an agent), the time, the decision, and the span ids checked.
+- Confirmation is a quality control, not the accuracy measure. Accuracy is measured as section 4 already sets out: against Helen's blind gold labels (section 5) and by second-model agreement.
+- Helen signs off the protocol, its amendments and the published findings.
+
+Reason: one standard for work by people and AI, judged by its process and evidence, not by who produced it (Helen's AI Output to Value stance). Requiring one named person to confirm every positive made her the bottleneck for every run, and the evidence that measures accuracy already exists independently of her confirmations.

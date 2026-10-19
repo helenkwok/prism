@@ -44,9 +44,10 @@ function registerRows() {
     .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()));
 }
 
-test("the protocol has its headings, in order", () => {
+test("the protocol has its headings, in order, followed only by dated addenda (section 12)", () => {
   const found = text.split("\n").filter((l) => /^#{1,2} /.test(l));
-  assert.deepEqual(found, HEADINGS);
+  assert.deepEqual(found.slice(0, HEADINGS.length), HEADINGS);
+  for (const extra of found.slice(HEADINGS.length)) assert.match(extra, /^## Addendum \d{4}-\d{2}-\d{2} /);
 });
 
 test("every locked numeric threshold appears as an exact literal", () => {
