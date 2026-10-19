@@ -190,7 +190,8 @@ async function processProject(
     cacheDir,
     projectId,
     "evidence",
-    { finalUrl: project.final_url, boundary, githubOwnerRepo },
+    // homepageFollow is set only for GitHub-entry projects, so other projects' cached evidence keeps its key.
+    { finalUrl: project.final_url, boundary, githubOwnerRepo, ...(githubOwnerRepo ? { homepageFollow: 1 } : {}) },
     async () => {
       const [tavilyResult, githubResult] = await Promise.all([
         collectProjectPages({ boundary, startUrl: project.final_url, apiKey: apiKeys.tavily, fetchImpl: overrides.tavilyFetchImpl }),
@@ -202,7 +203,25 @@ async function processProject(
             })
           : Promise.resolve(null as RepoEvidence | null),
       ]);
-      return { tavily: tavilyResult, github: githubResult };
+      // A repository-first launch's own website is the homepage its repository declares: collect it
+      // too, inside its own boundary, so "GitHub-only" means the repo really is the only own source.
+      const homepage = homepageToFollow(githubResult);
+      if (!homepage) return { tavily: tavilyResult, github: githubResult, homepage: null };
+      const site = await collectProjectPages({ boundary: deriveBoundary(homepage), startUrl: homepage, apiKey: apiKeys.tavily, fetchImpl: overrides.tavilyFetchImpl });
+      const seen = new Set(tavilyResult.pages.map((p) => p.url));
+      return {
+        tavily: {
+          ...tavilyResult,
+          pages: [...tavilyResult.pages, ...site.pages.filter((p) => !seen.has(p.url))],
+          creditsSpent: tavilyResult.creditsSpent + site.creditsSpent,
+          mapUrlCount: tavilyResult.mapUrlCount + site.mapUrlCount,
+          offBoundaryCount: tavilyResult.offBoundaryCount + site.offBoundaryCount,
+          calls: [...tavilyResult.calls, ...site.calls],
+          missingUrls: [...tavilyResult.missingUrls, ...site.missingUrls],
+        },
+        github: githubResult,
+        homepage,
+      };
     },
   );
   const evidence = evidenceStage.value;
@@ -357,6 +376,7 @@ async function processProject(
           projectN: project.n,
           hnId: projectId,
           boundary,
+          homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
           snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
             url: s.url,
             visibility: "provider-extracted",
@@ -458,6 +478,25 @@ export async function runPipeline({
     outcomes,
   };
   return accounting;
+}
+
+/** The repository's declared homepage when it is a separate http(s) site, else null. */
+export function homepageToFollow(github: RepoEvidence | null): string | null {
+  const repo = github?.repo as { homepage?: string | null } | null | undefined;
+  const raw = repo && typeof repo === "object" ? repo.homepage : null;
+  if (!raw) return null;
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw);
+  if (hasScheme && !/^https?:\/\//i.test(raw)) return null;
+  let u: URL;
+  try {
+    u = new URL(hasScheme ? raw : `https://${raw}`);
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(u.protocol)) return null;
+  const host = u.hostname.replace(/^www\./, "").toLowerCase();
+  if (host === "github.com" || host.endsWith(".github.com")) return null;
+  return u.toString();
 }
 
 // ---- credentials -------------------------------------------------------------

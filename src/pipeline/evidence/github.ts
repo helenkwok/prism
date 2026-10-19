@@ -96,6 +96,8 @@ export interface RepoInfo {
   topics: string[];
   pushedAt: string | null;
   stargazersCount: number | null;
+  /** The repository's own declared website, if any (a project's own source, not personal data). */
+  homepage: string | null;
 }
 
 export interface ReadmeInfo {
@@ -173,6 +175,7 @@ export async function fetchRepoEvidence({
             topics: j.topics ?? [],
             pushedAt: j.pushed_at ?? null,
             stargazersCount: j.stargazers_count ?? null,
+            homepage: typeof j.homepage === "string" && j.homepage.trim() ? j.homepage.trim() : null,
           };
         })()
       : null;
