@@ -6,9 +6,8 @@
 // the caller from process.env and passed in; this module never logs it and
 // scrubs it from any thrown error text.
 //
-// The tracer's one real call is pinned to D-15's configuration (per
-// spikes/nebius.md): model "nvidia/Nemotron-3-Ultra-550b-a55b",
-// baseUrl "https://api.tokenfactory.nebius.com/v1", mode "json_schema",
+// Coding is pinned to D-15's configuration (spikes/nebius.md), with the model
+// moved on 2026-10-19 to "nvidia/Nemotron-3.5-Super-VL" (see PINNED_MODEL), baseUrl "https://api.tokenfactory.nebius.com/v1", mode "json_schema",
 // thinking false.
 
 import { scrubSecrets } from "../evidence/redact.ts";
@@ -198,6 +197,8 @@ export function buildChatBody({
   };
 }
 
-/** D-15's pinned coding configuration (spikes/nebius.md). */
-export const PINNED_MODEL = "nvidia/Nemotron-3-Ultra-550b-a55b";
+/** D-15's pinned coding configuration (spikes/nebius.md). The model moved from
+ * Nemotron-3-Ultra-550b-a55b on 2026-10-19: on the 20-project pilot, 18 of Super-VL's
+ * 22 positives were supported by their cited spans against 11 of Ultra's 47. */
+export const PINNED_MODEL = "nvidia/Nemotron-3.5-Super-VL";
 export const PINNED_BASE_URL = "https://api.tokenfactory.nebius.com/v1";

@@ -633,3 +633,11 @@ Status: final. Plan 01-10 completed the 12-config matrix, the escape probe, the 
 - **Plan 01-10, the D-15 pin:** Ultra qualified first in preference order (>=0.95 schema-valid on >=20 pages, D-15) via `json_schema`/thinking-off; pinned `nvidia/Nemotron-3-Ultra-550b-a55b`, output_mode `json_schema`, thinking `off`, mode `real-time`, retry_rate 0, base_url the docs host.
 - **50-page streak (pages disjoint from the matrix's 25):** n=50, max_consecutive_valid=23. **The STATE gate (>=50 consecutive schema-valid responses before any bulk run) is NOT met on this streak.** This is recorded as a measured shortfall, not a plan failure (D-15/STATE do not require the streak itself to reach 50 as a condition of pinning): Phase 2 must either re-run a fresh streak before any bulk coding pass, or treat the ~23-in-a-row ceiling as informing its own retry/backoff design before committing to an unattended bulk run.
 - **Batch close-out (Task 3):** re-polled to a terminal state; `final_status` remains `rejected` (all 3 candidates, unchanged from the Task 3/01-07 submission). Fallbacks: batch `triggered`, zdr `not-needed` (ZDR is `on`).
+- **2026-10-19, the pin moves to `nvidia/Nemotron-3.5-Super-VL`.** That day the live `/v1/models` list served five NVIDIA models. The newest was Nemotron-3.5-Super-VL, released 2026-10-12 at $0.30 / $0.90 per million tokens against Ultra's $1 / $3. Both models coded the 20-project pilot with the same request (keyed reply schema, `max_tokens` 16384, thinking off). Every `pass` and `claimed` was then judged against its cited spans and the codebook rule by a confirmer that was neither model:
+
+  | Model | Positives | Supported | Precision |
+  |---|---|---|---|
+  | Ultra | 47 | 11 | 23% |
+  | 3.5-Super-VL | 22 | 18 | 82% |
+
+  Ultra cited a median of 11 spans per non-empty check and up to 61, often the same page dump for every check. Super-VL cited 1 to 7 spans, and needed 1 attempt for each of the 17 projects with spans. **Open: recall.** Super-VL coded no `fail` states and may miss real positives. Its recall is measured against the gold labels (section 5).
