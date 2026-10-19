@@ -103,6 +103,8 @@ jobs:
         run: |
           python -m venv .venv-gate
           .venv-gate/bin/pip install --require-virtualenv -r vendor/ai-output-to-value/requirements-claim-gate.txt
+      # The vendored Node gate (core.mjs) imports ajv.
+      - run: npm ci
       - name: Gate tests through the pinned jsonschema
         run: npm run test:gate
 

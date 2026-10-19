@@ -1,7 +1,7 @@
 // A6: the sign-off reviewer role, filled by an agent. Each named item of a proposal document is
 // judged on its own, and each judgement is a decision record bound to the digest of the text
 // it judged. The reviewer must not have drafted the proposal or coded the projects involved:
-// its model family differs from the coders', the confirmer's and the drafter's (Claude).
+// its model family differs from the coders', the confirmer's and the drafting agent's.
 //
 //   node src/pipeline/signoff/signoff.ts --doc <proposal.md> --context <file> ... --item "R1 (option a)" ...
 //
