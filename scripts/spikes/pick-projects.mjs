@@ -131,7 +131,19 @@ export async function preflightCandidate(c) {
       redirect_hops: r.hops.length - 1,
       boundary_ok: !redirectedOffBoundary,
     },
+    page_text: pageText(r.body),
   };
+}
+
+/** Visible text of a fetched page, for full-text screening (DSC-02 stage 2). Crude on purpose:
+ * a single-page app yields little text here, and screening treats that as insufficient text. */
+export function pageText(html) {
+  return String(html ?? "")
+    .replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const CLASSES = ["own-domain", "shared-host", "repo-only", "spa", "redirect"];

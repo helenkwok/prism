@@ -217,3 +217,22 @@ Coded check states continue to come only from a project's own sources: its own w
 Each channel is used only within its own terms: official APIs where they exist (GitHub, the Hacker News Algolia API); for Reddit, the Data API once approved, otherwise manual or pasted context; for Discord, existing aggregate syntheses only, with no new automated collection unless Helen decides otherwise.
 
 Reason: people comment about a launch everywhere, so any one channel gives a partial picture of what it delivers.
+
+## Addendum 2026-10-19 (A5)
+
+Signed by Helen on 2026-10-19. Results seen when this was written: the 20-project pilot (drawn from the unscreened frame, so most of it was not AI products), the pilot's coding by two models, and a screening spike of Nemotron-3.5-Lightning on 300 frame posts and the 20 pilot projects. No gold label existed.
+
+### A5. A `not-ai` reason code, and screening in two stages (changes section 2 and row R13)
+
+Changed rule: section 2 gains one exclusion code, `not-ai`: the candidate has no AI or machine-learning model in the product at all. The six content codes are `not-ai`, `ai-adjacent`, `library-no-product-claim`, `model-or-paper`, `dataset` and `demo-no-site`; `duplicate` and `unreachable-at-screening` stay as R13 set them.
+
+Screening runs in two stages, as title-and-abstract and full-text screening do in a systematic review:
+
+- Stage 1 reads a candidate's title and URL. It excludes only what they clearly show; when unsure it includes.
+- Stage 2 reads the text of the candidate's own page and decides. With fewer than 500 characters of page text, stage 2 does not decide: the candidate is included and marked `insufficient-text`, so a page that has not rendered is never excluded for saying nothing.
+- Candidates are screened in seeded draw order until the draw has enough inclusions. The PRISMA counts cover every record screened, each with exactly one outcome. A candidate that is reachable but cannot be collected within its terms or boundary (robots.txt disallows it, or it redirects off its own boundary) is counted as not collectable, not as a screening exclusion.
+- The screener is Nemotron-3.5-Lightning, deterministic (temperature 0), with a schema-constrained reply. Stage 2 runs with reasoning on.
+
+The screening audit (section 4, D-04) measures the exclusion error of both stages together.
+
+Reason: the frame is every Show HN post in the window, most of which are not AI products, and section 2 had no true code for them. Without it a non-AI candidate could be excluded only under a code whose meaning is false for it.
