@@ -405,7 +405,8 @@ describe("run.ts's --slice flag (03-09)", () => {
     }
 
     assert.doesNotMatch(stderr, /missing required env var/, "with all three env vars set, run.ts must never reach the missing-env-var branch");
-    assert.ok(!threw, "run.ts must exit 0 once --slice reaches a project whose only failure is its own malformed URL, not a CLI wiring error");
     assert.match(stdout, /ACCOUNTING:/, "the CLI must still print its ACCOUNTING line — proof --slice reached runPipeline");
+    assert.match(stdout, /"failed":1/, "the malformed-URL project is accounted as failed");
+    assert.ok(threw, "run.ts exits non-zero when any project failed, so a run with failures can never pass on exit status");
   });
 });
