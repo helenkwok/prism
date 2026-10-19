@@ -337,6 +337,13 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
     const rowZeroPages = await db.selectFrom("pipeline_project_results").select(["missing_data"]).where("project_n", "=", 302).executeTakeFirst();
     assert.equal(rowHasPage.missing_data, 0, "a project with at least one collected page must record missing_data=0, even though every check is unknown");
     assert.equal(rowZeroPages.missing_data, 1, "a project whose Tavily collection returns zero pages must record missing_data=1");
+
+    // A second database fed by the same, fully warm cache must still receive the project's rows:
+    // recording is never served from cache (it once was, which left a fresh database empty).
+    const db2 = freshDb();
+    await runPipeline({ sliceProjectsPath, apiKeys: { tavily: "k", nebius: "k", github: "k" }, cacheDir, dataDir, db: db2, gatesPath, overrides: { tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides } });
+    const rows2 = await db2.selectFrom("pipeline_project_results").select(["project_n"]).execute();
+    assert.equal(rows2.length, 2, "both projects are recorded into the second database from a warm cache");
   });
 });
 

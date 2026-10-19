@@ -309,8 +309,10 @@ async function processProject(
   );
   const claims = claimsStage.value;
 
-  // 8. record — the durable manifest + per-check + per-claim rows (COD-06).
-  const recordStage = await withStageCache(cacheDir, projectId, "record", { filteredChecks, claimsKeys: Object.keys(claims) }, async () => {
+  // 8. record — the durable manifest + per-check + per-claim rows (COD-06). Never cached: the
+  // cache knows nothing about which database it wrote to, so a cached record skipped writing to a
+  // fresh or replaced database. The writes are idempotent replaces, so always doing them is safe.
+  const recordStage = { fromCache: false, value: await (async () => {
     const byCodeId = new Map(codeChecks.map((c) => [c.checkId, c]));
     const checkStates: CheckStateRecord[] = filteredChecks.map((f) => ({
       checkId: f.checkId,
@@ -369,7 +371,7 @@ async function processProject(
     );
 
     return { recorded: true };
-  });
+  })() };
 
   return {
     n: project.n,
