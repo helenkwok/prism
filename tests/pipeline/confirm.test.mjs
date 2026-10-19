@@ -44,9 +44,9 @@ describe("confirmation records", () => {
     const base = { projectN: 1, checkId, reason: "p1-s1 shows it", confirmerKind: "agent", modelId: "m", decidedAt: "t", inputDigest: "d", spanIds: ["p1-s1"] };
     await recordConfirmation(db, { ...base, decision: "rejected", confirmerId: "agent:m" });
     await recordConfirmation(db, { ...base, decision: "confirmed", confirmerId: "agent:m" });
-    await recordConfirmation(db, { ...base, decision: "confirmed", confirmerId: "person:helen", confirmerKind: "person", modelId: null });
+    await recordConfirmation(db, { ...base, decision: "confirmed", confirmerId: "person:reviewer", confirmerKind: "person", modelId: null });
     const rows = await db.selectFrom("pipeline_confirmations").selectAll().orderBy("confirmer_id").execute();
-    assert.deepEqual(rows.map((r) => [r.confirmer_id, r.decision]), [["agent:m", "confirmed"], ["person:helen", "confirmed"]]);
+    assert.deepEqual(rows.map((r) => [r.confirmer_id, r.decision]), [["agent:m", "confirmed"], ["person:reviewer", "confirmed"]]);
   });
 
   test("a model that coded the projects is refused as confirmer (A2)", async () => {

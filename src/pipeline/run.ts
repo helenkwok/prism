@@ -45,7 +45,7 @@ import {
 } from "./store/results.ts";
 import { printTally } from "./tally.ts";
 
-const CODEBOOK_VERSION = "v0";
+const CODEBOOK_VERSION = "v1.0";
 
 export interface SliceEntryLike {
   n: number;

@@ -236,3 +236,26 @@ Screening runs in two stages, as title-and-abstract and full-text screening do i
 The screening audit (section 4, D-04) measures the exclusion error of both stages together.
 
 Reason: the frame is every Show HN post in the window, most of which are not AI products, and section 2 had no true code for them. Without it a non-AI candidate could be excluded only under a code whose meaning is false for it.
+
+## Addendum 2026-10-19 (A6)
+
+Adopted on Helen's instruction of 2026-10-19 ("it needs to be scalable so my name should not be required"). Results seen when this was written: the screened pilot's coding by two models, its agent confirmation, and the redrawn floor-effect review. No gold label existed.
+
+### A6. Roles, not a named person (changes sections 3, 4, 5, 12 and addenda A2, A3, A4)
+
+Changed rule: every step this protocol assigned to Helen by name is a role. A person or an agent may fill any role, under the independence rules below, and every act in a role is a decision record: what was decided, the reasons, the digest of the input judged, the time, and the actor's identity and kind (person, or agent with its model id). Helen may fill any role; none requires her.
+
+| Role | Replaces | Independence rule |
+|---|---|---|
+| Sign-off reviewer | Helen signing the protocol, its amendments, the codebook, floor-effect decisions and the published findings (sections 12 and 13, A2) | Did not draft what it signs. An agent reviewer is of a model family different from the drafter's and from every coder's of the projects involved. |
+| Gold labeller | Helen's blind labels (sections 4 and 5) | Never sees a model proposal or confirmation for the projects it labels. Neither a coder nor the confirmer of those projects. An agent labeller is of a model family different from every coder's and the confirmer's. |
+| Screening auditor | Helen re-screening 50 exclusions (section 4, D-04) | Not the screener model. |
+| Collection-recall gatherer | Helen gathering evidence for about 10 projects (section 4, D-05) | Gathers from the project's own sources before seeing the pipeline's output for that project, and is not the collector. |
+| Confirmer | as in A2 | as in A2 |
+
+Two consequences for reporting:
+
+- Every accuracy figure names the kind of labeller behind it. A figure from agent labels is reported as agreement with an independent labeller (with its model id), never as accuracy against expert or human labels. The thresholds in section 4 apply unchanged.
+- A3's gold-label replacement rule now reads: a labeller that has seen a project's coding cannot label that project blind, so the next project in gold-label seed order replaces it. A4's Discord rule now reads: no new automated collection unless a signed amendment allows it.
+
+Reason: a method that needs one named person at every gate cannot scale beyond what that person can review, and A2 already judges work by its process and evidence, not by who did it. The independence rules keep the separation between who produces a result and who checks it.

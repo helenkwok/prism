@@ -1,11 +1,10 @@
-# PRISM Codebook v0
+# PRISM Codebook v1.0
 
-This is codebook v0: a draft pass (per decision D-31) covering all 24 ai-output-to-value
-decision-gate checks. One check — `acceptance-criteria-met` — is fully authored as this phase's
-tracer; the other 23 are schema-complete placeholders (their `operationalDefinition` is prefixed
-`DRAFT PLACEHOLDER: `) to be filled with real content in later Phase 3 plans. This file is pending
-Helen's review and correction before it is frozen (CDB-05); nothing in it should be treated as a
-settled citation until then.
+This is codebook v1.0, covering all 24 ai-output-to-value decision-gate checks. It was drafted
+from the 20-project pilot, revised from its floor-effect review (D-44), signed off by an
+independent reviewer under protocol addendum A6, and frozen at the annotated tag `codebook-v1.0`
+(CDB-05). After the tag, the text above any addendum is never edited: a change is appended as an
+addendum and goes through the same sign-off.
 
 ## Purpose and scope
 
@@ -81,14 +80,14 @@ Per decision D-38 (COD-03): a badge, logo, or certification mark on a project's 
 adjacent certificate ID or verifiable register URL is coded `claimed`, never `pass`, regardless of
 whether its span resolves. This pipeline does not fetch or verify any external certificate
 register — doing so would also cross EVD-01's own-source evidence boundary. Whether a linked
-register URL actually resolves to a real, valid certificate is Helen's judgment at Phase 4
-confirmation (COD-08), not an automated check.
+register URL actually resolves to a real, valid certificate is the confirmer's judgement at
+confirmation (COD-08, addenda A2 and A6), not an automated check.
 
 ## The 24 checks
 
 ```json
 {
-  "codebookVersion": "v0",
+  "codebookVersion": "v1.0",
   "relationTypes": [
     "addresses",
     "supports",
@@ -121,7 +120,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.6.2.7",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -131,7 +130,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Operational documentation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -141,7 +140,7 @@ confirmation (COD-08), not an automated check.
             "locator": "GOVERN 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -162,7 +161,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.3",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -203,7 +202,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Scope",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -213,7 +212,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MAP 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -234,7 +233,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.3",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -275,7 +274,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Scope",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -285,7 +284,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MAP 3",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -306,7 +305,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -347,7 +346,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Objectives",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -357,7 +356,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MEASURE 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -378,7 +377,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -389,7 +388,7 @@ confirmation (COD-08), not an automated check.
       "operationalDefinition": "Whether the project's own published pages or repository show that the acceptance criteria it defined for its stated intended use were actually met — not merely asserted, planned, or in progress.",
       "passRule": "Coded pass when a page or repository artefact names a specific acceptance criterion (or a linked test/evaluation report) and states, with a verbatim quotable sentence plus a linked artefact (a report, benchmark table, or test-suite result), that the criterion was met.",
       "failRule": "Coded fail when the project's own page or repository states, in a verbatim quotable sentence, that a named acceptance criterion was NOT met, or that an evaluation surfaced a criterion failure that was not subsequently resolved.",
-      "claimedRule": "Coded claimed — never pass — when the only evidence is a self-asserted badge, logo, or certification mark (for example a \"SOC 2 Type II\" badge image) with no adjacent certificate ID or verifiable register URL. This applies regardless of whether the badge's own span resolves to a real span in the page; whether a linked register URL actually resolves is Helen's judgment at Phase 4 confirmation (COD-08), never fetched or verified by this pipeline.",
+      "claimedRule": "Coded claimed — never pass — when the project states that its system met a quality or acceptance bar, or reports a result for it (for example a benchmark score, or \"highly accurate\"), but either links no report, test result or verifiable register a reader could check, or states no bar the result is judged against; or when the only evidence is a self-asserted badge, logo, or certification mark (for example a \"SOC 2 Type II\" badge image) with no adjacent certificate ID or verifiable register URL. This applies regardless of whether the badge's own span resolves to a real span in the page; whether a linked register URL actually resolves is the confirmer's judgement at confirmation (COD-08, addendum A2), never fetched or verified by this pipeline.",
       "notApplicableNote": "A project with no stated intended use or acceptance criteria at all is not separately marked not-applicable by the coder for this check; the gate's own INSUFFICIENT_EVIDENCE / not-applicable handling applies at the decision level instead.",
       "anchors": {
         "positive": [
@@ -491,7 +490,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: AI risk assessment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -522,7 +521,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -563,7 +562,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Statement of Applicability",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -573,7 +572,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MEASURE 4",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -594,7 +593,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.3",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -625,7 +624,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Clause 9",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -635,7 +634,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Management review",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -645,7 +644,7 @@ confirmation (COD-08), not an automated check.
             "locator": "GOVERN 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -666,7 +665,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -707,7 +706,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Roles",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -738,7 +737,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -779,7 +778,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Evidence of implementation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -810,7 +809,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -841,7 +840,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.6.2.6",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -851,7 +850,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Risk treatment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -882,7 +881,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -913,7 +912,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Clause 8",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -923,7 +922,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Internal audit",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -954,7 +953,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -963,7 +962,7 @@ confirmation (COD-08), not an automated check.
       "decision": "operate",
       "label": "Support, maintenance, debugging, and change responsibility are defined.",
       "operationalDefinition": "Whether the project's own page or repository names who is responsible for ongoing support, maintenance, debugging, and making changes, rather than leaving that responsibility unstated.",
-      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific support channel, maintenance cadence, or change-approval process (for example a stated SLA, a release-cadence policy, or a named maintainer group), with a linked artefact (a support page or contributing guide) where one exists.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming at least one of: a channel offered for getting help with the product (for example a support email, an issue tracker or a help forum offered for that purpose), a maintenance or release cadence, or a change-approval process (for example a stated SLA, a release-cadence policy, or a named maintainer group). Any one suffices; cite a linked artefact (a support page or contributing guide) where one exists, but none is required. A contact address offered only for legal, privacy or sales matters, or a bare link with no sentence saying what it is for, is not a support channel.",
       "failRule": "Coded fail when the project's own page or repository explicitly states no support or maintenance process exists (for example \"issues will not be triaged\").",
       "claimedRule": "Coded claimed — never pass — when the project asserts it is supported and maintained (for example \"actively supported\") with no named channel, cadence, or process.",
       "notApplicableNote": "No legitimate not-applicable case: any system in operation implies some party does or does not maintain it, which is always a coded question even when the answer is unknown.",
@@ -995,7 +994,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Operational documentation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "addresses",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1005,7 +1004,7 @@ confirmation (COD-08), not an automated check.
             "locator": "GOVERN 6",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1026,7 +1025,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1034,8 +1033,8 @@ confirmation (COD-08), not an automated check.
     "operating-cost-known": {
       "decision": "operate",
       "label": "The relevant operating-cost boundary is known well enough for the decision.",
-      "operationalDefinition": "Whether the project's own page or repository states what it costs to keep the system running at the scale it is promoted for, rather than leaving operating cost unaddressed.",
-      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific operating-cost figure or boundary (for example a stated per-request compute cost, an infrastructure spend figure, or a pricing page tied to usage volume), with a linked artefact (a pricing or cost-transparency page) where one exists.",
+      "operationalDefinition": "Whether the project's own page or repository states what it costs to keep the system running at the scale it is promoted for, rather than leaving operating cost unaddressed. For a product that others use or subscribe to, the adopter's operating cost is the published price. A price counts when the quoted span, or a span cited with it, states the volume it covers: per unit, per seat, or a plan together with its quota or \"unlimited\". A price with no stated volume is not an operating-cost boundary.",
+      "passRule": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific operating-cost figure or boundary (for example a stated per-request compute cost, an infrastructure spend figure, or a pricing page tied to usage volume), with a linked artefact (a pricing or cost-transparency page) where one exists. For a product that others use or subscribe to, the adopter's operating cost is the published price. A price counts when the quoted span, or a span cited with it, states the volume it covers: per unit, per seat, or a plan together with its quota or \"unlimited\". A price with no stated volume is not an operating-cost boundary.",
       "failRule": "Coded fail when the project's own page or repository explicitly states operating cost is unknown or has not been estimated (for example \"we don't yet know what this costs to run at scale\").",
       "claimedRule": "Coded claimed — never pass — when the project asserts cost awareness (for example \"cost-efficient to operate\") with no named figure, boundary, or linked cost breakdown.",
       "notApplicableNote": "No legitimate not-applicable case: any system in operation has some real resource cost, which is always a coded question even when the answer is unknown.",
@@ -1057,7 +1056,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.4.5",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1067,7 +1066,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: AI risk assessment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1077,7 +1076,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MAP 3",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1098,7 +1097,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.1",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1106,7 +1105,7 @@ confirmation (COD-08), not an automated check.
     "outcome-measure-defined": {
       "decision": "measure-outcome",
       "label": "The outcome measure is defined.",
-      "operationalDefinition": "Whether the project's own page or repository names the specific outcome measure used to judge the initiative, stated before or alongside its claim that the outcome changed — not an output metric (what the system produced) but an outcome (the real-world result the initiative was meant to cause).",
+      "operationalDefinition": "Whether the project's own page or repository names the specific outcome measure used to judge the initiative, stated before or alongside its claim that the outcome changed — not an output metric (what the system produced) but an outcome (the real-world result the initiative was meant to cause). Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, exactly which outcome measure it tracks (for example a named metric, its unit, and how it is captured), with a linked artefact (a dashboard, report, or methodology note) where one exists.",
       "failRule": "Coded fail when the project's own page or repository explicitly states no outcome measure was settled on, or that the measure used was later disavowed as the wrong one to have tracked.",
       "claimedRule": "Coded claimed — never pass — when the project asserts an outcome was achieved (for example \"this made a real difference\") without ever naming the specific measure used to judge it.",
@@ -1139,7 +1138,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Objectives",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1149,7 +1148,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MEASURE 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1170,7 +1169,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.1",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1178,7 +1177,7 @@ confirmation (COD-08), not an automated check.
     "baseline-defined": {
       "decision": "measure-outcome",
       "label": "A comparable baseline or counterfactual is defined.",
-      "operationalDefinition": "Whether the project's own page or repository states what the outcome measure's value was, or would have been, before or absent the initiative — a comparable prior period, a control group, or another explicit counterfactual — against which the after-measurement is judged.",
+      "operationalDefinition": "Whether the project's own page or repository states what the outcome measure's value was, or would have been, before or absent the initiative — a comparable prior period, a control group, or another explicit counterfactual — against which the after-measurement is judged. Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository gives, in a verbatim quotable sentence, the baseline value or counterfactual used (for example a stated pre-launch metric, a held-out control group, or a prior period's figure), with a linked artefact where one exists.",
       "failRule": "Coded fail when the project's own page or repository explicitly states no baseline or counterfactual was captured before comparing against the outcome measure.",
       "claimedRule": "Coded claimed — never pass — when the project asserts an improvement over \"before\" without stating what the before value actually was.",
@@ -1201,7 +1200,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Clause 6",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1211,7 +1210,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Scope",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1221,7 +1220,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MAP 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1242,7 +1241,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1250,7 +1249,7 @@ confirmation (COD-08), not an automated check.
     "outcome-measured": {
       "decision": "measure-outcome",
       "label": "The outcome was measured after the intervention.",
-      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was actually captured after the initiative ran — not merely defined in advance, but recorded with a real value once the intervention had time to take effect.",
+      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was actually captured after the initiative ran — not merely defined in advance, but recorded with a real value once the intervention had time to take effect. Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository states, with a verbatim quotable sentence, a specific after-the-fact value for the outcome measure, with a linked artefact (a report, dashboard snapshot, or dataset) where one exists.",
       "failRule": "Coded fail when the project's own page or repository explicitly states the outcome was never actually re-measured after launch, despite stating an intent to.",
       "claimedRule": "Coded claimed — never pass — when the project asserts the outcome improved without giving any post-intervention figure for the measure it defined.",
@@ -1283,7 +1282,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Evidence of implementation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1314,7 +1313,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.1",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1322,7 +1321,7 @@ confirmation (COD-08), not an automated check.
     "measurement-definition-consistent": {
       "decision": "measure-outcome",
       "label": "Before/after measurements use the same relevant definition.",
-      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was defined and captured the same way both before and after the initiative — the same metric, unit, population, and collection method — so the comparison is not comparing two different things.",
+      "operationalDefinition": "Whether the project's own page or repository shows the outcome measure was defined and captured the same way both before and after the initiative — the same metric, unit, population, and collection method — so the comparison is not comparing two different things. Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, that the before and after figures used the same definition, method, or population (for example naming an unchanged analytics query or cohort definition), with a linked artefact where one exists.",
       "failRule": "Coded fail when the project's own page or repository explicitly states the before and after measurements used different definitions, populations, or methods (for example a metric redefinition mid-comparison, or comparing a sampled cohort to a full population).",
       "claimedRule": "Coded claimed — never pass — when the project asserts the comparison is apples-to-apples without describing how the measurement method stayed the same.",
@@ -1355,7 +1354,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Operational documentation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1365,7 +1364,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MEASURE 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1386,7 +1385,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.3",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1394,7 +1393,7 @@ confirmation (COD-08), not an automated check.
     "important-confounds-named": {
       "decision": "measure-outcome",
       "label": "Material confounds, uncertainty, or attribution limits are named.",
-      "operationalDefinition": "Whether the project's own page or repository names the other factors that could plausibly explain the measured change besides the initiative itself (seasonality, a concurrent change, a different user mix) — or otherwise states the uncertainty or attribution limits of the comparison, rather than presenting a single number as unambiguous proof the initiative caused it.",
+      "operationalDefinition": "Whether the project's own page or repository names the other factors that could plausibly explain the measured change besides the initiative itself (seasonality, a concurrent change, a different user mix) — or otherwise states the uncertainty or attribution limits of the comparison, rather than presenting a single number as unambiguous proof the initiative caused it. Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository names, in a verbatim quotable sentence, at least one plausible confound, caveat, or attribution limit relevant to the comparison (for example a concurrent marketing campaign, a seasonal effect, or a stated confidence interval), with a linked artefact where one exists.",
       "failRule": "Coded fail when the project's own page or repository explicitly states that no other explanation was considered despite a known concurrent change that could plausibly account for the result.",
       "claimedRule": "Coded claimed — never pass — when the project asserts the result is \"definitely caused by\" the initiative with no acknowledgement that anything else could have contributed.",
@@ -1417,7 +1416,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.5.3",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1427,7 +1426,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: AI risk assessment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1458,7 +1457,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.3",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1466,7 +1465,7 @@ confirmation (COD-08), not an automated check.
     "outcome-evidence-available": {
       "decision": "scale-renew-stop",
       "label": "Outcome evidence relevant to the decision is available.",
-      "operationalDefinition": "Whether, at the point of deciding to scale, renew, expand, or stop, the project's own page or repository still has the outcome evidence from the measure-outcome decision available and referenced — not that the outcome itself was necessarily positive, but that the evidence a scale/stop decision needs has not gone missing or stale.",
+      "operationalDefinition": "Whether, at the point of deciding to scale, renew, expand, or stop, the project's own page or repository still has the outcome evidence from the measure-outcome decision available and referenced — not that the outcome itself was necessarily positive, but that the evidence a scale/stop decision needs has not gone missing or stale. Outcome means a real-world result of using the product, the project's own or its users' or customers', measured by the project. An output or benchmark metric of the system itself (accuracy, recall, latency, a score) is not an outcome. Illustrative scenarios, calculators, projections, default assumptions, sample reports and figures about third parties are not measurements: code them claimed when they assert an improvement, otherwise unknown.",
       "passRule": "Coded pass when the project's own page or repository references or links the specific outcome evidence (the measured result and its baseline) it is relying on for this scale/renew/stop decision, with a verbatim quotable sentence.",
       "failRule": "Coded fail when the project's own page or repository explicitly states the outcome evidence it would need for this decision is no longer available (for example a report that was lost, a dashboard that was discontinued, or a measurement window that was never completed).",
       "claimedRule": "Coded claimed — never pass — when the project asserts the decision is \"backed by the data\" without linking or quoting the actual outcome evidence being relied on.",
@@ -1489,7 +1488,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Clause 9",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1499,7 +1498,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Evidence of implementation",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1509,7 +1508,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MEASURE 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1530,7 +1529,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1561,7 +1560,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.4.2",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1571,7 +1570,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Management review",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1581,7 +1580,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MAP 3",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1602,7 +1601,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1643,7 +1642,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: AI risk assessment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1674,7 +1673,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.4",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1705,7 +1704,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Annex A.5.2",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "partial",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1715,7 +1714,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Risk treatment",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1725,7 +1724,7 @@ confirmation (COD-08), not an automated check.
             "locator": "MANAGE 2",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1746,7 +1745,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }
@@ -1777,7 +1776,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Clause 9",
             "source_version": "ISO/IEC 42001:2023",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "gaicc": [
@@ -1787,7 +1786,7 @@ confirmation (COD-08), not an automated check.
             "locator": "AIMS artefact: Management review",
             "source_version": "GAICC 12-Week Challenge AIMS artefact list",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "nistAiRmf": [
@@ -1797,7 +1796,7 @@ confirmation (COD-08), not an automated check.
             "locator": "GOVERN 1",
             "source_version": "NIST AI RMF 1.0 (2023), as profiled by AI 600-1",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ],
         "euAiAct": [
@@ -1818,7 +1817,7 @@ confirmation (COD-08), not an automated check.
             "locator": "Principle 1.5",
             "source_version": "OECD Recommendation on AI, as updated May 2024",
             "relation_type": "supports",
-            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs Helen's review"
+            "qualification": "[ASSUMED] no direct research candidate for this check; nearest structural fit, needs sign-off review (A6)"
           }
         ]
       }

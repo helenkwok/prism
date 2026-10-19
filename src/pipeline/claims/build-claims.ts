@@ -55,14 +55,14 @@ export function templateFields(
 ): Pick<ClaimRecord, "project" | "intendedUse" | "actors" | "authority" | "accountability" | "nextEvidence" | "stopRule"> {
   return {
     project,
-    intendedUse: `Code the AI readiness evidence for "${decisionLabel}" against the PRISM codebook v0, from ${project}'s own publicly reachable pages and repository.`,
+    intendedUse: `Code the AI readiness evidence for "${decisionLabel}" against the PRISM codebook v1.0, from ${project}'s own publicly reachable pages and repository.`,
     actors: [
-      { type: "ai-agent", role: "Evidence coder (Nemotron on Nebius Token Factory)", interactionChannel: "api" },
+      { type: "ai-agent", role: "Evidence coder (primary and second coder on Nebius Token Factory)", interactionChannel: "api" },
       { type: "deterministic-system", role: "Quote-or-unknown filter and claim gate", interactionChannel: "api" },
     ],
     authority: "PRISM review protocol v1 (protocol/PROTOCOL.md), within the pre-registered inclusion rules and disclosure controls.",
-    accountability: "Helen Kwok, PRISM project owner; every pass/claimed state is confirmed by her before publication (COD-08, Phase 4).",
-    nextEvidence: "Phase 3 codebook v1.0 operational definitions and the Phase 4 blind-label/second-model validation.",
+    accountability: "PRISM's sign-off reviewer role (protocol addendum A6); every pass/claimed state is confirmed by a confirmer that did not code it before publication (A2).",
+    nextEvidence: "The Phase 4 blind-label and second-model validation of codebook v1.0.",
     stopRule: "Stop and withhold the affected estimate if the Phase 4 pre-registered validation threshold for this check is missed and no corrective action has been applied (protocol section 4, VAL-07).",
   };
 }
