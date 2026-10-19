@@ -143,11 +143,19 @@ PILOT_PATH="$DATA_DIR/pipeline/pilot-projects.json"
 RUN_LOG=$(mktemp "${TMPDIR:-/tmp}/prism-phase3-run.XXXXXX")
 RUN_STATUS=0
 node src/pipeline/run.ts --slice "$PILOT_PATH" >"$RUN_LOG" 2>&1 || RUN_STATUS=$?
-if [[ $RUN_STATUS -eq 0 ]]; then
-  record PASS "C3: real pipeline run over the 20-project pilot (node src/pipeline/run.ts --slice pilot-projects.json) exits 0"
+# The evidence is the run's own ACCOUNTING line (every project succeeded), not
+# its exit status: a run whose every project failed once exited 0.
+C3_LABEL="C3: real pipeline run over the 20-project pilot (node src/pipeline/run.ts --slice pilot-projects.json): all 20 projects succeeded"
+if node -e '
+  const line = require("fs").readFileSync(process.argv[1], "utf8").split("\n").find((l) => l.startsWith("ACCOUNTING: "));
+  if (!line) process.exit(1);
+  const a = JSON.parse(line.slice("ACCOUNTING: ".length));
+  process.exit(a.ranProjects === 20 && a.succeeded === 20 && a.failed === 0 ? 0 : 1);
+' "$RUN_LOG"; then
+  record PASS "$C3_LABEL"
 else
-  record FAIL "C3: real pipeline run over the 20-project pilot (node src/pipeline/run.ts --slice pilot-projects.json) exits 0"
-  sed 's/^/    /' "$RUN_LOG" >&2
+  record FAIL "$C3_LABEL (run.ts exit status $RUN_STATUS)"
+  grep -E "FAILED|ACCOUNTING" "$RUN_LOG" | sed 's/^/    /' >&2
 fi
 
 # ============================================================

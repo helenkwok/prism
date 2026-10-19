@@ -507,6 +507,7 @@ if (invokedDirectly) {
     }
     process.stdout.write(`ACCOUNTING: ${JSON.stringify({ ...accounting, outcomes: undefined })}\n`);
     await printTally();
+    if (accounting.failed > 0) process.exitCode = 1;
   })().catch((err) => {
     process.stderr.write(`${err?.stack ?? err}\n`);
     process.exit(1);

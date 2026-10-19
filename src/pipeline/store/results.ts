@@ -53,6 +53,13 @@ export async function ensurePipelineSchema(db: Kysely<any>): Promise<void> {
     .addColumn("completed_at", "text")
     .execute();
 
+  // CREATE TABLE IF NOT EXISTS never alters a table made by an earlier schema, so columns added
+  // later are added here when a database from an earlier phase lacks them.
+  const resultsTable = (await db.introspection.getTables()).find((t) => t.name === "pipeline_project_results");
+  if (resultsTable && !resultsTable.columns.some((c) => c.name === "missing_data")) {
+    await db.schema.alterTable("pipeline_project_results").addColumn("missing_data", "integer").execute();
+  }
+
   // D-41: per-span injection-detection flags, so a future confirmation queue
   // can point at the exact triggering span without Helen re-reading the page.
   await db.schema

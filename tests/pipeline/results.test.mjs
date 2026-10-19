@@ -326,3 +326,19 @@ describe("node src/pipeline/tally.ts (CLI)", () => {
     }
   });
 });
+
+test("ensurePipelineSchema adds missing_data to a pipeline_project_results table created by the Phase 2 schema", async () => {
+  const sqlite = new Database(":memory:");
+  sqlite.exec(`CREATE TABLE pipeline_project_results (project_n integer primary key, hn_id text, model_id text,
+    prompt_hash text, codebook_version text, gate_sha text, snapshot_hashes_json text, coding_attempts integer,
+    coding_all_unknown integer, completed_at text)`);
+  sqlite.exec(`INSERT INTO pipeline_project_results (project_n, hn_id) VALUES (1, 'h1')`);
+  const db = new Kysely({ dialect: new SqliteDialect({ database: sqlite }) });
+
+  await ensurePipelineSchema(db);
+  await ensurePipelineSchema(db);
+  await recordMissingData(db, 1, true);
+
+  const row = sqlite.prepare("SELECT hn_id, missing_data FROM pipeline_project_results WHERE project_n = 1").get();
+  assert.deepEqual(row, { hn_id: "h1", missing_data: 1 });
+});
