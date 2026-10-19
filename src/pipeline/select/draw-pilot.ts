@@ -41,7 +41,8 @@ export async function drawPilot({ targetN = 20, out = "pilot-projects.json", see
         screenCandidate(client as any, 1, c, { thinking: STAGE1_THINKING }),
       );
     },
-    preflight: (p) => preflightCandidate({ id: p.id, title: p.title, url: p.url, created_at: p.created_at }),
+    // Cached so a re-run screens the same page text: live pages change between fetches.
+    preflight: (p) => cached(p.id, "preflight", { url: p.url, v: 1 }, () => preflightCandidate({ id: p.id, title: p.title, url: p.url, created_at: p.created_at })),
     // Cached like the model calls: a re-run must not re-render (or see a page that changed since).
     render: (finalUrl) => cached(finalUrl, "render-text", { v: 1 }, async () => renderText(finalUrl)),
     screen2: (p, finalUrl, text) => {
