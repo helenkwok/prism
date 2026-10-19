@@ -4,6 +4,7 @@
 // targetN inclusions. Every walked candidate gets one recorded outcome, so the PRISMA counts
 // cover exactly the records screened.
 
+import { deriveBoundary } from "../evidence/boundary.ts";
 import { sortPilotCandidates } from "./pilot-draw.ts";
 import type { ModelReasonCode, ScreenDecision } from "./screen-model.ts";
 
@@ -11,7 +12,7 @@ import type { ModelReasonCode, ScreenDecision } from "./screen-model.ts";
 export const MIN_STAGE2_CHARS = 500;
 
 export type Outcome =
-  | { kind: "included"; stage2: "screened" | "insufficient-text" }
+  | { kind: "included"; stage2: "screened" | "insufficient-text"; textSource?: "html" | "rendered" }
   | { kind: "excluded"; stage: 1 | 2; reasonCode: ModelReasonCode | "duplicate" | "unreachable-at-screening" }
   /** Not a screening exclusion: the candidate cannot be collected within its terms or boundary. */
   | { kind: "not-collectable"; detail: "robots-blocked" | "redirected-off-boundary" };
@@ -43,11 +44,15 @@ export interface DrawEntry {
   created_at: string;
   draw_rank: number;
   stage2: "screened" | "insufficient-text";
+  textSource: "html" | "rendered";
 }
 
-function hostnameOf(url: string): string | null {
+/** The project's identity for duplicate detection: its ownership boundary, so two repositories on
+ * github.com are two projects, while two posts of one site are one. */
+function projectKey(url: string): string | null {
   try {
-    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    const b = deriveBoundary(url);
+    return `${b.host}${b.pathPrefix ?? ""}`;
   } catch {
     return null;
   }
@@ -60,6 +65,7 @@ export async function drawScreened({
   screen1,
   preflight,
   screen2,
+  render = () => "",
 }: {
   posts: FramePost[];
   seed?: string;
@@ -67,6 +73,8 @@ export async function drawScreened({
   screen1: (post: FramePost) => Promise<ScreenDecision>;
   preflight: (post: FramePost) => Promise<PreflightResult | null>;
   screen2: (post: FramePost, finalUrl: string, text: string) => Promise<ScreenDecision>;
+  /** Rendered page text, tried when the HTML's own text is too thin (single-page apps). */
+  render?: (finalUrl: string) => string | Promise<string>;
 }) {
   const log: { id: string; rank: number; outcome: Outcome }[] = [];
   const entries: DrawEntry[] = [];
@@ -78,7 +86,7 @@ export async function drawScreened({
     rank += 1;
     const record = (outcome: Outcome) => log.push({ id: post.id, rank, outcome });
 
-    const host = hostnameOf(post.url);
+    const host = projectKey(post.url);
     if (host && hosts.has(host)) {
       record({ kind: "excluded", stage: 1, reasonCode: "duplicate" });
       continue;
@@ -97,7 +105,15 @@ export async function drawScreened({
       record({ kind: "not-collectable", detail: p.preflight.robots_blocked ? "robots-blocked" : "redirected-off-boundary" });
       continue;
     }
-    const text = p.page_text ?? "";
+    let text = p.page_text ?? "";
+    let textSource: "html" | "rendered" = "html";
+    if (text.length < MIN_STAGE2_CHARS) {
+      const rendered = await render(p.final_url);
+      if (rendered.length > text.length) {
+        text = rendered;
+        textSource = "rendered";
+      }
+    }
     let stage2: "screened" | "insufficient-text" = "insufficient-text";
     if (text.length >= MIN_STAGE2_CHARS) {
       const s2 = await screen2(post, p.final_url, text);
@@ -107,7 +123,7 @@ export async function drawScreened({
       }
       stage2 = "screened";
     }
-    record({ kind: "included", stage2 });
+    record({ kind: "included", stage2, textSource });
     if (host) hosts.add(host);
     entries.push({
       n: entries.length + 1,
@@ -120,6 +136,7 @@ export async function drawScreened({
       created_at: post.created_at,
       draw_rank: rank,
       stage2,
+      textSource,
     });
   }
 

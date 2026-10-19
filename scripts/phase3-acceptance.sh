@@ -73,64 +73,24 @@ run_check "C1b: none of the 24 checks' operationalDefinition still carries a DRA
 # ============================================================
 # Criterion 2: the screened pool and the 20-project pilot draw (D-42) exist
 # under PRISM_DATA_DIR/pipeline/pilot-projects.json. This check WRITES that
-# file itself, by screening + drawing against the real, already-built
-# frame.json (DSC-01) and preflighting each drawn candidate — no Tavily,
-# Nebius or GitHub credential is needed for this, only a plain HTTPS fetch of
-# each candidate's own entry URL to resolve its boundary (same preflight
-# scripts/spikes/pick-projects.mjs uses for the Phase 2 slice draw).
+# file itself: src/pipeline/select/draw-pilot.ts walks the real frame.json
+# (DSC-01) in seeded draw order and screens each candidate in two stages (A5,
+# Nemotron-3.5-Lightning, Nebius key from the key file), with a plain HTTPS
+# preflight of its own page and a headless render when that page is thin. No
+# Tavily or GitHub credential is needed. Screening calls are cached.
 # ============================================================
-run_check "C2: screenFrame + selectPilotProjects (D-42) draw and preflight 20 pilot projects, written to pilot-projects.json" env PRISM_DATA_DIR_RESOLVED="$DATA_DIR" node -e "
+run_check "C2: screened seeded draw (DSC-02, A5, D-42): 20 pilot projects, one outcome per walked record, written to pilot-projects.json" env PRISM_DATA_DIR_RESOLVED="$DATA_DIR" node -e "
   const fs = require('node:fs');
   const path = require('node:path');
   const dataDir = process.env.PRISM_DATA_DIR_RESOLVED;
-  const framePath = path.join(dataDir, 'pipeline', 'frame.json');
-  if (!fs.existsSync(framePath)) throw new Error('missing: ' + framePath + ' — run buildFrame() first (Phase 2)');
-  const frame = JSON.parse(fs.readFileSync(framePath, 'utf8'));
-
-  const { screenFrame } = require('./src/pipeline/select/screen.ts');
-  const { sortPilotCandidates } = require('./src/pipeline/select/pilot-draw.ts');
-  const { preflightCandidate } = require('./scripts/spikes/pick-projects.mjs');
-
-  const TARGET_N = 20;
-
+  if (!fs.existsSync(path.join(dataDir, 'pipeline', 'frame.json'))) throw new Error('missing frame.json: run buildFrame() first (Phase 2)');
+  const { drawPilot } = require('./src/pipeline/select/draw-pilot.ts');
   (async () => {
-    const screened = screenFrame(frame);
-    // Walk the full deterministic draw order (same seed, same pool, same
-    // order every run) past the first 20 ranks when some fail preflight,
-    // rather than re-seeding or accepting a short draw. Fully reproducible:
-    // re-running against the same frame.json always walks the same ranks.
-    const ordered = sortPilotCandidates(screened.included);
-    const byId = new Map(screened.included.map((p) => [p.id, p]));
-
-    const entries = [];
-    let ranksWalked = 0;
-    for (const { id } of ordered) {
-      ranksWalked += 1;
-      const post = byId.get(id);
-      const p = await preflightCandidate({ id: post.id, title: post.title, url: post.url, created_at: post.created_at });
-      if (!p || p.preflight.robots_blocked || !p.preflight.boundary_ok) continue;
-      entries.push({
-        n: entries.length + 1,
-        hn_id: post.id,
-        title: post.title,
-        entry_url: p.entry_url,
-        final_url: p.final_url,
-        boundary: p.boundary,
-        type_class: p.type_class,
-        created_at: post.created_at,
-        draw_rank: ranksWalked,
-      });
-      if (entries.length === TARGET_N) break;
-    }
-
-    const pipelineDir = path.join(dataDir, 'pipeline');
-    fs.mkdirSync(pipelineDir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(path.join(pipelineDir, 'pilot-projects.json'), JSON.stringify(entries, null, 2), { mode: 0o600 });
-
-    if (entries.length !== TARGET_N) {
-      throw new Error('expected ' + TARGET_N + ' preflight-passing pilot projects (D-42), got ' + entries.length + ' after walking the entire ' + ordered.length + '-candidate screened pool — the pool is genuinely exhausted');
-    }
-    console.log('screened included', screened.counts.included, 'ranks walked', ranksWalked, 'preflighted', entries.length);
+    const r = await drawPilot({ targetN: 20 });
+    if (r.entries.length !== 20) throw new Error('expected 20 included pilot projects, got ' + r.entries.length + ': the frame is exhausted');
+    if (new Set(r.log.map((l) => l.id)).size !== r.log.length) throw new Error('a walked record has more than one outcome');
+    if (r.counts.screened !== r.log.length) throw new Error('PRISMA screened count does not cover every walked record');
+    console.log('PRISMA', JSON.stringify(r.counts));
   })().catch((err) => { console.error(err.message); process.exitCode = 1; });
 "
 

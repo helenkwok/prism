@@ -11,6 +11,7 @@ import { resolveDataDir } from "../../app/server/db.ts";
 import { withStageCache, defaultCacheDir } from "../cache/stage-cache.ts";
 import { createClient, PINNED_BASE_URL } from "../coding/nebius-client.ts";
 import { readKey } from "../run.ts";
+import { renderText } from "../evidence/render.ts";
 import { drawScreened, type FramePost } from "./draw.ts";
 import { PILOT_DRAW_SEED } from "./pilot-draw.ts";
 import { screenCandidate, screenMessages, SCREENER_MODEL, STAGE1_THINKING } from "./screen-model.ts";
@@ -41,6 +42,8 @@ export async function drawPilot({ targetN = 20, out = "pilot-projects.json", see
       );
     },
     preflight: (p) => preflightCandidate({ id: p.id, title: p.title, url: p.url, created_at: p.created_at }),
+    // Cached like the model calls: a re-run must not re-render (or see a page that changed since).
+    render: (finalUrl) => cached(finalUrl, "render-text", { v: 1 }, async () => renderText(finalUrl)),
     screen2: (p, finalUrl, text) => {
       const c = { title: p.title, url: finalUrl, text: text.slice(0, STAGE2_TEXT_CAP) };
       return cached(p.id, "screen2", { model: SCREENER_MODEL, thinking: true, req: hash(screenMessages(2, c)) }, () =>

@@ -6,7 +6,7 @@ import { describe, test } from "node:test";
 import { drawScreened, MIN_STAGE2_CHARS } from "../../src/pipeline/select/draw.ts";
 import { parseScreenReply } from "../../src/pipeline/select/screen-model.ts";
 
-const post = (id, title, url = `https://${id}.example.com/`) => ({ id, title, url, created_at: "2026-01-01T00:00:00Z" });
+const post = (id, title, url = `https://${id}-site.com/`) => ({ id, title, url, created_at: "2026-01-01T00:00:00Z" });
 const okPreflight = (text) => async (p) => ({
   entry_url: p.url,
   final_url: p.url,
@@ -51,7 +51,7 @@ describe("drawScreened", () => {
   });
 
   test("stage 2 exclusions, unreachable, robots-blocked and duplicate hosts are each recorded", async () => {
-    const posts = [post("a", "x", "https://same.example.com/a"), post("b", "x", "https://same.example.com/b"), post("c", "x"), post("d", "x"), post("e", "x")];
+    const posts = [post("a", "x", "https://same.com/a"), post("b", "x", "https://same.com/b"), post("c", "x"), post("d", "x"), post("e", "x")];
     const { log, counts } = await drawScreened({
       posts,
       targetN: 99,
@@ -67,6 +67,42 @@ describe("drawScreened", () => {
     assert.equal(counts["stage2:ai-adjacent"], 1);
     assert.equal(counts.included, 1);
     assert.equal(counts["stage1:duplicate"], 1);
+  });
+});
+
+describe("drawScreened: identity and rendered text", () => {
+  test("two repositories on github.com are two projects; two posts of one site are one", async () => {
+    const posts = [
+      post("a", "x", "https://github.com/acme/one"),
+      post("b", "x", "https://github.com/acme/two"),
+      post("c", "x", "https://site.com/"),
+      post("d", "x", "https://www.site.com/blog"),
+    ];
+    const { counts } = await drawScreened({
+      posts,
+      targetN: 99,
+      screen1: async () => ({ include: true, reasonCode: null }),
+      preflight: okPreflight(() => longText),
+      screen2: async () => ({ include: true, reasonCode: null }),
+    });
+    assert.equal(counts.included, 3);
+    assert.equal(counts["stage1:duplicate"], 1);
+  });
+
+  test("thin HTML text is replaced by the rendered text, which stage 2 then judges", async () => {
+    const seen = [];
+    const { entries, counts } = await drawScreened({
+      posts: [post("a", "x"), post("b", "y")],
+      targetN: 99,
+      screen1: async () => ({ include: true, reasonCode: null }),
+      preflight: okPreflight(() => "Loading..."),
+      render: (url) => (url.includes("//a-site.") ? longText : ""),
+      screen2: async (_p, _u, text) => (seen.push(text.length), { include: false, reasonCode: "not-ai" }),
+    });
+    assert.deepEqual(seen, [longText.length], "stage 2 runs only where rendering produced enough text");
+    assert.equal(counts["stage2:not-ai"], 1);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].stage2, "insufficient-text");
   });
 });
 
