@@ -95,3 +95,139 @@ export function wilson(x: number, n: number, z = 1.96): [number, number] {
   const h = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
   return [(c - h) / d, (c + h) / d];
 }
+
+export type CheckState = "pass" | "fail" | "unknown" | "claimed";
+
+const FOUR_STATES: CheckState[] = ["pass", "fail", "unknown", "claimed"];
+
+function isPass(s: string): boolean {
+  return s === "pass";
+}
+
+/** Four-state AC1 (R06 secondary). pe = [1/(k-1)] sum pi_j (1 - pi_j), k=4. */
+export function fourState(a: string[], b: string[]) {
+  const n = a.length;
+  if (n === 0 || b.length !== n) return { n: 0, pa: 0, ac1: 0 };
+  let agree = 0;
+  const countA: Record<string, number> = Object.fromEntries(FOUR_STATES.map((s) => [s, 0]));
+  const countB: Record<string, number> = Object.fromEntries(FOUR_STATES.map((s) => [s, 0]));
+  for (let i = 0; i < n; i++) {
+    if (a[i] === b[i]) agree++;
+    if (a[i]! in countA) countA[a[i]!]!++;
+    if (b[i]! in countB) countB[b[i]!]!++;
+  }
+  const pa = agree / n;
+  let sum = 0;
+  for (const s of FOUR_STATES) {
+    const pi = (countA[s]! / n + countB[s]! / n) / 2;
+    sum += pi * (1 - pi);
+  }
+  const pe = sum / (FOUR_STATES.length - 1);
+  const ac1 = pe === 1 ? 0 : (pa - pe) / (1 - pe);
+  return { n, pa, ac1 };
+}
+
+export type AgreementRow = { projectN: number; checkId: string; a: string; b: string };
+
+type Ci = [number, number] | null;
+
+function emptyCheckEntry(checkId: string) {
+  return {
+    checkId,
+    n: 0,
+    pa: 0,
+    ac1: 0,
+    kappa: null as number | null,
+    precision: null as number | null,
+    recall: null as number | null,
+    goldPasses: 0,
+    coderPasses: 0,
+    fourStateAc1: 0,
+    estimable: false,
+    ac1CI: null as Ci,
+    precisionCI: null as Ci,
+    recallCI: null as Ci,
+    kappaCI: null as Ci,
+    paCI: null as Ci,
+  };
+}
+
+function statsForRows(rows: AgreementRow[]) {
+  if (rows.length === 0) {
+    return {
+      ...emptyCheckEntry(""),
+      fourStateAc1: 0,
+    };
+  }
+  const bin = binary(
+    rows.map((r) => isPass(r.a)),
+    rows.map((r) => isPass(r.b)),
+  );
+  const fs = fourState(
+    rows.map((r) => r.a),
+    rows.map((r) => r.b),
+  );
+  return {
+    ...bin,
+    fourStateAc1: fs.ac1,
+    estimable: estimable(bin.goldPasses),
+  };
+}
+
+/**
+ * Per-check and pooled agreement. Bootstrap resamples projects (draws project
+ * numbers and takes all their rows). Pure: no database, no file access.
+ */
+export function agreementByCheck(rows: AgreementRow[], checkIds: string[], seed: string, B = 2000) {
+  const byCheck = new Map<string, AgreementRow[]>();
+  for (const id of checkIds) byCheck.set(id, []);
+  for (const row of rows) {
+    const list = byCheck.get(row.checkId);
+    if (list) list.push(row);
+  }
+
+  const projectSet = new Set<number>();
+  for (const row of rows) projectSet.add(row.projectN);
+  const projectIds = [...projectSet].map(String);
+
+  function withCIs(checkId: string, checkRows: AgreementRow[]) {
+    const base = statsForRows(checkRows);
+    const entry = { ...emptyCheckEntry(checkId), ...base, checkId };
+    if (checkRows.length === 0 || projectIds.length === 0) return entry;
+
+    const rowsOf = (projSample: string[]) => {
+      const want = new Set(projSample.map(Number));
+      return checkRows.filter((r) => want.has(r.projectN));
+    };
+
+    entry.ac1CI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).ac1, seed, B);
+    entry.paCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).pa, seed, B);
+    entry.precisionCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).precision, seed, B);
+    entry.recallCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).recall, seed, B);
+    entry.kappaCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).kappa, seed, B);
+    return entry;
+  }
+
+  const checks = checkIds.map((id) => withCIs(id, byCheck.get(id) ?? []));
+
+  // Pooled: all rows; bootstrap still over projects. Never mutates checks.
+  const pooledBase = statsForRows(rows);
+  const pooled = {
+    ...emptyCheckEntry("pooled"),
+    ...pooledBase,
+    checkId: "pooled",
+  };
+  if (rows.length > 0 && projectIds.length > 0) {
+    const rowsOf = (projSample: string[]) => {
+      const want = new Set(projSample.map(Number));
+      return rows.filter((r) => want.has(r.projectN));
+    };
+    pooled.ac1CI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).ac1, seed, B);
+    pooled.paCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).pa, seed, B);
+    pooled.precisionCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).precision, seed, B);
+    pooled.recallCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).recall, seed, B);
+    pooled.kappaCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).kappa, seed, B);
+  }
+
+  return { checks, pooled };
+}
