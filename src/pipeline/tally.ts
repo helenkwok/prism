@@ -10,17 +10,15 @@ import { getDb } from "../app/server/db.ts";
 import { loadGateFile, resolveGatesPath } from "./coding/contract.ts";
 import { ensurePipelineSchema, readTally } from "./store/results.ts";
 
-const PROJECT_COUNT = 10;
-
-export async function printTally(): Promise<void> {
+export async function printTally(opts?: { projectNs?: number[] }): Promise<void> {
   const db = getDb();
   await ensurePipelineSchema(db);
   const gateFile = loadGateFile(resolveGatesPath());
-  const tally = await readTally(db, gateFile);
+  const tally = await readTally(db, gateFile, opts?.projectNs ? { projectNs: opts.projectNs } : undefined);
   for (const row of tally) {
     const { pass, fail, unknown, claimed } = row.counts;
     process.stdout.write(
-      `${row.checkId}: pass ${pass}, fail ${fail}, unknown ${unknown}, claimed ${claimed} (of N=${PROJECT_COUNT})\n`,
+      `${row.checkId}: pass ${pass}, fail ${fail}, unknown ${unknown}, claimed ${claimed} (of N=${row.total})\n`,
     );
   }
 }

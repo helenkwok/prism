@@ -528,6 +528,167 @@ describe("D-55 render stage (04-03)", () => {
   });
 });
 
+const FAT = (label) =>
+  `# ${label}\n\n` + "Real page content long enough for extract and the five-hundred-character thin-page gate. ".repeat(6);
+
+describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
+  test("secondCoderIds codes code2 only for the seeded hn id; others have no second-coder rows", async () => {
+    const cacheDir = tempDir("prism-run-code2-subset-");
+    const dataDir = tempDir("prism-run-code2-subset-data-");
+    const db = freshDb();
+    const projects = [
+      { n: 501, hn_id: "hn-in-subset", title: "In", final_url: "https://in-subset.example.test/" },
+      { n: 502, hn_id: "hn-out-subset", title: "Out", final_url: "https://out-subset.example.test/" },
+    ];
+    const sliceProjectsPath = writeSliceProjects(dataDir, projects);
+    const nebiusCounter = { calls: 0, byModel: {} };
+    const tavilyFetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith("/map")) return jsonResponse({ results: [body.url], usage: { credits: 1 } });
+      return jsonResponse({ results: body.urls.map((u) => ({ url: u, raw_content: FAT(u) })), usage: { credits: 1 } });
+    };
+
+    const accounting = await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "k", nebius: "k", github: "k" },
+      cacheDir,
+      dataDir,
+      db,
+      gatesPath,
+      secondCoderIds: new Set(["hn-in-subset"]),
+      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
+    });
+    assert.equal(accounting.succeeded, 2);
+    assert.equal(nebiusCounter.byModel[PINNED_MODEL], 2);
+    assert.equal(nebiusCounter.byModel[SECOND_CODER_MODEL], 1, "code2 only for the seeded project");
+    const second = await db.selectFrom("pipeline_second_coder_states").select(["project_n"]).execute();
+    assert.ok(second.every((r) => r.project_n === 501));
+    assert.equal(second.length, gateFile.checkIds.length);
+  });
+
+  test("secondCoderIds undefined: every project still gets code2 (Phase 3 behaviour)", async () => {
+    const cacheDir = tempDir("prism-run-code2-all-");
+    const dataDir = tempDir("prism-run-code2-all-data-");
+    const db = freshDb();
+    const projects = [
+      { n: 511, hn_id: "hn-a", title: "A", final_url: "https://code2-all-a.example.test/" },
+      { n: 512, hn_id: "hn-b", title: "B", final_url: "https://code2-all-b.example.test/" },
+    ];
+    const sliceProjectsPath = writeSliceProjects(dataDir, projects);
+    const nebiusCounter = { calls: 0, byModel: {} };
+    const tavilyFetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith("/map")) return jsonResponse({ results: [body.url], usage: { credits: 1 } });
+      return jsonResponse({ results: body.urls.map((u) => ({ url: u, raw_content: FAT(u) })), usage: { credits: 1 } });
+    };
+
+    await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "k", nebius: "k", github: "k" },
+      cacheDir,
+      dataDir,
+      db,
+      gatesPath,
+      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
+    });
+    assert.equal(nebiusCounter.byModel[SECOND_CODER_MODEL], 2);
+    const second = await db.selectFrom("pipeline_second_coder_states").select(["project_n"]).execute();
+    assert.equal(second.length, 2 * gateFile.checkIds.length);
+  });
+
+  test("Tavily usage-limit (432) stops the run: status stopped, evidence not cached, ACCOUNTING.stopReason set", async () => {
+    const cacheDir = tempDir("prism-run-tavily-stop-");
+    const dataDir = tempDir("prism-run-tavily-stop-data-");
+    const db = freshDb();
+    // Two projects, concurrency 1 so the second is not yet started when the first stops.
+    const projects = [
+      { n: 521, hn_id: "hn-limit-first", title: "First", final_url: "https://limit-first.example.test/" },
+      { n: 522, hn_id: "hn-limit-second", title: "Second", final_url: "https://limit-second.example.test/" },
+    ];
+    const sliceProjectsPath = writeSliceProjects(dataDir, projects);
+    const tavilyFetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith("/map")) {
+        return { ok: false, status: 432, headers: { get: () => null }, text: async () => JSON.stringify({ detail: { error: "usage limit" } }) };
+      }
+      return jsonResponse({ results: [], usage: { credits: 0 } });
+    };
+
+    const accounting = await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "k", nebius: "k", github: "k" },
+      concurrency: 1,
+      cacheDir,
+      dataDir,
+      db,
+      gatesPath,
+      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
+    });
+    assert.ok(accounting.stopped > 0);
+    assert.match(accounting.stopReason ?? "", /432/);
+    assert.ok(accounting.outcomes.every((o) => o.status === "stopped"));
+    // Evidence with a usage-limit call must not be cached: a second run still hits Tavily.
+    let mapHits = 0;
+    const tavily2 = async (url, init) => {
+      if (url.endsWith("/map")) {
+        mapHits += 1;
+        return { ok: false, status: 432, headers: { get: () => null }, text: async () => "{}" };
+      }
+      return jsonResponse({ results: [], usage: { credits: 0 } });
+    };
+    await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "k", nebius: "k", github: "k" },
+      concurrency: 1,
+      cacheDir,
+      dataDir,
+      db: freshDb(),
+      gatesPath,
+      overrides: { tavilyFetchImpl: tavily2, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
+    });
+    assert.ok(mapHits >= 1, "usage-limit evidence must not be served from the stage cache");
+  });
+
+  test("Nebius HTTP 402 stops the run with QuotaStop-style reason, never all-unknown coding", async () => {
+    const cacheDir = tempDir("prism-run-nebius-402-");
+    const dataDir = tempDir("prism-run-nebius-402-data-");
+    const db = freshDb();
+    const projects = [
+      { n: 531, hn_id: "hn-402-a", title: "A", final_url: "https://nebius-402-a.example.test/" },
+      { n: 532, hn_id: "hn-402-b", title: "B", final_url: "https://nebius-402-b.example.test/" },
+    ];
+    const sliceProjectsPath = writeSliceProjects(dataDir, projects);
+    const tavilyFetchImpl = async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (url.endsWith("/map")) return jsonResponse({ results: [body.url], usage: { credits: 1 } });
+      return jsonResponse({ results: body.urls.map((u) => ({ url: u, raw_content: FAT(u) })), usage: { credits: 1 } });
+    };
+    const nebius402 = async () => ({
+      ok: false,
+      status: 402,
+      headers: { get: () => null },
+      text: async () => JSON.stringify({ error: { message: "Insufficient balance" } }),
+    });
+
+    const accounting = await runPipeline({
+      sliceProjectsPath,
+      apiKeys: { tavily: "k", nebius: "k", github: "k" },
+      concurrency: 1,
+      cacheDir,
+      dataDir,
+      db,
+      gatesPath,
+      overrides: { tavilyFetchImpl, nebiusFetchImpl: nebius402, ...gateOverrides },
+    });
+    assert.ok(accounting.stopped > 0);
+    assert.match(accounting.stopReason ?? "", /402|quota/i);
+    assert.ok(accounting.outcomes.some((o) => o.status === "stopped"));
+    // No project should have been recorded as a completed all-unknown coding from retries.
+    const rows = await db.selectFrom("pipeline_project_results").select(["project_n", "coding_all_unknown"]).execute();
+    assert.equal(rows.length, 0, "402 must not land as a recorded coding result");
+  });
+});
+
 describe("run.ts's --slice flag (03-09)", () => {
   test("runPipeline({sliceProjectsPath}) reads from exactly that path, not the default slice-projects.json", async () => {
     const cacheDir = tempDir("prism-run-slice-cache-");

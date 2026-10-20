@@ -210,6 +210,57 @@ describe("ensurePipelineSchema / recordProjectResult / readTally (COD-06)", () =
     assert.deepEqual(byId.get(c3).counts, { pass: 0, fail: 0, unknown: 2, claimed: 0 });
   });
 
+  test("readTally({ projectNs }) counts only those projects (04-03)", async () => {
+    const db = freshDb();
+    await ensurePipelineSchema(db);
+    const [c0] = gateFile.checkIds;
+
+    await recordProjectResult(db, {
+      projectN: 1,
+      hnId: "h1",
+      modelId: "m",
+      promptHash: "p1",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: checkStatesFor({ [c0]: "pass" }),
+      claims: [],
+    });
+    await recordProjectResult(db, {
+      projectN: 2,
+      hnId: "h2",
+      modelId: "m",
+      promptHash: "p2",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: checkStatesFor({ [c0]: "fail" }),
+      claims: [],
+    });
+    await recordProjectResult(db, {
+      projectN: 3,
+      hnId: "h3",
+      modelId: "m",
+      promptHash: "p3",
+      codebookVersion: "v0",
+      gateSha: "g",
+      snapshotHashesInCollectionOrder: [],
+      codingAttempts: 1,
+      codingAllUnknown: false,
+      checkStates: checkStatesFor({ [c0]: "claimed" }),
+      claims: [],
+    });
+
+    const scoped = await readTally(db, gateFile, { projectNs: [1, 3] });
+    const row = scoped.find((r) => r.checkId === c0);
+    assert.deepEqual(row.counts, { pass: 1, fail: 0, unknown: 0, claimed: 1 });
+    assert.equal(row.total, 2, "scoped tally N is the filtered project count, not every row in the DB");
+  });
+
   test("codingAllUnknown is queryable as distinct from a genuine model-coded unknown with identical filtered_state values", async () => {
     const db = freshDb();
     await ensurePipelineSchema(db);
@@ -319,7 +370,9 @@ describe("node src/pipeline/tally.ts (CLI)", () => {
       const lines = out.trim().split("\n").filter(Boolean);
       assert.ok(lines.length >= gateFile.checkIds.length, "must print at least one line per check");
       for (const line of lines) {
-        assert.match(line, /^.+: pass \d+, fail \d+, unknown \d+, claimed \d+ \(of N=10\)$/);
+        // N is the real tally total for the check (here 1 seeded project), never a hardcoded constant.
+        assert.match(line, /^.+: pass \d+, fail \d+, unknown \d+, claimed \d+ \(of N=\d+\)$/);
+        assert.match(line, /\(of N=1\)$/);
       }
     } finally {
       fs.rmSync(dataDir, { recursive: true, force: true });

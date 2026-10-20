@@ -230,12 +230,21 @@ export interface TallyRow {
 }
 
 /**
- * Per-check tally over every recorded project, iterated in `gateFile`'s own
+ * Per-check tally over recorded projects, iterated in `gateFile`'s own
  * canonical checkIds order (decisions object-key order, then requiredChecks
  * array order within each decision) — never an arbitrary SQL result order.
+ * Optional `projectNs` scopes the count to that slice (real N for a bulk run).
  */
-export async function readTally(db: Kysely<any>, gateFile: { checkIds: string[] }): Promise<TallyRow[]> {
-  const rows = await db.selectFrom("pipeline_check_states").select(["check_id", "filtered_state"]).execute();
+export async function readTally(
+  db: Kysely<any>,
+  gateFile: { checkIds: string[] },
+  opts?: { projectNs?: number[] },
+): Promise<TallyRow[]> {
+  let query = db.selectFrom("pipeline_check_states").select(["check_id", "filtered_state", "project_n"]);
+  if (opts?.projectNs && opts.projectNs.length > 0) {
+    query = query.where("project_n", "in", opts.projectNs) as typeof query;
+  }
+  const rows = await query.execute();
 
   const byCheck = new Map<string, TallyCounts>();
   for (const checkId of gateFile.checkIds) byCheck.set(checkId, { pass: 0, fail: 0, unknown: 0, claimed: 0 });

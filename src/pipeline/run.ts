@@ -28,7 +28,16 @@ import { findSiteRepos } from "./evidence/site-repos.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
-import { createClient, buildChatBody, PINNED_MODEL, SECOND_CODER_MODEL, PINNED_BASE_URL, type FetchImpl as NebiusFetchImpl } from "./coding/nebius-client.ts";
+import {
+  createClient,
+  buildChatBody,
+  PINNED_MODEL,
+  SECOND_CODER_MODEL,
+  PINNED_BASE_URL,
+  QuotaStop,
+  isQuotaResponse,
+  type FetchImpl as NebiusFetchImpl,
+} from "./coding/nebius-client.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
@@ -129,6 +138,9 @@ function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, 
       maxTokens: CODING_MAX_TOKENS,
     });
     const res = await client.request("/chat/completions", { method: "POST", body });
+    if (isQuotaResponse(res) || res.status === 402) {
+      throw new QuotaStop(res.status, `nebius quota stop status ${res.status}`);
+    }
     if (!res.ok) throw new Error(`nebius chat/completions returned status ${res.status}`);
     const content = (res.json as any)?.choices?.[0]?.message?.content;
     if (typeof content !== "string") throw new Error("nebius response is missing choices[0].message.content");
@@ -136,10 +148,20 @@ function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, 
   };
 }
 
+/** Tavily plan usage-limit statuses (docs: 432 Custom Forbidden / usage limit; 433 also listed). */
+const TAVILY_USAGE_LIMIT_STATUSES = new Set([432, 433]);
+
+function tavilyUsageLimitStatus(evidence: { tavily?: { calls?: { status?: number }[] } }): number | null {
+  for (const call of evidence.tavily?.calls ?? []) {
+    if (typeof call.status === "number" && TAVILY_USAGE_LIMIT_STATUSES.has(call.status)) return call.status;
+  }
+  return null;
+}
+
 export interface ProjectOutcome {
   n: number;
   hnId: string;
-  status: "ok" | "failed";
+  status: "ok" | "failed" | "stopped";
   error?: string;
   boundaryFromCache?: boolean;
   evidenceFromCache?: boolean;
@@ -158,6 +180,8 @@ export interface RunAccounting {
   ranProjects: number;
   succeeded: number;
   failed: number;
+  stopped: number;
+  stopReason?: string;
   evidenceComputed: number;
   evidenceFromCache: number;
   codeComputed: number;
@@ -178,9 +202,13 @@ async function processProject(
     contract: ReturnType<typeof buildContract>;
     codebook: Codebook;
     overrides: Overrides;
+    /** D-48: when set, code2 runs only for hn ids in the set. */
+    secondCoderIds?: Set<string>;
+    /** D-51: notify the run that credit exhaustion requires a clean stop. */
+    onStop?: (reason: string) => void;
   },
 ): Promise<ProjectOutcome> {
-  const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides } = ctx;
+  const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides, secondCoderIds, onStop } = ctx;
   const projectId = String(project.hn_id);
 
   // 1. boundary — cheap, cached anyway for a uniform resume story.
@@ -195,6 +223,7 @@ async function processProject(
   }
 
   // 2. evidence — Tavily collection + (when GitHub-hosted) repo evidence.
+  // D-51: never cache a result that hit a Tavily usage-limit status (resume must re-try the call).
   const evidenceStage = await withStageCache(
     cacheDir,
     projectId,
@@ -232,8 +261,16 @@ async function processProject(
         homepage,
       };
     },
+    (result) => tavilyUsageLimitStatus(result) == null,
   );
   const evidence = evidenceStage.value;
+
+  const usageLimit = tavilyUsageLimitStatus(evidence);
+  if (usageLimit != null) {
+    const reason = `tavily usage-limit status ${usageLimit}`;
+    onStop?.(reason);
+    return { n: project.n, hnId: projectId, status: "stopped", error: reason, evidenceFromCache: evidenceStage.fromCache };
+  }
 
   // 2a. render — thin pages (<500 chars) and the start URL when Tavily returned nothing (D-55).
   const thinUrls: string[] = [];
@@ -394,11 +431,14 @@ async function processProject(
   };
   const codeStage = await codeWith(PINNED_MODEL, "code");
   // 5b. second coder (NVIDIA, hackathon rule; VAL agreement figure). Recorded alongside, never
-  // read by filter/claims/gate: the primary coding alone decides.
-  const code2Stage = await codeWith(SECOND_CODER_MODEL, "code2");
+  // read by filter/claims/gate: the primary coding alone decides. D-48: only the seeded subset.
+  const runCode2 = secondCoderIds === undefined || secondCoderIds.has(projectId);
+  const code2Stage = runCode2
+    ? await codeWith(SECOND_CODER_MODEL, "code2")
+    : { value: null as any, fromCache: false };
   const second: any = code2Stage.value;
-  const secondChecks: CheckEntry[] = second.checks ?? [];
-  const secondFiltered: CheckEntry[] = applyQuoteOrUnknownFilter(secondChecks, spanIds);
+  const secondChecks: CheckEntry[] = second?.checks ?? [];
+  const secondFiltered: CheckEntry[] = runCode2 ? applyQuoteOrUnknownFilter(secondChecks, spanIds) : [];
   const codingResult: any = codeStage.value;
   const codeChecks: CheckEntry[] = codingResult.checks ?? codingResult.data?.checks ?? [];
   const codingAttempts: number = codingResult.attempts ?? 0;
@@ -452,17 +492,19 @@ async function processProject(
       checkStates,
       claims: storeClaims,
     });
-    const byCode2Id = new Map(secondChecks.map((c) => [c.checkId, c]));
-    await recordSecondCoding(db, project.n, {
-      modelId: SECOND_CODER_MODEL,
-      allUnknown: second.allUnknown === true,
-      checkStates: secondFiltered.map((f) => ({
-        checkId: f.checkId,
-        proposedState: byCode2Id.get(f.checkId)?.proposedState ?? f.proposedState,
-        filteredState: f.proposedState,
-        spanIds: f.spanIds,
-      })),
-    });
+    if (runCode2 && second) {
+      const byCode2Id = new Map(secondChecks.map((c) => [c.checkId, c]));
+      await recordSecondCoding(db, project.n, {
+        modelId: SECOND_CODER_MODEL,
+        allUnknown: second.allUnknown === true,
+        checkStates: secondFiltered.map((f) => ({
+          checkId: f.checkId,
+          proposedState: byCode2Id.get(f.checkId)?.proposedState ?? f.proposedState,
+          filteredState: f.proposedState,
+          spanIds: f.spanIds,
+        })),
+      });
+    }
     await recordInjectionFlags(db, project.n, injectionResult.spanIds.map((spanId) => ({ spanId })));
     await recordMissingData(db, project.n, evidence.tavily.pages.length === 0);
 
@@ -525,6 +567,7 @@ export async function runPipeline({
   db,
   gatesPath,
   projectFilter,
+  secondCoderIds,
   overrides = {},
 }: {
   sliceProjectsPath?: string;
@@ -536,6 +579,8 @@ export async function runPipeline({
   db?: ReturnType<typeof getDb>;
   gatesPath?: string;
   projectFilter?: number;
+  /** D-48 / VAL-02: when set, code2 runs only for these hn ids. */
+  secondCoderIds?: Set<string>;
   overrides?: Overrides;
 }): Promise<RunAccounting> {
   const resolvedDataDir = dataDir ?? resolveDataDir();
@@ -550,10 +595,18 @@ export async function runPipeline({
   const codebook = loadCodebook(path.join(process.cwd(), "codebook.md"));
   const resolvedCacheDir = cacheDir ?? defaultCacheDir();
 
+  let stopReason: string | undefined;
+  const onStop = (reason: string) => {
+    if (!stopReason) stopReason = reason;
+  };
+
   const limit = pLimit(concurrency);
   const outcomes: ProjectOutcome[] = await Promise.all(
     projects.map((project) =>
       limit(async (): Promise<ProjectOutcome> => {
+        if (stopReason) {
+          return { n: project.n, hnId: String(project.hn_id), status: "stopped", error: stopReason };
+        }
         try {
           return await processProject(project, {
             apiKeys,
@@ -564,8 +617,15 @@ export async function runPipeline({
             contract,
             codebook,
             overrides,
+            secondCoderIds,
+            onStop,
           });
         } catch (err) {
+          if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop") {
+            const reason = (err as QuotaStop).message || `nebius quota stop status ${(err as QuotaStop).status}`;
+            onStop(reason);
+            return { n: project.n, hnId: String(project.hn_id), status: "stopped", error: reason };
+          }
           return { n: project.n, hnId: String(project.hn_id), status: "failed", error: err instanceof Error ? err.message : String(err) };
         }
       }),
@@ -576,6 +636,8 @@ export async function runPipeline({
     ranProjects: outcomes.length,
     succeeded: outcomes.filter((o) => o.status === "ok").length,
     failed: outcomes.filter((o) => o.status === "failed").length,
+    stopped: outcomes.filter((o) => o.status === "stopped").length,
+    stopReason,
     evidenceComputed: outcomes.filter((o) => o.evidenceFromCache === false).length,
     evidenceFromCache: outcomes.filter((o) => o.evidenceFromCache === true).length,
     codeComputed: outcomes.filter((o) => o.codeFromCache === false).length,
@@ -704,6 +766,19 @@ if (invokedDirectly) {
     const projectFilter = projectIdx >= 0 ? Number(args[projectIdx + 1]) : undefined;
     const sliceIdx = args.indexOf("--slice");
     const sliceProjectsPath = sliceIdx >= 0 ? args[sliceIdx + 1] : undefined;
+    const concurrencyIdx = args.indexOf("--concurrency");
+    const concurrency = concurrencyIdx >= 0 ? Number(args[concurrencyIdx + 1]) : 2;
+    const subsetsIdx = args.indexOf("--subsets");
+    let secondCoderIds: Set<string> | undefined;
+    if (subsetsIdx >= 0) {
+      const subsetsPath = args[subsetsIdx + 1];
+      const subsets = JSON.parse(fs.readFileSync(subsetsPath, "utf8")) as { secondModel?: string[] };
+      if (!Array.isArray(subsets.secondModel)) {
+        process.stderr.write(`run.ts: --subsets file must contain a secondModel string array: ${subsetsPath}\n`);
+        process.exit(1);
+      }
+      secondCoderIds = new Set(subsets.secondModel.map(String));
+    }
 
     const tavily = readKey("TAVILY_API_KEY", "tavily.key");
     const nebius = readKey("NEBIUS_API_KEY", "nebius.key");
@@ -730,13 +805,21 @@ if (invokedDirectly) {
       process.exit(1);
     }
 
-    const accounting = await runPipeline({ apiKeys: { tavily: tavily!, nebius: nebius!, github: github! }, projectFilter, sliceProjectsPath });
+    const accounting = await runPipeline({
+      apiKeys: { tavily: tavily!, nebius: nebius!, github: github! },
+      projectFilter,
+      sliceProjectsPath,
+      concurrency,
+      secondCoderIds,
+    });
     for (const o of accounting.outcomes) {
       if (o.status === "failed") process.stderr.write(`project n=${o.n}: FAILED: ${o.error}\n`);
+      if (o.status === "stopped") process.stderr.write(`project n=${o.n}: STOPPED: ${o.error}\n`);
     }
     process.stdout.write(`ACCOUNTING: ${JSON.stringify({ ...accounting, outcomes: undefined })}\n`);
-    await printTally();
-    if (accounting.failed > 0) process.exitCode = 1;
+    const projectNs = accounting.outcomes.map((o) => o.n);
+    await printTally({ projectNs });
+    if (accounting.failed > 0 || accounting.stopped > 0) process.exitCode = 1;
   })().catch((err) => {
     process.stderr.write(`${err?.stack ?? err}\n`);
     process.exit(1);

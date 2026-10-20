@@ -164,6 +164,8 @@ export interface CollectCallResult {
   failed?: boolean;
   reason?: string;
   refused?: boolean;
+  /** HTTP status when the call failed (e.g. 432/433 usage limit). */
+  status?: number;
 }
 
 export interface CollectProjectPagesResult {
@@ -227,7 +229,12 @@ export async function collectProjectPages({
     budget.record({ perCall: mapPerCall, formula: mapFormula });
     calls.push({ pages: [] });
   } catch (e) {
-    calls.push({ pages: [], failed: true, reason: e instanceof Error ? e.message : String(e) });
+    calls.push({
+      pages: [],
+      failed: true,
+      reason: e instanceof Error ? e.message : String(e),
+      status: e instanceof TavilyError ? e.status : undefined,
+    });
   }
 
   // 2. code-side boundary filter
@@ -263,7 +270,12 @@ export async function collectProjectPages({
       for (const f of json?.failed_results ?? []) failedUrls.push(f.url);
       calls.push({ pages: results.map((res) => ({ url: res.url, rawText: res.raw_content ?? "" })) });
     } catch (e) {
-      calls.push({ pages: [], failed: true, reason: e instanceof Error ? e.message : String(e) });
+      calls.push({
+        pages: [],
+        failed: true,
+        reason: e instanceof Error ? e.message : String(e),
+        status: e instanceof TavilyError ? e.status : undefined,
+      });
       failedUrls.push(...urls);
     }
   };
