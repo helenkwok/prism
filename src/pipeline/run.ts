@@ -19,10 +19,11 @@ import path from "node:path";
 import pLimit from "p-limit";
 
 import { resolveDataDir, getDb } from "../app/server/db.ts";
-import { deriveBoundary, hostClass, type Boundary } from "./evidence/boundary.ts";
+import { deriveBoundary, hostClass, withinBoundary, type Boundary } from "./evidence/boundary.ts";
 import { collectProjectPages, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
 import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImpl, type RepoEvidence } from "./evidence/github.ts";
 import { redactText } from "./evidence/redact.ts";
+import { renderTextAsync, type RenderImplAsync } from "./evidence/render.ts";
 import { findSiteRepos } from "./evidence/site-repos.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
@@ -61,7 +62,15 @@ interface Overrides {
   gateSpawnImpl?: SpawnImpl;
   pythonPath?: string;
   gateScriptPath?: string;
+  /** D-55: inject a fake renderer in tests; production uses renderTextAsync. */
+  renderImpl?: RenderImplAsync;
 }
+
+/** One browser at a time across concurrent projects (D-55 / Pitfall 3). */
+const renderLimit = pLimit(1);
+
+/** Pages thinner than this get a headless render before redact (D-55). */
+const THIN_PAGE_CHARS = 500;
 
 interface Source {
   url: string;
@@ -226,6 +235,43 @@ async function processProject(
   );
   const evidence = evidenceStage.value;
 
+  // 2a. render — thin pages (<500 chars) and the start URL when Tavily returned nothing (D-55).
+  const thinUrls: string[] = [];
+  for (const p of evidence.tavily.pages as { url: string; rawText: string }[]) {
+    if (p.rawText.length < THIN_PAGE_CHARS && withinBoundary(p.url, boundary)) thinUrls.push(p.url);
+  }
+  if (evidence.tavily.pages.length === 0 && withinBoundary(project.final_url, boundary)) {
+    thinUrls.push(project.final_url);
+  }
+  const uniqueThinUrls = [...new Set(thinUrls)];
+  const renderStage = await withStageCache(cacheDir, projectId, "render", { urls: uniqueThinUrls, v: 1 }, async () => {
+    const rendered: Record<string, string> = {};
+    const renderFn = overrides.renderImpl ?? renderTextAsync;
+    await Promise.all(
+      uniqueThinUrls.map((url) =>
+        renderLimit(async () => {
+          const text = await renderFn(url);
+          const prior = (evidence.tavily.pages as { url: string; rawText: string }[]).find((p) => p.url === url)?.rawText.length ?? 0;
+          if (text.length > prior) rendered[url] = text;
+        }),
+      ),
+    );
+    return { rendered };
+  });
+  const renderedMap: Record<string, string> = renderStage.value.rendered ?? {};
+  const didRender = Object.keys(renderedMap).length > 0;
+  const evidenceForRedact = didRender
+    ? (() => {
+        const pages = (evidence.tavily.pages as { url: string; rawText: string }[]).map((p) =>
+          renderedMap[p.url] ? { ...p, rawText: renderedMap[p.url] } : p,
+        );
+        for (const [url, rawText] of Object.entries(renderedMap)) {
+          if (!pages.some((p) => p.url === url)) pages.push({ url, rawText });
+        }
+        return { ...evidence, tavily: { ...evidence.tavily, pages } };
+      })()
+    : evidence;
+
   // 2b. site repos — a site-first launch's own GitHub repositories (evidence/site-repos.ts).
   const siteReposStage = githubOwnerRepo
     ? { value: [] as { owner: string; repo: string; evidence: RepoEvidence }[], fromCache: false }
@@ -239,11 +285,18 @@ async function processProject(
   const siteRepos = siteReposStage.value;
 
   // 3. redact — every third-party text, GitHub README/SECURITY.md base64-decoded first (EVD-07).
-  // Projects without site repos keep their earlier cache key.
-  const redactStage = await withStageCache(cacheDir, projectId, "redact", siteRepos.length ? { evidence, siteRepos } : evidence, async () => {
-    const sources: Source[] = evidence.tavily.pages.map((p) => ({ url: p.url, rawText: p.rawText }));
+  // Projects without site repos keep their earlier cache key; rendered pages bump the key (D-55).
+  const redactKey = didRender
+    ? siteRepos.length
+      ? { evidence: evidenceForRedact, siteRepos, rendered: renderedMap }
+      : { evidence: evidenceForRedact, rendered: renderedMap }
+    : siteRepos.length
+      ? { evidence, siteRepos }
+      : evidence;
+  const redactStage = await withStageCache(cacheDir, projectId, "redact", redactKey, async () => {
+    const sources: Source[] = evidenceForRedact.tavily.pages.map((p: { url: string; rawText: string }) => ({ url: p.url, rawText: p.rawText }));
     const repos = [
-      ...(evidence.github && githubOwnerRepo ? [{ ...githubOwnerRepo, evidence: evidence.github as RepoEvidence }] : []),
+      ...(evidenceForRedact.github && githubOwnerRepo ? [{ ...githubOwnerRepo, evidence: evidenceForRedact.github as RepoEvidence }] : []),
       ...siteRepos,
     ];
     for (const { owner, repo, evidence: gh } of repos) {
@@ -431,7 +484,7 @@ async function processProject(
           repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
           snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
             url: s.url,
-            visibility: "provider-extracted",
+            visibility: renderedMap[s.url] ? "rendered" : "provider-extracted",
             redactionCounts: s.counts,
           })),
           snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
