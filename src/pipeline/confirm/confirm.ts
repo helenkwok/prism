@@ -97,6 +97,22 @@ export function confirmationStatus(
   });
 }
 
+/** Spans in collection order (ids `p<i>-<segment id>`), same as the coder saw. */
+export function projectSpans(dataDir: string, projectN: number): { id: string; text: string }[] {
+  const m = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "manifests", `${projectN}.json`), "utf8"));
+  const spans: { id: string; text: string }[] = [];
+  m.snapshotHashesInCollectionOrder.forEach((h: string, i: number) => {
+    const snap = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "snapshots", `${h}.json`), "utf8"));
+    for (const s of segmentText(snap.redactedText)) spans.push({ id: `p${i + 1}-${s.id}`, text: s.text });
+  });
+  return spans;
+}
+
+/** Gold lock input digest: sha256 of span ids and text. */
+export function spansDigest(spans: { id: string; text: string }[]): string {
+  return crypto.createHash("sha256").update(JSON.stringify(spans.map((s) => ({ id: s.id, text: s.text })))).digest("hex");
+}
+
 /** Every recorded pass/claimed state with its quoted spans' text, read back from the private store. */
 export async function readPositives(db: Kysely<any>, dataDir: string): Promise<Positive[]> {
   const rows = await db
@@ -109,13 +125,7 @@ export async function readPositives(db: Kysely<any>, dataDir: string): Promise<P
   const spanCache = new Map<number, Map<string, string>>();
   const spansOf = (n: number) => {
     if (!spanCache.has(n)) {
-      const m = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "manifests", `${n}.json`), "utf8"));
-      const byId = new Map<string, string>();
-      m.snapshotHashesInCollectionOrder.forEach((h: string, i: number) => {
-        const snap = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "snapshots", `${h}.json`), "utf8"));
-        for (const s of segmentText(snap.redactedText)) byId.set(`p${i + 1}-${s.id}`, s.text);
-      });
-      spanCache.set(n, byId);
+      spanCache.set(n, new Map(projectSpans(dataDir, n).map((s) => [s.id, s.text])));
     }
     return spanCache.get(n)!;
   };

@@ -20,6 +20,23 @@ export class NebiusError extends Error {
   }
 }
 
+/** Live CLI stop: out of credit / balance / quota (D-64). */
+export class QuotaStop extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = "QuotaStop";
+  }
+}
+
+/** True for HTTP 402, or 403/429 after retries, or a body naming credit/balance/quota. */
+export function isQuotaResponse(res: { status: number; text?: string; json?: unknown }): boolean {
+  if (res.status === 402 || res.status === 403 || res.status === 429) return true;
+  const blob = `${res.text ?? ""} ${typeof res.json === "string" ? res.json : JSON.stringify(res.json ?? "")}`.toLowerCase();
+  return /\b(credit|balance|quota)\b/.test(blob);
+}
+
 const RATE_LIMIT_HEADERS = [
   "x-ratelimit-remaining-requests",
   "x-ratelimit-remaining-tokens",
@@ -177,6 +194,7 @@ export function buildChatBody({
   thinking = false,
   maxTokens = 4096,
   temperature = 0,
+  reasoningEffort,
 }: {
   model: string;
   messages: { role: string; content: string }[];
@@ -185,6 +203,8 @@ export function buildChatBody({
   thinking?: boolean;
   maxTokens?: number;
   temperature?: number;
+  /** D-62: GLM reasoning_effort; omitted → body byte-identical to pre-D-62. */
+  reasoningEffort?: "low" | "medium" | "high";
 }) {
   if (!model) throw new NebiusError(0, "model is required");
   if (!Array.isArray(messages) || messages.length === 0) throw new NebiusError(0, "messages is required");
@@ -198,6 +218,7 @@ export function buildChatBody({
     temperature,
     response_format: mode === "json_schema" ? { type: "json_schema", json_schema: schema } : { type: "json_object" },
     chat_template_kwargs: { enable_thinking: thinking },
+    ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
   };
 }
 
