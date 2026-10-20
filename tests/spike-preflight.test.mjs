@@ -25,6 +25,7 @@ import {
   percentile,
   selectorsFor,
 } from "../scripts/spikes/lib/tavily-math.mjs";
+import { preflightCandidate } from "../scripts/spikes/pick-projects.mjs";
 
 const PUBLIC = async () => ["93.184.216.34"];
 
@@ -326,3 +327,70 @@ describe("tavily credit math and selectors", () => {
     assert.equal(isPageLike("https://a.example/data.json"), false);
   });
 });
+
+describe("preflightCandidate robots-before-page", () => {
+  const cand = (url) => ({
+    id: "1",
+    title: "Show HN: Widget",
+    url,
+    created_at: "2026-09-15T00:00:00Z",
+  });
+
+  it("robots.txt disallow: robots_blocked and the page URL is never requested", async () => {
+    const fetchImpl = fakeFetch({
+      "https://blocked.example/robots.txt": {
+        status: 200,
+        body: "User-agent: *\nDisallow: /\n",
+      },
+      "https://blocked.example/app": { status: 200, body: "<html>secret</html>" },
+    });
+    const p = await preflightCandidate(cand("https://blocked.example/app"), {
+      fetchImpl,
+      resolver: PUBLIC,
+    });
+    assert.equal(p.preflight.robots_blocked, true);
+    assert.equal(fetchImpl.calls.includes("https://blocked.example/app"), false);
+    assert.ok(fetchImpl.calls.some((u) => u.includes("/robots.txt")));
+  });
+
+  it("cross-origin redirect to a final origin that disallows: robots_blocked and empty page_text", async () => {
+    const fetchImpl = fakeFetch({
+      "https://entry.example/robots.txt": { status: 404, body: "" },
+      "https://entry.example/go": { status: 302, location: "https://final.example/land" },
+      "https://final.example/land": { status: 200, body: "<html><p>plenty of page text here for screening</p></html>" },
+      "https://final.example/robots.txt": {
+        status: 200,
+        body: "User-agent: *\nDisallow: /\n",
+      },
+    });
+    const p = await preflightCandidate(cand("https://entry.example/go"), {
+      fetchImpl,
+      resolver: PUBLIC,
+    });
+    assert.equal(p.preflight.robots_blocked, true);
+    assert.equal(p.page_text, "");
+    assert.ok(fetchImpl.calls.includes("https://entry.example/go"));
+  });
+
+  it("robots allows: unchanged result shape (type_class, boundary, preflight, page_text)", async () => {
+    const fetchImpl = fakeFetch({
+      "https://ok.example/robots.txt": { status: 404, body: "" },
+      "https://ok.example/": {
+        status: 200,
+        body: "<html><body><p>Hello AI product with enough visible words for text extraction.</p></body></html>",
+      },
+    });
+    const p = await preflightCandidate(cand("https://ok.example/"), {
+      fetchImpl,
+      resolver: PUBLIC,
+    });
+    assert.equal(p.preflight.robots_blocked, false);
+    assert.equal(p.preflight.boundary_ok, true);
+    assert.equal(typeof p.type_class, "string");
+    assert.ok(p.boundary);
+    assert.ok(p.page_text.length > 0);
+    assert.equal(p.entry_url, "https://ok.example/");
+    assert.equal(p.final_url, "https://ok.example/");
+  });
+});
+
