@@ -56,6 +56,7 @@ export async function signOff(client: any, doc: string, context: string, item: s
     reason: v.reason as string,
     reviewer: { id: `agent:${model}`, kind: "agent", modelId: model },
     inputDigest: crypto.createHash("sha256").update(JSON.stringify({ doc, context, item })).digest("hex"),
+    docDigest: crypto.createHash("sha256").update(doc).digest("hex"),
     decidedAt: new Date().toISOString(),
   };
 }

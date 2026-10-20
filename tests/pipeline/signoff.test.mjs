@@ -22,4 +22,6 @@ test("a decision record is bound to the digest of the text it judged", async () 
   assert.equal(a.narrowsWhatPasses, true);
   assert.equal(a.reviewer.kind, "agent");
   assert.notEqual(a.inputDigest, b.inputDigest);
+  assert.equal(a.docDigest.length, 64);
+  assert.notEqual(a.docDigest, b.docDigest);
 });

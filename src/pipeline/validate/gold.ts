@@ -242,20 +242,20 @@ export async function labelProject({
   };
 }
 
-/** A7 item names (plan 04-02 Task 3 fills PROTOCOL + sign-off). */
+/** A7 item names — must match PROTOCOL.md ### headings and sign-off --item values. */
 export const A7_ITEMS = [
-  "A7.1",
-  "A7.2",
-  "A7.3",
-  "A7.4",
-  "A7.5",
-  "A7.6",
-  "A7.7",
-  "A7.8",
-  "A7.9",
-  "A7.10",
-  "A7.11",
-  "A7.12",
+  "A7.1 Gold labels on all 300",
+  "A7.2 Labeller and auditor configuration",
+  "A7.3 Rendered text as own-source evidence",
+  "A7.4 Shortfall step 1",
+  "A7.5 Shortfall step 2",
+  "A7.6 Confirmer downgrade",
+  "A7.7 Injection-flagged projects",
+  "A7.8 Published state",
+  "A7.9 Agreement details",
+  "A7.10 Screening audit",
+  "A7.11 Collection recall",
+  "A7.12 Strata and N",
 ] as const;
 
 export function a7Section(protocolText: string): string {

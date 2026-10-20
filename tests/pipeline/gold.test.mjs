@@ -295,15 +295,13 @@ describe("a7Section / a7Signed helpers", () => {
     assert.ok(a7Section(fs.readFileSync(protocolPath, "utf8")).startsWith("## Addendum 2026-10-20 (A7)"));
     assert.equal(await a7Signed({ protocolPath, signoffPath }), false);
     const digest = crypto.createHash("sha256").update(a7Section(fs.readFileSync(protocolPath, "utf8"))).digest("hex");
-    const items = [
-      "A7.1", "A7.2", "A7.3", "A7.4", "A7.5", "A7.6", "A7.7", "A7.8", "A7.9", "A7.10", "A7.11", "A7.12",
-    ];
+    const { A7_ITEMS } = await import("../../src/pipeline/validate/gold.ts");
     fs.writeFileSync(
       signoffPath,
-      items.map((item) => JSON.stringify({ item, decision: "approved", docDigest: digest })).join("\n") + "\n",
+      A7_ITEMS.map((item) => JSON.stringify({ item, decision: "approved", docDigest: digest })).join("\n") + "\n",
     );
     assert.equal(await a7Signed({ protocolPath, signoffPath }), true);
-    fs.appendFileSync(signoffPath, JSON.stringify({ item: "A7.1", decision: "rejected", docDigest: digest }) + "\n");
+    fs.appendFileSync(signoffPath, JSON.stringify({ item: A7_ITEMS[0], decision: "rejected", docDigest: digest }) + "\n");
     assert.equal(await a7Signed({ protocolPath, signoffPath }), false);
     fs.writeFileSync(protocolPath, `# Protocol\n\n## 13. End\n\n## Addendum 2026-10-20 (A7)\n\nChanged\n`);
     assert.equal(await a7Signed({ protocolPath, signoffPath: path.join(dir, "signoff.jsonl") }), false);

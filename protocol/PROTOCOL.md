@@ -259,3 +259,79 @@ Two consequences for reporting:
 - A3's gold-label replacement rule now reads: a labeller that has seen a project's coding cannot label that project blind, so the next project in gold-label seed order replaces it. A4's Discord rule now reads: no new automated collection unless a signed amendment allows it.
 
 Reason: a method that needs one named person at every gate cannot scale beyond what that person can review, and A2 already judges work by its process and evidence, not by who did it. The independence rules keep the separation between who produces a result and who checks it.
+
+## Addendum 2026-10-20 (A7)
+
+Adopted on Helen's 2026-10-20 decisions D-46 through D-65, through the A6 sign-off role. Results seen when this was written: the pilot's coding and confirmation, the GLM probes on two pilot chunks, and the labeller spike on 5 pilot projects. No gold label existed.
+
+### A7.1 Gold labels on all 300
+
+Changed rule (widens section 5): every project in the drawn sample of 300 is gold-labelled by an independent agent labeller (GLM-5.3 by its pinned provider and setting), in gold-seed order. A3 keeps ArtCraft out of gold. A gold outcome must exist before a project is confirmed or edited: `labelled`, `no-gold` after three off-contract replies, or `excluded-a3`. Labels are never changed once written. Figures are reported as agreement with an independent labeller (GLM-5.3), never as human accuracy.
+
+Reason: more checks become estimable; independence and lock-before-confirm keep the gate meaningful.
+
+### A7.2 Labeller and auditor configuration
+
+Changed rule: the gold labeller's provider, model id and reasoning setting are the pin recorded in the gold-labeller spike record (Token Factory `zai-org/GLM-5.3-Flash`, reasoning `low`). Kimi-K3 fills the screening auditor and the collection-recall gatherer. Every decision record stores provider and model id. Routers that pick a random model are not used.
+
+Reason: measured settings avoid token exhaustion; attribution makes every label auditable; a free-router id is never a valid model.
+
+### A7.3 Rendered text as own-source evidence
+
+Changed rule: pages under 500 characters of HTML text are rendered headless (about 1.5 s after network idle, scrolled) and snapshotted as own-source spans with visibility `rendered`.
+
+Reason: thin pages that have not rendered must not be treated as empty of evidence when a short render recovers the text.
+
+### A7.4 Shortfall step 1
+
+Changed rule: when a check misses its gate, one correction is allowed, preferably coder guidance that leaves the rule text unchanged. A rule change is codebook v1.1 with its own signed amendment, and gold for that check is re-labelled under v1.1. Revalidation uses a fresh draw that continues each quarter's sampling-seed walk past its first 75 (about 19 per quarter, numbered 301+), gold-labelled the same way, and is never scored on the projects it was tuned on. When it passes, the corrected coding replaces only the corrected checks' states across the 300. A check not estimable on the fresh draw is withheld.
+
+Reason: one pre-registered correction path; no scoring on the sample that taught the fix.
+
+### A7.5 Shortfall step 2
+
+Changed rule: if step 1 still fails, "human-code" means withhold unless a person codes that check across the full sample. The labeller's states are never published as the coding. There is no third agent.
+
+Reason: the labeller measures agreement; it is not a substitute publisher of coded states.
+
+### A7.6 Confirmer downgrade
+
+Changed rule: a confirmer may downgrade `pass` to `claimed` (downward only). That decision counts as confirmed.
+
+Reason: a state that is a claim rather than evidence should be recorded as claimed without a full reject.
+
+### A7.7 Injection-flagged projects
+
+Changed rule: injection-flagged projects are confirmed normally. Any positive that cites a flagged span is rejected. Flagged counts and decisions are reported.
+
+Reason: the flag marks untrusted span text; confirmation still runs, but a positive that rests on flagged text does not stand.
+
+### A7.8 Published state
+
+Changed rule: person edits re-run the quote-or-unknown filter. A person decision on the current digest outranks an agent decision. Nobody confirms their own edit. Rejected or unconfirmed positives enter no statistic and count as not-pass in the secondary agreement figure.
+
+Reason: the published state is the filtered, confirmed one; person overrides stay digest-bound.
+
+### A7.9 Agreement details
+
+Changed rule: the gate compares the primary coder's filtered proposals with gold per check. Published-state agreement is secondary. Bootstrap draws use one running counter i over resamples with the seed of the sample analysed (gold seed for the gate, second-model seed for the second-model figure). Projects without gold are excluded and counted.
+
+Reason: the pre-registered gate stays on proposals against gold; resampling stays reproducible.
+
+### A7.10 Screening audit
+
+Changed rule: the audit pool is exclusions with a content reason code from either screening stage; `duplicate` and `unreachable-at-screening` are reported separately. The auditor reads title, final URL and own-page text (rendered when thin), never the screener's decision. Fewer than 500 characters is "not assessable". An error is an excluded candidate the auditor would include. The Wilson upper limit is reported. On a miss, the tightened rule re-screens the 50 audited exclusions once and the error is re-measured there; the drawn 300 is not redrawn; a remaining miss is a stated selection limitation with the count of candidates the tightened rule would include.
+
+Reason: A6 independence for the auditor; operational codes are not content errors.
+
+### A7.11 Collection recall
+
+Changed rule: recall items are (check, URL, verbatim quote, pass or claimed) the gatherer finds on the project's own site and repository by its own fetches (robots.txt first, no third-party search API). An item whose quote is not verbatim in the gatherer's own fetched text is dropped and counted. An item is found when its redacted, case- and whitespace-normalised quote is a substring of the project's collected snapshot text. Both fetch dates and missed-page versus changed-text are recorded. On a miss, the collector's map and extract depth is widened once and re-measured on the same projects; the widened collector is applied to the whole sample only when the search-API balance covers it; otherwise (or if still under 70%) every unknown is worded "not found by the collector".
+
+Reason: recall measures the collector against an independent gatherer that does not reuse the collector's fetches.
+
+### A7.12 Strata and N
+
+Changed rule: strata remain the window-aligned quarters already signed in register row R03 (equal 75 per quarter), walked in chronological order. Across quarters, a project already included from an earlier post is excluded under the existing \`duplicate\` reason code (R13 / section 2), using one shared set of included hosts so the same launch is not counted twice. N stays 300 (A1/A2). Robots-blocked at preflight is not collectable (A5), while a drawn project whose collection fails stays in N with a sensitivity line (section 3). Pilot rows are removed after a verified backup and statistics are limited to the sample list. Coding runs in real time because the Batch API was unavailable.
+
+Reason: restates R03 and the pre-registered N for the bulk sample; pilot and sample must not share project numbers in one store.
