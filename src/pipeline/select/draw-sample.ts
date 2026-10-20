@@ -2,17 +2,27 @@
 // plus D-52 seeded subsets and D-55a extension past the first 300.
 //   node src/pipeline/select/draw-sample.ts [--per-quarter 75] [--extend 19]
 
+import fs from "node:fs";
+import path from "node:path";
+import pLimit from "p-limit";
+
+import { resolveDataDir } from "../../app/server/db.ts";
+import { defaultCacheDir } from "../cache/stage-cache.ts";
+import { createClient, PINNED_BASE_URL } from "../coding/nebius-client.ts";
 import { deriveBoundary } from "../evidence/boundary.ts";
+import { readKey } from "../run.ts";
 import {
   drawScreened,
+  MIN_STAGE2_CHARS,
   prismaCounts,
   type DrawEntry,
   type FramePost,
   type Outcome,
   type PreflightResult,
 } from "./draw.ts";
+import { makeScreeners } from "./draw-pilot.ts";
 import { sortPilotCandidates } from "./pilot-draw.ts";
-import { MODEL_REASON_CODES, type ScreenDecision } from "./screen-model.ts";
+import { MODEL_REASON_CODES, SCREENER_MODEL, type ScreenDecision } from "./screen-model.ts";
 
 export const SAMPLING_SEED = "ae0b3a26c3b17672";
 export const SCREENING_AUDIT_SEED = "fa23e4fccbc39ce5";
@@ -234,3 +244,136 @@ export function buildSubsets(
     audit,
   };
 }
+
+const PREWARM_PER_QUARTER = 500;
+const PREWARM_CONCURRENCY = 8;
+
+/** Cache screen1/preflight/screen2 for the first N candidates per quarter (no render). */
+export async function prewarmSample({
+  posts,
+  screeners,
+  seed = SAMPLING_SEED,
+  perQuarter = PREWARM_PER_QUARTER,
+  concurrency = PREWARM_CONCURRENCY,
+}: {
+  posts: FramePost[];
+  screeners: Screeners;
+  seed?: string;
+  perQuarter?: number;
+  concurrency?: number;
+}) {
+  const byQuarter = splitByQuarter(posts);
+  const limit = pLimit(concurrency);
+  const jobs: Promise<void>[] = [];
+  for (const q of [1, 2, 3, 4] as const) {
+    const ordered = sortPilotCandidates(byQuarter[q], seed).slice(0, perQuarter);
+    for (const p of ordered) {
+      jobs.push(
+        limit(async () => {
+          try {
+            const s1 = await screeners.screen1(p);
+            if (!s1.include) return;
+            const pref = await screeners.preflight(p);
+            if (!pref || pref.preflight.robots_blocked || !pref.preflight.boundary_ok) return;
+            const text = pref.page_text ?? "";
+            if (text.length < MIN_STAGE2_CHARS) return;
+            await screeners.screen2(p, pref.final_url, text);
+          } catch {
+            // ponytail: skip a flaky pre-warm call; the walk retries via the same cache
+          }
+        }),
+      );
+    }
+  }
+  await Promise.all(jobs);
+}
+
+function writePrivateJson(dir: string, name: string, value: unknown) {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(dir, name), JSON.stringify(value, null, 2), { mode: 0o600 });
+}
+
+export async function runSampleCli(argv: string[] = process.argv) {
+  const arg = (name: string) => {
+    const i = argv.indexOf(name);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  const perQuarter = Number(arg("--per-quarter") ?? 75);
+  const extendN = arg("--extend") !== undefined ? Number(arg("--extend")) : undefined;
+
+  const dataDir = resolveDataDir();
+  const dir = path.join(dataDir, "pipeline");
+  const posts: FramePost[] = JSON.parse(fs.readFileSync(path.join(dir, "frame.json"), "utf8")).posts;
+  const apiKey = readKey("NEBIUS_API_KEY", "nebius.key");
+  if (!apiKey) throw new Error("NEBIUS_API_KEY / nebius.key missing");
+  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey });
+  const screeners = makeScreeners({ client, cacheDir: defaultCacheDir(), preflightVersion: 2 });
+
+  if (extendN !== undefined) {
+    const previousEntries: SampleEntry[] = JSON.parse(fs.readFileSync(path.join(dir, "sample-projects.json"), "utf8"));
+    const previousLogFile = JSON.parse(fs.readFileSync(path.join(dir, "sample-screening-log.json"), "utf8"));
+    const previousLog = previousLogFile.log as SampleLogRecord[];
+    const ext = await extendSample({
+      posts,
+      previousLog,
+      previousEntries,
+      perQuarter: extendN,
+      screeners,
+      seed: SAMPLING_SEED,
+    });
+    writePrivateJson(dir, "fresh-projects.json", ext.entries);
+    writePrivateJson(dir, "fresh-screening-log.json", {
+      seed: SAMPLING_SEED,
+      perQuarter: extendN,
+      model: SCREENER_MODEL,
+      counts: ext.counts,
+      log: ext.log,
+    });
+    console.log("PRISMA:", JSON.stringify(ext.counts));
+    return;
+  }
+
+  await prewarmSample({ posts, screeners, seed: SAMPLING_SEED });
+  const result = await drawSample({ posts, perQuarter, screeners, seed: SAMPLING_SEED });
+  const subsets = buildSubsets(result.entries, result.log);
+
+  writePrivateJson(dir, "sample-projects.json", result.entries);
+  writePrivateJson(dir, "sample-screening-log.json", {
+    seed: SAMPLING_SEED,
+    perQuarter,
+    model: SCREENER_MODEL,
+    counts: result.counts,
+    perQuarterCounts: result.perQuarterCounts,
+    log: result.log,
+  });
+  writePrivateJson(dir, "sample-subsets.json", subsets);
+
+  console.log("PRISMA:", JSON.stringify(result.counts));
+  console.log(
+    "SUBSETS:",
+    JSON.stringify({
+      gold: subsets.goldOrder.length,
+      a3Excluded: subsets.a3Excluded.length,
+      secondModel: subsets.secondModel.length,
+      recall: subsets.recall.length,
+      auditPool: subsets.auditPool.length,
+      audit: subsets.audit.length,
+    }),
+  );
+
+  for (const q of [1, 2, 3, 4]) {
+    const n = result.entries.filter((e) => e.quarter === q).length;
+    if (n < perQuarter) {
+      console.error(`quarter ${q}: ${n} included (wanted ${perQuarter})`);
+      process.exitCode = 1;
+    }
+  }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runSampleCli().catch((err) => {
+    console.error(err?.stack ?? err);
+    process.exitCode = 1;
+  });
+}
+

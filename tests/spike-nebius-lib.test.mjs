@@ -78,7 +78,7 @@ describe("createClient: retries and rate-limit headers", () => {
     const fetchImpl = async () => {
       throw new Error(`connection reset while calling with token ${SECRET}`);
     };
-    const client = createClient({ baseUrl: "https://example.test/v1", apiKey: SECRET, fetchImpl });
+    const client = createClient({ baseUrl: "https://example.test/v1", apiKey: SECRET, fetchImpl, maxRetries: 0 });
     await assert.rejects(client.request("/models"), (err) => {
       assert.ok(err instanceof NebiusError);
       assert.ok(!err.message.includes(SECRET), "thrown message must not contain the API key");

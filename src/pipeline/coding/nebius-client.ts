@@ -131,6 +131,10 @@ export function createClient({
             body: body === undefined ? undefined : isMultipart ? (body as BodyInit) : JSON.stringify(body),
           });
         } catch (e: any) {
+          if (attempt <= maxRetries) {
+            await sleep(jitteredDelayMs(attempt));
+            continue;
+          }
           const msg = scrubSecrets(`network failure on ${method} ${path}: ${e?.message ?? e?.name ?? "error"}`, [apiKey]);
           throw new NebiusError(0, msg);
         }
