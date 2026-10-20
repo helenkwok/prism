@@ -5,9 +5,11 @@ import { describe, test } from "node:test";
 
 import {
   ESTIMABLE_MIN_GOLD_PASSES,
+  agreementByCheck,
   binary,
   bootstrapCI,
   estimable,
+  fourState,
   uniform,
   wilson,
 } from "../../src/pipeline/validate/agreement.ts";
@@ -111,5 +113,56 @@ describe("bootstrap stream (R07)", () => {
     assert.ok(a !== null && b !== null && c !== null);
     assert.deepEqual(a, b);
     assert.notDeepEqual(a, c);
+  });
+});
+
+describe("four-state AC1 (R06 secondary)", () => {
+  test("hand-computed k=4 example: AC1 = 91/163 ≈ 0.5583", () => {
+    // A: pass,pass,fail,unknown,claimed,claimed
+    // B: pass,fail,fail,unknown,claimed,pass  → pa=4/6; pe=53/216; AC1=91/163
+    const a = ["pass", "pass", "fail", "unknown", "claimed", "claimed"];
+    const b = ["pass", "fail", "fail", "unknown", "claimed", "pass"];
+    const r = fourState(a, b);
+    assert.equal(r.n, 6);
+    assert.equal(r.pa, 4 / 6);
+    assert.equal(Number(r.ac1.toFixed(4)), 0.5583);
+  });
+});
+
+describe("agreementByCheck and pooled", () => {
+  test("per-check order, binary+fourState, estimable, bootstrap CIs; pooled separate; empty check safe", () => {
+    const rows = [
+      { projectN: 1, checkId: "c1", a: "pass", b: "pass" },
+      { projectN: 1, checkId: "c2", a: "fail", b: "fail" },
+      { projectN: 2, checkId: "c1", a: "pass", b: "claimed" },
+      { projectN: 2, checkId: "c2", a: "pass", b: "pass" },
+      { projectN: 3, checkId: "c1", a: "unknown", b: "unknown" },
+      { projectN: 3, checkId: "c2", a: "claimed", b: "pass" },
+    ];
+    const checkIds = ["c1", "c2", "c-missing"];
+    const out = agreementByCheck(rows, checkIds, "d1481ad50ed309ea", 100);
+    assert.equal(out.checks.length, 3);
+    assert.deepEqual(
+      out.checks.map((c) => c.checkId),
+      checkIds,
+    );
+
+    const c1 = out.checks[0];
+    assert.equal(c1.n, 3);
+    assert.ok(typeof c1.ac1 === "number");
+    assert.ok(typeof c1.fourStateAc1 === "number");
+    assert.equal(c1.estimable, false); // goldPasses < 10
+    assert.ok(c1.ac1CI === null || (Array.isArray(c1.ac1CI) && c1.ac1CI.length === 2));
+    assert.ok("precisionCI" in c1 && "recallCI" in c1 && "kappaCI" in c1 && "paCI" in c1);
+
+    const missing = out.checks[2];
+    assert.equal(missing.n, 0);
+    assert.equal(missing.estimable, false);
+
+    const pooledBefore = JSON.stringify(out.checks);
+    assert.ok(out.pooled);
+    assert.equal(out.pooled.n, 6);
+    assert.ok(typeof out.pooled.ac1 === "number");
+    assert.equal(JSON.stringify(out.checks), pooledBefore);
   });
 });
