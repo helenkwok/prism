@@ -66,6 +66,7 @@ export async function drawScreened({
   preflight,
   screen2,
   render = () => "",
+  hosts: hostsArg,
 }: {
   posts: FramePost[];
   seed?: string;
@@ -75,10 +76,12 @@ export async function drawScreened({
   screen2: (post: FramePost, finalUrl: string, text: string) => Promise<ScreenDecision>;
   /** Rendered page text, tried when the HTML's own text is too thin (single-page apps). */
   render?: (finalUrl: string) => string | Promise<string>;
+  /** Shared duplicate set (mutated in place). Default a fresh Set — existing callers unchanged. */
+  hosts?: Set<string>;
 }) {
   const log: { id: string; rank: number; outcome: Outcome }[] = [];
   const entries: DrawEntry[] = [];
-  const hosts = new Set<string>();
+  const hosts = hostsArg ?? new Set<string>();
   let rank = 0;
 
   for (const post of sortPilotCandidates(posts, seed)) {
