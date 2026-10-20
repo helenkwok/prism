@@ -68,11 +68,12 @@ export function looksLikeSpa(html) {
   return SPA_MARKERS.test(html) && visibleTextLength(html) < 600 && (html.match(/<script/gi) ?? []).length >= 1;
 }
 
-async function fetchRobots(finalUrl) {
-  const u = new URL(finalUrl);
+async function fetchRobots(pageUrl, opts = {}) {
+  const u = new URL(pageUrl);
   const robotsUrl = `${u.origin}/robots.txt`;
+  const { fetchImpl, resolver } = opts;
   try {
-    const r = await followRedirects(robotsUrl, { readBody: 200000, maxHops: 5 });
+    const r = await followRedirects(robotsUrl, { readBody: 200000, maxHops: 5, fetchImpl, resolver });
     if (r.status === 404 || r.status === 410) return { status: r.status, allowed: true };
     if (r.status >= 500) return { status: r.status, allowed: false };
     if (r.status >= 400) return { status: r.status, allowed: true };
@@ -83,8 +84,21 @@ async function fetchRobots(finalUrl) {
   }
 }
 
-/** Pre-flight one candidate. Returns a classification or null when unusable. */
-export async function preflightCandidate(c) {
+function classifyType(entry, redirectedOffBoundary, body) {
+  const startHostClass = hostClass(entry.hostname);
+  if (redirectedOffBoundary) return "redirect";
+  if (startHostClass === "shared-path-host") {
+    return entry.hostname.replace(/^www\./, "") === "github.com" ? "repo-only" : "shared-host";
+  }
+  if (startHostClass === "shared-suffix-host") return "shared-host";
+  if (body != null && looksLikeSpa(body)) return "spa";
+  return "own-domain";
+}
+
+/** Pre-flight one candidate. Returns a classification or null when unusable.
+ * Optional `fetchImpl` / `resolver` are threaded into robots and page fetches (tests). */
+export async function preflightCandidate(c, opts = {}) {
+  const { fetchImpl, resolver } = opts;
   let entry;
   try {
     entry = new URL(c.url);
@@ -92,10 +106,34 @@ export async function preflightCandidate(c) {
     return null;
   }
   if (entry.protocol !== "https:") return null;
-  let boundary = deriveBoundary(entry.toString());
+  const boundary = deriveBoundary(entry.toString());
+
+  // Robots for the entry origin before any page request (Phase 3 owed fix).
+  const entryRobots = await fetchRobots(entry.toString(), { fetchImpl, resolver });
+  if (!entryRobots.allowed) {
+    return {
+      n: 0,
+      type_class: classifyType(entry, false, null),
+      hn_id: c.id,
+      title: c.title,
+      created_at: c.created_at,
+      entry_url: entry.toString(),
+      final_url: entry.toString(),
+      boundary,
+      requested_boundary: boundary,
+      preflight: {
+        robots_blocked: true,
+        robots_status: entryRobots.status,
+        redirect_hops: 0,
+        boundary_ok: true,
+      },
+      page_text: "",
+    };
+  }
+
   let r;
   try {
-    r = await followRedirects(entry.toString(), { boundary, readBody: 300000 });
+    r = await followRedirects(entry.toString(), { boundary, readBody: 300000, fetchImpl, resolver });
   } catch {
     return null;
   }
@@ -105,19 +143,18 @@ export async function preflightCandidate(c) {
   // The operative boundary follows the FINAL url (research Pitfall 8): the entry
   // link was the requested url, the site it leads to is the project's own site.
   const operative = redirectedOffBoundary ? deriveBoundary(finalUrl) : boundary;
-  const robots = await fetchRobots(finalUrl);
 
-  let type;
-  const startHostClass = hostClass(entry.hostname);
-  if (redirectedOffBoundary) type = "redirect";
-  else if (startHostClass === "shared-path-host") type = entry.hostname.replace(/^www\./, "") === "github.com" ? "repo-only" : "shared-host";
-  else if (startHostClass === "shared-suffix-host") type = "shared-host";
-  else if (looksLikeSpa(r.body)) type = "spa";
-  else type = "own-domain";
+  let robots = entryRobots;
+  let text = pageText(r.body);
+  // Cross-origin redirect: honour the final origin's robots; drop the body when disallowed.
+  if (new URL(finalUrl).origin !== entry.origin) {
+    robots = await fetchRobots(finalUrl, { fetchImpl, resolver });
+    if (!robots.allowed) text = "";
+  }
 
   return {
     n: 0,
-    type_class: type,
+    type_class: classifyType(entry, redirectedOffBoundary, r.body),
     hn_id: c.id,
     title: c.title,
     created_at: c.created_at,
@@ -131,7 +168,7 @@ export async function preflightCandidate(c) {
       redirect_hops: r.hops.length - 1,
       boundary_ok: !redirectedOffBoundary,
     },
-    page_text: pageText(r.body),
+    page_text: text,
   };
 }
 

@@ -22,35 +22,55 @@ const STAGE2_TEXT_CAP = 12000;
 
 const hash = (v: unknown) => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
 
+/** Cached screen1 / preflight / render / screen2 closures shared by the pilot and the 300 draw.
+ * `preflightVersion` is part of the cache key: 1 = legacy (page then robots), 2 = robots-first. */
+export function makeScreeners({
+  client,
+  cacheDir,
+  preflightVersion,
+}: {
+  client: { request: (p: string, init: { method: string; body: unknown }) => Promise<{ ok: boolean; status: number; json: unknown }> };
+  cacheDir: string;
+  preflightVersion: number;
+}) {
+  const cached = (id: string, stage: string, input: unknown, compute: () => Promise<any>) =>
+    withStageCache(cacheDir, id, stage, input, compute).then((r) => r.value);
+
+  return {
+    screen1: (p: FramePost) => {
+      const c = { title: p.title, url: p.url };
+      return cached(p.id, "screen1", { model: SCREENER_MODEL, thinking: STAGE1_THINKING, req: hash(screenMessages(1, c)) }, () =>
+        screenCandidate(client as any, 1, c, { thinking: STAGE1_THINKING }),
+      );
+    },
+    preflight: (p: FramePost) =>
+      cached(p.id, "preflight", { url: p.url, v: preflightVersion }, () =>
+        preflightCandidate({ id: p.id, title: p.title, url: p.url, created_at: p.created_at }),
+      ),
+    render: (finalUrl: string) => cached(finalUrl, "render-text", { v: 1 }, async () => renderText(finalUrl)),
+    screen2: (p: FramePost, finalUrl: string, text: string) => {
+      const c = { title: p.title, url: finalUrl, text: text.slice(0, STAGE2_TEXT_CAP) };
+      return cached(p.id, "screen2", { model: SCREENER_MODEL, thinking: true, req: hash(screenMessages(2, c)) }, () =>
+        screenCandidate(client as any, 2, c, { thinking: true }),
+      );
+    },
+  };
+}
+
 export async function drawPilot({ targetN = 20, out = "pilot-projects.json", seed = PILOT_DRAW_SEED } = {}) {
   const dataDir = resolveDataDir();
   const cacheDir = defaultCacheDir();
   const posts: FramePost[] = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "frame.json"), "utf8")).posts;
   const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: readKey("NEBIUS_API_KEY", "nebius.key")! });
 
-  const cached = (id: string, stage: string, input: unknown, compute: () => Promise<any>) =>
-    withStageCache(cacheDir, id, stage, input, compute).then((r) => r.value);
+  // Pilot keeps preflightVersion 1 so it still reproduces from its cached v1 entries.
+  const screeners = makeScreeners({ client, cacheDir, preflightVersion: 1 });
 
   const result = await drawScreened({
     posts,
     seed,
     targetN,
-    screen1: (p) => {
-      const c = { title: p.title, url: p.url };
-      return cached(p.id, "screen1", { model: SCREENER_MODEL, thinking: STAGE1_THINKING, req: hash(screenMessages(1, c)) }, () =>
-        screenCandidate(client as any, 1, c, { thinking: STAGE1_THINKING }),
-      );
-    },
-    // Cached so a re-run screens the same page text: live pages change between fetches.
-    preflight: (p) => cached(p.id, "preflight", { url: p.url, v: 1 }, () => preflightCandidate({ id: p.id, title: p.title, url: p.url, created_at: p.created_at })),
-    // Cached like the model calls: a re-run must not re-render (or see a page that changed since).
-    render: (finalUrl) => cached(finalUrl, "render-text", { v: 1 }, async () => renderText(finalUrl)),
-    screen2: (p, finalUrl, text) => {
-      const c = { title: p.title, url: finalUrl, text: text.slice(0, STAGE2_TEXT_CAP) };
-      return cached(p.id, "screen2", { model: SCREENER_MODEL, thinking: true, req: hash(screenMessages(2, c)) }, () =>
-        screenCandidate(client as any, 2, c, { thinking: true }),
-      );
-    },
+    ...screeners,
   });
 
   const dir = path.join(dataDir, "pipeline");
