@@ -21,9 +21,9 @@ export interface RoleSpec {
   reasoning: "low" | "medium" | "high" | boolean;
 }
 
-/** Gold re-pinned in plan 04-02 Task 2 from spikes/gold-labeller.md. */
+/** Gold pinned from spikes/gold-labeller.md (option d-tf-glm-flash, 2026-10-20). */
 export const ROLE_CONFIG: Record<RoleName, RoleSpec> = {
-  gold: { provider: "ollama", model: "glm-5.3:cloud", reasoning: "low" },
+  gold: { provider: "token-factory", model: "zai-org/GLM-5.3-Flash", reasoning: "low" },
   auditor: { provider: "ollama", model: "kimi-k3:cloud", reasoning: true },
   gatherer: { provider: "ollama", model: "kimi-k3:cloud", reasoning: true },
 };

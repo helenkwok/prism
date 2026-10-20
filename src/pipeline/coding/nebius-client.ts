@@ -30,9 +30,11 @@ export class QuotaStop extends Error {
   }
 }
 
-/** True for HTTP 402, or 403/429 after retries, or a body naming credit/balance/quota. */
-export function isQuotaResponse(res: { status: number; text?: string; json?: unknown }): boolean {
+/** True for HTTP 402, or 403/429 after retries, or a non-OK body naming credit/balance/quota. */
+export function isQuotaResponse(res: { status: number; ok?: boolean; text?: string; json?: unknown }): boolean {
   if (res.status === 402 || res.status === 403 || res.status === 429) return true;
+  // Never scan a successful body: coding replies can mention "credit"/"balance"/"quota" as data.
+  if (res.ok === true || (res.status >= 200 && res.status < 300)) return false;
   const blob = `${res.text ?? ""} ${typeof res.json === "string" ? res.json : JSON.stringify(res.json ?? "")}`.toLowerCase();
   return /\b(credit|balance|quota)\b/.test(blob);
 }

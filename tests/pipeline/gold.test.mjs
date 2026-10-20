@@ -73,9 +73,10 @@ describe("buildChatBody reasoning_effort (D-62)", () => {
 });
 
 describe("QuotaStop / isQuotaResponse (D-64)", () => {
-  test("402 and body naming quota are quota; QuotaStop is an Error", () => {
+  test("402 and non-OK body naming quota are quota; OK 200 is never quota from body text", () => {
     assert.equal(isQuotaResponse({ status: 402 }), true);
-    assert.equal(isQuotaResponse({ status: 200, text: "insufficient credit remaining" }), true);
+    assert.equal(isQuotaResponse({ status: 500, text: "insufficient credit remaining" }), true);
+    assert.equal(isQuotaResponse({ status: 200, ok: true, text: "insufficient credit remaining" }), false);
     assert.equal(isQuotaResponse({ status: 200, text: "ok" }), false);
     const e = new QuotaStop(402, "out");
     assert.ok(e instanceof Error);
