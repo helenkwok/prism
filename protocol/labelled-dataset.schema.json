@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/helenkwok/prism/protocol/labelled-dataset.schema.json",
+  "title": "PRISM labelled decision record",
+  "description": "One JSONL line: a confirmation, gold label, or person edit exported for judges (D-59). Synthetic example only in-repo; live data stays under the private store.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "projectN",
+    "checkId",
+    "spanIds",
+    "quotes",
+    "verdict",
+    "state",
+    "reason",
+    "actor",
+    "timestamp",
+    "codebookVersion",
+    "inputDigest"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["confirmation", "gold", "edit"]
+    },
+    "projectN": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "checkId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "spanIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "quotes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spanId", "text"],
+        "properties": {
+          "spanId": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "minLength": 1,
+      "description": "confirmed|rejected|downgraded for confirmations; the labelled or edited state otherwise"
+    },
+    "state": {
+      "type": ["string", "null"],
+      "description": "Resulting state, or null when rejected"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "provider", "modelId"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "enum": ["person", "agent"] },
+        "provider": { "type": ["string", "null"] },
+        "modelId": { "type": ["string", "null"] }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "codebookVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "inputDigest": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
