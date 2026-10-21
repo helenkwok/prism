@@ -19,8 +19,10 @@ import { buildCodingMessages } from "../../src/pipeline/run.ts";
 import {
   a7Section,
   a7Signed,
+  A7_ITEMS,
   ensureGoldSchema,
   labelProject,
+  runGoldCli,
 } from "../../src/pipeline/validate/gold.ts";
 import {
   assertIndependent,
@@ -28,6 +30,9 @@ import {
   ROLE_CONFIG,
   roleClient,
 } from "../../src/pipeline/validate/providers.ts";
+import { ARTCRAFT_HN_ID, GOLD_SEED } from "../../src/pipeline/select/draw-sample.ts";
+import { sortPilotCandidates } from "../../src/pipeline/select/pilot-draw.ts";
+import { QuotaStop as QuotaStopClass } from "../../src/pipeline/coding/nebius-client.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const codebook = loadCodebook(path.join(repoRoot, "codebook.md"));
@@ -295,7 +300,6 @@ describe("a7Section / a7Signed helpers", () => {
     assert.ok(a7Section(fs.readFileSync(protocolPath, "utf8")).startsWith("## Addendum 2026-10-20 (A7)"));
     assert.equal(await a7Signed({ protocolPath, signoffPath }), false);
     const digest = crypto.createHash("sha256").update(a7Section(fs.readFileSync(protocolPath, "utf8"))).digest("hex");
-    const { A7_ITEMS } = await import("../../src/pipeline/validate/gold.ts");
     fs.writeFileSync(
       signoffPath,
       A7_ITEMS.map((item) => JSON.stringify({ item, decision: "approved", docDigest: digest })).join("\n") + "\n",
@@ -305,5 +309,159 @@ describe("a7Section / a7Signed helpers", () => {
     assert.equal(await a7Signed({ protocolPath, signoffPath }), false);
     fs.writeFileSync(protocolPath, `# Protocol\n\n## 13. End\n\n## Addendum 2026-10-20 (A7)\n\nChanged\n`);
     assert.equal(await a7Signed({ protocolPath, signoffPath: path.join(dir, "signoff.jsonl") }), false);
+  });
+});
+
+function writeSignedA7(dir) {
+  const protocolPath = path.join(dir, "PROTOCOL.md");
+  const signoffPath = path.join(dir, "signoff.jsonl");
+  const section = "## Addendum 2026-10-20 (A7)\n\n### A7.1 Gold\nbody\n";
+  fs.writeFileSync(protocolPath, `# P\n\n${section}`);
+  const digest = crypto.createHash("sha256").update(a7Section(fs.readFileSync(protocolPath, "utf8"))).digest("hex");
+  fs.writeFileSync(
+    signoffPath,
+    A7_ITEMS.map((item) => JSON.stringify({ item, decision: "approved", docDigest: digest })).join("\n") + "\n",
+  );
+  return { protocolPath, signoffPath };
+}
+
+describe("runGoldCli", () => {
+  test("refuses with A7 not signed before any client call", async () => {
+    const dataDir = tempDir("prism-gold-cli-a7-");
+    const protocolPath = path.join(dataDir, "PROTOCOL.md");
+    const signoffPath = path.join(dataDir, "signoff.jsonl");
+    fs.writeFileSync(protocolPath, "## Addendum 2026-10-20 (A7)\n\nx\n");
+    fs.writeFileSync(signoffPath, "");
+    fs.mkdirSync(path.join(dataDir, "pipeline"), { recursive: true });
+    fs.writeFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), JSON.stringify([{ n: 1, hn_id: "1" }]));
+    let clientCalls = 0;
+    const lines = [];
+    const { exitCode, summary } = await runGoldCli({
+      argv: ["--projects", path.join(dataDir, "pipeline", "sample-projects.json")],
+      dataDir,
+      protocolPath,
+      signoffPath,
+      repoRoot,
+      client: {
+        request: async () => {
+          clientCalls += 1;
+          return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } };
+        },
+      },
+      log: (l) => lines.push(l),
+      err: () => {},
+    });
+    assert.equal(exitCode, 1);
+    assert.equal(clientCalls, 0);
+    assert.match(lines.join("\n"), /A7 not signed/);
+    assert.equal(summary.stopped, "A7 not signed");
+  });
+
+  test("gold-seed order, excluded-a3, noEvidence, no-spans, QuotaStop stop, re-run skip", async () => {
+    const dataDir = tempDir("prism-gold-cli-");
+    const { protocolPath, signoffPath } = writeSignedA7(dataDir);
+    fs.mkdirSync(path.join(dataDir, "pipeline", "manifests"), { recursive: true });
+    fs.mkdirSync(path.join(dataDir, "pipeline", "snapshots"), { recursive: true });
+    // Three ids: artcraft, one with spans, one with empty manifest (no spans), plus one missing manifest
+    const entries = [
+      { n: 10, hn_id: "aaa" },
+      { n: 20, hn_id: ARTCRAFT_HN_ID },
+      { n: 30, hn_id: "bbb" },
+      { n: 40, hn_id: "ccc" },
+    ];
+    const expectedOrder = sortPilotCandidates(
+      entries.map((e) => ({ id: e.hn_id, n: e.n, hn_id: e.hn_id })),
+      GOLD_SEED,
+    ).map((x) => x.n);
+    fs.writeFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), JSON.stringify(entries));
+    writeProjectTree(dataDir, 10, ["Project aaa with enough text for a span about shipping."]);
+    // ArtCraft: manifest present but must get excluded-a3, no labels
+    writeProjectTree(dataDir, 20, ["ArtCraft should never be labelled."]);
+    // Empty spans: manifest with empty snapshot list
+    fs.writeFileSync(
+      path.join(dataDir, "pipeline", "manifests", "30.json"),
+      JSON.stringify({ snapshotHashesInCollectionOrder: [], hnId: "bbb" }),
+    );
+    // n=40: no manifest → noEvidence
+
+    let calls = 0;
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    await ensureGoldSchema(db);
+    // concurrency 1: first model call QuotaStops (D-64)
+    const first = await runGoldCli({
+      argv: ["--projects", path.join(dataDir, "pipeline", "sample-projects.json"), "--concurrency", "1"],
+      dataDir,
+      db,
+      protocolPath,
+      signoffPath,
+      repoRoot,
+      client: {
+        request: async () => {
+          calls += 1;
+          throw new QuotaStopClass(402, "out of credit");
+        },
+      },
+      role: ROLE_CONFIG.gold,
+      log: () => {},
+      err: () => {},
+    });
+    assert.equal(first.exitCode, 1);
+    assert.ok(first.summary.stopped);
+    assert.ok(Number.isInteger(first.summary.completePrefix));
+    assert.equal(expectedOrder.length, 4);
+
+    // Finish: fake client succeeds; ArtCraft / no-spans / noEvidence rules apply
+    const second = await runGoldCli({
+      argv: ["--projects", path.join(dataDir, "pipeline", "sample-projects.json"), "--concurrency", "1"],
+      dataDir,
+      db,
+      protocolPath,
+      signoffPath,
+      repoRoot,
+      client: {
+        request: async () => {
+          calls += 1;
+          return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } };
+        },
+      },
+      role: ROLE_CONFIG.gold,
+      log: () => {},
+      err: () => {},
+    });
+    assert.equal(second.exitCode, 0);
+    assert.equal(second.summary.stopped, null);
+    assert.equal(second.summary.excludedA3, 1);
+    assert.equal(second.summary.noEvidence, 1);
+    const a3 = await db.selectFrom("pipeline_gold_outcomes").selectAll().where("outcome", "=", "excluded-a3").execute();
+    assert.equal(a3.length, 1);
+    assert.equal(a3[0].project_n, 20);
+    assert.equal((await db.selectFrom("pipeline_gold_labels").selectAll().where("project_n", "=", 20).execute()).length, 0);
+    const noSpan = await db.selectFrom("pipeline_gold_outcomes").selectAll().where("project_n", "=", 30).executeTakeFirst();
+    assert.equal(noSpan?.outcome, "labelled");
+    assert.equal(noSpan?.reason, "no-spans");
+    assert.equal((await db.selectFrom("pipeline_gold_labels").selectAll().where("project_n", "=", 30).execute()).length, 24);
+    const out10 = await db.selectFrom("pipeline_gold_outcomes").selectAll().where("project_n", "=", 10).executeTakeFirst();
+    assert.ok(out10);
+
+    // Third run: all digests present → no further model calls
+    const callsAfterSecond = calls;
+    await runGoldCli({
+      argv: ["--projects", path.join(dataDir, "pipeline", "sample-projects.json"), "--concurrency", "1"],
+      dataDir,
+      db,
+      protocolPath,
+      signoffPath,
+      repoRoot,
+      client: {
+        request: async () => {
+          calls += 1;
+          return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } };
+        },
+      },
+      role: ROLE_CONFIG.gold,
+      log: () => {},
+      err: () => {},
+    });
+    assert.equal(calls, callsAfterSecond);
   });
 });
