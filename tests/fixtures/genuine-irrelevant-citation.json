@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "note": "Synthetic own-source-style quote that does not support the check (COD-08). Pricing/product-launch tone; says nothing about failure-modes-tested.",
+  "checkId": "failure-modes-tested",
+  "state": "pass",
+  "spans": [
+    {
+      "id": "p1-s1",
+      "text": "Our Pro plan starts at $29 per month and includes unlimited seats for your launch team."
+    }
+  ]
+}
