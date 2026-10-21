@@ -8,12 +8,14 @@ import { describe, test } from "node:test";
 
 import { wilson } from "../../src/pipeline/validate/agreement.ts";
 import {
+  actionFromRescreen,
   auditExclusions,
   auditFigure,
   operationalExcludedCounts,
+  rescreenWithTightenedRule,
 } from "../../src/pipeline/validate/screening-audit.ts";
 import { ROLE_CONFIG } from "../../src/pipeline/validate/providers.ts";
-import { screenMessages, SCREENER_MODEL } from "../../src/pipeline/select/screen-model.ts";
+import { RULE, screenMessages, SCREENER_MODEL } from "../../src/pipeline/select/screen-model.ts";
 
 function tmpCache() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "prism-audit-"));
@@ -294,5 +296,61 @@ describe("source contract", () => {
     );
     assert.match(src, /assertIndependent\("auditor"/);
     assert.match(src, /"audit2"/);
+  });
+});
+
+describe("rule override (A7.10)", () => {
+  test("screenMessages with no rule override returns byte-identical messages to before", () => {
+    const c = { title: "Show HN: X", url: "https://x.example/", text: "hello ".repeat(100) };
+    assert.deepEqual(screenMessages(2, c), screenMessages(2, c, RULE));
+    assert.equal(JSON.stringify(screenMessages(1, c)), JSON.stringify(screenMessages(1, { title: c.title, url: c.url })));
+  });
+
+  test("rescreenWithTightenedRule counts remaining auditor-include exclusions", async () => {
+    const records = [
+      {
+        id: "a1",
+        assessable: true,
+        auditorInclude: true,
+        originalStage: 2,
+        originalReasonCode: "not-ai",
+        auditorReasonCode: null,
+        provider: "ollama",
+        model: "kimi",
+        textSource: "html",
+        textChars: 600,
+        auditedAt: "t",
+      },
+      {
+        id: "a2",
+        assessable: true,
+        auditorInclude: false,
+        originalStage: 2,
+        originalReasonCode: "not-ai",
+        auditorReasonCode: "not-ai",
+        provider: "ollama",
+        model: "kimi",
+        textSource: "html",
+        textChars: 600,
+        auditedAt: "t",
+      },
+    ];
+    const client = fakeClient([
+      JSON.stringify({ include: true, reasonCode: null }),
+      JSON.stringify({ include: false, reasonCode: "not-ai" }),
+    ]);
+    const rescreen = await rescreenWithTightenedRule({
+      records,
+      posts,
+      screeners: stubScreeners(),
+      screenerClient: client,
+      ruleText: RULE + "\nAlso include MCP servers that route AI models.",
+      cacheDir: tmpCache(),
+    });
+    assert.equal(rescreen.wouldNowInclude, 1);
+    assert.equal(rescreen.remeasured.errors, 0);
+    const action = actionFromRescreen("tight", rescreen);
+    assert.equal(action.kind, "tightened-rescreen");
+    assert.equal(action.finalStatus, "within");
   });
 });

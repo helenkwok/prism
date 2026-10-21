@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 
 import { resolveDataDir } from "../../app/server/db.ts";
 import { withStageCache, defaultCacheDir } from "../cache/stage-cache.ts";
-import { QuotaStop } from "../coding/nebius-client.ts";
+import { createClient, PINNED_BASE_URL, QuotaStop } from "../coding/nebius-client.ts";
+import { readKey } from "../run.ts";
 import { MIN_STAGE2_CHARS, type FramePost, type PreflightResult } from "../select/draw.ts";
 import { makeScreeners } from "../select/draw-pilot.ts";
 import {
@@ -261,15 +262,140 @@ function writeAuditJson(dataDir: string, payload: unknown): string {
   return file;
 }
 
+export type AuditAction =
+  | { kind: "none"; reason: string }
+  | {
+      kind: "tightened-rescreen";
+      ruleText: string;
+      remeasured: { errors: number; errorRate: number; wilson95: [number, number] };
+      wouldNowInclude: number;
+      finalStatus: "within" | "selection-limitation";
+    };
+
+/** A7.10: re-screen the audited 50 with a tightened rule (screener model); reuse auditor decisions. */
+export async function rescreenWithTightenedRule({
+  records,
+  posts,
+  screeners,
+  screenerClient,
+  ruleText,
+  cacheDir,
+}: {
+  records: AuditRecord[];
+  posts: FramePost[];
+  screeners: Screeners;
+  screenerClient: { request: (p: string, init: { method: string; body: unknown }) => Promise<{ ok: boolean; status: number; json: unknown }> };
+  ruleText: string;
+  cacheDir: string;
+}): Promise<{
+  remeasured: { errors: number; errorRate: number; wilson95: [number, number] };
+  wouldNowInclude: number;
+  decisions: { id: string; include: boolean; reasonCode: ModelReasonCode | null }[];
+}> {
+  const byPost = postsById(posts);
+  const decisions: { id: string; include: boolean; reasonCode: ModelReasonCode | null }[] = [];
+  let wouldNowInclude = 0;
+  let remErrors = 0;
+  let remAssessable = 0;
+
+  for (const rec of records) {
+    const post = byPost.get(rec.id);
+    if (!post) throw new Error(`rescreen: post ${rec.id} missing`);
+    if (!rec.assessable) {
+      decisions.push({ id: rec.id, include: false, reasonCode: null });
+      continue;
+    }
+    const { text, finalUrl } = await resolveText(post, screeners);
+    const candidate = { title: post.title, url: finalUrl, text: text.slice(0, STAGE2_TEXT_CAP) };
+    const messages = screenMessages(2, candidate, ruleText);
+    const { value: decision } = await withStageCache(
+      cacheDir,
+      rec.id,
+      "audit-rescreen",
+      { model: SCREENER_MODEL, thinking: true, rule: hash(ruleText), req: hash(messages) },
+      async () =>
+        screenCandidate(screenerClient as any, 2, candidate, {
+          model: SCREENER_MODEL,
+          thinking: true,
+          rule: ruleText,
+        }),
+    );
+    const d = decision as ScreenDecision;
+    decisions.push({ id: rec.id, include: d.include, reasonCode: d.reasonCode });
+    if (d.include) wouldNowInclude += 1;
+    remAssessable += 1;
+    // Error under tightened rule: still excluded by screener but auditor would include.
+    if (!d.include && rec.auditorInclude === true) remErrors += 1;
+  }
+
+  const errorRate = remAssessable === 0 ? 0 : remErrors / remAssessable;
+  return {
+    remeasured: { errors: remErrors, errorRate, wilson95: wilson(remErrors, remAssessable) },
+    wouldNowInclude,
+    decisions,
+  };
+}
+
+export function actionFromRescreen(ruleText: string, rescreen: Awaited<ReturnType<typeof rescreenWithTightenedRule>>): AuditAction {
+  const within = rescreen.remeasured.errorRate <= AUDIT_BAR;
+  return {
+    kind: "tightened-rescreen",
+    ruleText,
+    remeasured: rescreen.remeasured,
+    wouldNowInclude: rescreen.wouldNowInclude,
+    finalStatus: within ? "within" : "selection-limitation",
+  };
+}
+
+function argValue(argv: string[], name: string): string | undefined {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
 export async function runScreeningAuditCli(argv = process.argv.slice(2)): Promise<void> {
   const dataDir = resolveDataDir();
   const cacheDir = defaultCacheDir();
+  const auditPath = path.join(dataDir, "validation", "screening-audit.json");
+  const tightenedPath = argValue(argv, "--tightened-rule");
+
+  // A7.10 action path: read an existing audit and record none or tightened-rescreen.
+  if (argv.includes("--apply-action") || tightenedPath) {
+    if (!fs.existsSync(auditPath)) throw new Error(`missing ${auditPath}; run the audit first`);
+    const payload = JSON.parse(fs.readFileSync(auditPath, "utf8"));
+    if (payload.withinThreshold) {
+      payload.action = { kind: "none", reason: "within threshold" } satisfies AuditAction;
+      writeAuditJson(dataDir, payload);
+      console.log(`AUDIT-ACTION ${payload.action.kind}`);
+      return;
+    }
+    if (!tightenedPath) throw new Error("missed 10% bar: pass --tightened-rule <file>");
+    const ruleText = fs.readFileSync(tightenedPath, "utf8").trim();
+    const frame = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "frame.json"), "utf8"));
+    const screenerClient = createClient({
+      baseUrl: PINNED_BASE_URL,
+      apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+    });
+    const screeners = makeScreeners({ client: screenerClient as any, cacheDir, preflightVersion: 2 });
+    const rescreen = await rescreenWithTightenedRule({
+      records: payload.records,
+      posts: frame.posts,
+      screeners,
+      screenerClient: screenerClient as any,
+      ruleText,
+      cacheDir,
+    });
+    payload.action = actionFromRescreen(ruleText, rescreen);
+    payload.rescreenDecisions = rescreen.decisions;
+    writeAuditJson(dataDir, payload);
+    console.log(`AUDIT-ACTION ${payload.action.kind} ${payload.action.finalStatus}`);
+    return;
+  }
+
   const subsets = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-subsets.json"), "utf8"));
   const screeningLog = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-screening-log.json"), "utf8"));
   const frame = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "frame.json"), "utf8"));
   const role = ROLE_CONFIG.auditor;
   const client = roleClient("auditor");
-  // Screener client only for preflight/render cache sharing (v2); auditor never uses it for decisions.
   const screeners = makeScreeners({
     client: client as any,
     cacheDir,
