@@ -24,6 +24,7 @@ import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImp
 import { collectOwnSitePages, extractLinks, pageText } from "../evidence/own-site.ts";
 import { redactText } from "../evidence/redact.ts";
 import { githubRepoLinks, isOwnRepo } from "../evidence/site-repos.ts";
+import { isPageLike } from "../evidence/tavily.ts";
 import { wilson } from "./agreement.ts";
 import { assertIndependent, roleClient, ROLE_CONFIG, type RoleSpec } from "./providers.ts";
 
@@ -222,7 +223,12 @@ export async function gatherOwnSources({
   if (start) pages.push(start);
 
   const candidates = extractLinks(startHtml, start?.url ?? startUrl).filter(
-    (u) => u.startsWith("https://") && withinBoundary(u, boundary) && pathAllowed(groups, u) && !seen.has(u.split("#")[0]!),
+    (u) =>
+      u.startsWith("https://") &&
+      isPageLike(u) &&
+      withinBoundary(u, boundary) &&
+      pathAllowed(groups, u) &&
+      !seen.has(u.split("#")[0]!),
   );
 
   for (const link of candidates) {
@@ -297,7 +303,8 @@ export function recallListMessages(codebook: Codebook, checkIds: string[], pages
     "You gather evidence items for a systematic review from the project's own pages only. " +
     "List every clear pass or claimed instance you can quote verbatim from the page texts. " +
     "Each item needs checkId (from the enum), the page url, a short verbatim quote from that page, and state pass or claimed. " +
-    "Do not invent quotes. Use only the page texts in the user message. Never invent pipeline states.\n\n" +
+    "Do not invent quotes. Use only the page texts in the user message. Never invent pipeline states. " +
+    "Reply with JSON only matching the schema — no markdown, no commentary.\n\n" +
     "Codebook rules:\n" +
     rules;
   return [
@@ -326,11 +333,30 @@ function chunkPages(pages: GatherPage[], maxChars: number): GatherPage[][] {
 }
 
 function parseItems(raw: string, checkIds: Set<string>): RecallItem[] {
-  let parsed: any;
+  let parsed: any = null;
+  const text = String(raw ?? "").trim();
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(text);
   } catch {
-    return [];
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) {
+      try {
+        parsed = JSON.parse(fence[1]!.trim());
+      } catch {
+        parsed = null;
+      }
+    }
+    if (!parsed) {
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        try {
+          parsed = JSON.parse(text.slice(start, end + 1));
+        } catch {
+          parsed = null;
+        }
+      }
+    }
   }
   const items = Array.isArray(parsed?.items) ? parsed.items : [];
   const out: RecallItem[] = [];
@@ -383,7 +409,8 @@ export async function listItems({
       maxTokens: 8192,
     });
     const req = { provider: role.provider, model: role.model, req: crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex") };
-    const { value } = await withStageCache(cache, pid, "recall-items", req, async () => {
+    // v2: JSON-only prompt + isPageLike gather; busts prose cache from first live attempt.
+    const { value } = await withStageCache(cache, pid, "recall-items-v2", req, async () => {
       const res = await client.request("/chat/completions", { method: "POST", body });
       if (isQuotaResponse(res)) throw new QuotaStop(res.status, `quota stop status ${res.status}`);
       if (!res.ok) throw new Error(`recall listItems status ${res.status}`);
