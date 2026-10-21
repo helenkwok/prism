@@ -489,28 +489,6 @@ export async function listItems({
             return false;
           }
         });
-        // #region agent log
-        fetch("http://127.0.0.1:7250/ingest/40fd775c-89d5-4264-b69a-95ca5935d9a9", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7d988b" },
-          body: JSON.stringify({
-            sessionId: "7d988b",
-            runId: "recall-remeasure",
-            hypothesisId: "A",
-            location: "recall.ts:listItems",
-            message: "gatherer reply shape",
-            data: {
-              projectId: pid,
-              chunk: i,
-              attempt,
-              prefix: String(value).slice(0, 80),
-              startsWithArray: String(value).trimStart().startsWith("["),
-              startsWithObj: String(value).trimStart().startsWith("{"),
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         parsedChunk = parseItems(value, idSet);
         lastErr = null;
         break;
