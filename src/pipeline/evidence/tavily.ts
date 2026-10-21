@@ -81,11 +81,16 @@ export class CreditBudget {
 }
 
 const ASSET_EXT = /\.(?:png|jpe?g|gif|webp|svg|ico|css|js|mjs|map|json|xml|zip|gz|tar|mp4|mp3|wav|woff2?|ttf|pdf|dmg|exe)$/i;
+/** Bundler / framework static paths (often extensionless chunk URLs). */
+const ASSET_PATH = /(?:^|\/)_next\/static(?:\/|$)|(?:^|\/)static\/(?:css|js|chunks)(?:\/|$)/i;
 
 /** True for URLs that are page-like rather than assets. */
 export function isPageLike(url: string): boolean {
   try {
-    return !ASSET_EXT.test(new URL(url).pathname);
+    const pathname = new URL(url).pathname;
+    if (ASSET_EXT.test(pathname)) return false;
+    if (ASSET_PATH.test(pathname)) return false;
+    return true;
   } catch {
     return false;
   }

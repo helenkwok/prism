@@ -25,7 +25,8 @@ export interface RoleSpec {
 export const ROLE_CONFIG: Record<RoleName, RoleSpec> = {
   gold: { provider: "token-factory", model: "zai-org/GLM-5.3-Flash", reasoning: "low" },
   auditor: { provider: "ollama", model: "kimi-k3:cloud", reasoning: true },
-  gatherer: { provider: "ollama", model: "kimi-k3:cloud", reasoning: true },
+  // low reasoning + larger num_predict: bare JSON items, fewer prose/empty replies (04-08 remasure)
+  gatherer: { provider: "ollama", model: "kimi-k3:cloud", reasoning: "low" },
 };
 
 const FAMILY_NAMES = ["deepseek", "nemotron", "qwen", "glm", "kimi", "gemma", "llama"] as const;

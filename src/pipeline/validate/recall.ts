@@ -67,15 +67,36 @@ export type ProjectRecall = {
 
 export type RecallFigure = {
   projects: number;
+  contributing: number;
+  gatherFailed: number;
   items: number;
   found: number;
   recall: number;
   wilson95: [number, number];
   bar: number;
   withinThreshold: boolean;
+  /** True when ≥ MIN_CONTRIBUTING projects contributed ≥1 verified item. */
+  acceptanceMet: boolean;
   droppedNonVerbatim: number;
   perProject: ProjectRecall[];
 };
+
+/** Minimum projects that must contribute items for a recall figure to be accepted. */
+export const MIN_CONTRIBUTING = 8;
+
+export class RecallParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RecallParseError";
+  }
+}
+
+export class GatherFailedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GatherFailedError";
+  }
+}
 
 export type SampleEntry = {
   n: number;
@@ -213,6 +234,7 @@ export async function gatherOwnSources({
           // keep HTML text when render fails
         }
       }
+      if (!isPageLike(r.finalUrl)) return null;
       return { url: r.finalUrl, text, fetchedAt: new Date().toISOString(), rendered };
     } catch {
       return null;
@@ -332,41 +354,71 @@ function chunkPages(pages: GatherPage[], maxChars: number): GatherPage[][] {
   return chunks;
 }
 
-function parseItems(raw: string, checkIds: Set<string>): RecallItem[] {
-  let parsed: any = null;
+/** Extract a JSON value from model text (object, array, or fenced). */
+function extractJson(raw: string): unknown {
   const text = String(raw ?? "").trim();
+  if (!text) throw new RecallParseError("empty gatherer reply");
   try {
-    parsed = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
-    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fence) {
-      try {
-        parsed = JSON.parse(fence[1]!.trim());
-      } catch {
-        parsed = null;
-      }
-    }
-    if (!parsed) {
-      const start = text.indexOf("{");
-      const end = text.lastIndexOf("}");
-      if (start >= 0 && end > start) {
-        try {
-          parsed = JSON.parse(text.slice(start, end + 1));
-        } catch {
-          parsed = null;
-        }
-      }
+    /* fall through */
+  }
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) {
+    try {
+      return JSON.parse(fence[1]!.trim());
+    } catch {
+      /* fall through */
     }
   }
-  const items = Array.isArray(parsed?.items) ? parsed.items : [];
+  const objStart = text.indexOf("{");
+  const objEnd = text.lastIndexOf("}");
+  if (objStart >= 0 && objEnd > objStart) {
+    try {
+      return JSON.parse(text.slice(objStart, objEnd + 1));
+    } catch {
+      /* fall through */
+    }
+  }
+  const arrStart = text.indexOf("[");
+  const arrEnd = text.lastIndexOf("]");
+  if (arrStart >= 0 && arrEnd > arrStart) {
+    try {
+      return JSON.parse(text.slice(arrStart, arrEnd + 1));
+    } catch {
+      /* fall through */
+    }
+  }
+  throw new RecallParseError("non-JSON gatherer reply");
+}
+
+/**
+ * Parse gatherer JSON into recall items.
+ * Accepts `{items:[...]}` or a bare `[...]` array.
+ * Empty arrays / missing items / prose → RecallParseError (caller retries then gather-failed).
+ */
+export function parseItems(raw: string, checkIds: Set<string>): RecallItem[] {
+  const parsed = extractJson(raw);
+  let items: unknown[];
+  if (Array.isArray(parsed)) {
+    items = parsed;
+  } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as { items?: unknown }).items)) {
+    items = (parsed as { items: unknown[] }).items;
+  } else {
+    throw new RecallParseError("gatherer JSON has no items array");
+  }
+  if (items.length === 0) throw new RecallParseError("empty items array");
+
   const out: RecallItem[] = [];
   for (const it of items) {
-    if (!checkIds.has(it?.checkId)) continue;
-    if (it.state !== "pass" && it.state !== "claimed") continue;
-    if (typeof it.url !== "string" || typeof it.quote !== "string") continue;
-    if (!it.quote.trim()) continue;
-    out.push({ checkId: it.checkId, url: it.url, quote: it.quote, state: it.state });
+    const row = it as Partial<RecallItem>;
+    if (!checkIds.has(row?.checkId as string)) continue;
+    if (row.state !== "pass" && row.state !== "claimed") continue;
+    if (typeof row.url !== "string" || typeof row.quote !== "string") continue;
+    if (!row.quote.trim()) continue;
+    out.push({ checkId: row.checkId as string, url: row.url, quote: row.quote, state: row.state });
   }
+  if (out.length === 0) throw new RecallParseError("no schema-valid items after filter");
   return out;
 }
 
@@ -395,6 +447,7 @@ export async function listItems({
   const all: RecallItem[] = [];
   const cache = cacheDir ?? defaultCacheDir();
   const pid = projectId ?? "recall";
+  const maxAttempts = 2;
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]!;
@@ -406,19 +459,73 @@ export async function listItems({
       schema: { name: "recall_items", schema, strict: true },
       thinking: role.reasoning === true,
       ...(typeof role.reasoning === "string" ? { reasoningEffort: role.reasoning } : {}),
-      maxTokens: 8192,
+      maxTokens: 16384,
     });
-    const req = { provider: role.provider, model: role.model, req: crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex") };
-    // v2: JSON-only prompt + isPageLike gather; busts prose cache from first live attempt.
-    const { value } = await withStageCache(cache, pid, "recall-items-v2", req, async () => {
-      const res = await client.request("/chat/completions", { method: "POST", body });
-      if (isQuotaResponse(res)) throw new QuotaStop(res.status, `quota stop status ${res.status}`);
-      if (!res.ok) throw new Error(`recall listItems status ${res.status}`);
-      const content = (res.json as any)?.choices?.[0]?.message?.content;
-      if (typeof content !== "string") throw new Error("recall listItems missing content");
-      return content;
-    });
-    all.push(...parseItems(value, idSet));
+    const req = {
+      provider: role.provider,
+      model: role.model,
+      reasoning: role.reasoning,
+      req: crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex"),
+    };
+    // v3: bare-array parse + empty/prose → retry/gather-failed; reasoning low; larger max tokens.
+    let lastErr: Error | null = null;
+    let parsedChunk: RecallItem[] | null = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const attemptReq = { ...req, attempt };
+      try {
+        const { value } = await withStageCache(cache, pid, "recall-items-v3", attemptReq, async () => {
+          const res = await client.request("/chat/completions", { method: "POST", body });
+          if (isQuotaResponse(res)) throw new QuotaStop(res.status, `quota stop status ${res.status}`);
+          if (!res.ok) throw new Error(`recall listItems status ${res.status}`);
+          const content = (res.json as any)?.choices?.[0]?.message?.content;
+          if (typeof content !== "string") throw new Error("recall listItems missing content");
+          return content;
+        }, (value) => {
+          // Cache only replies that parse to ≥1 valid item — bad empties/prose must retry.
+          try {
+            parseItems(value, idSet);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        // #region agent log
+        fetch("http://127.0.0.1:7250/ingest/40fd775c-89d5-4264-b69a-95ca5935d9a9", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7d988b" },
+          body: JSON.stringify({
+            sessionId: "7d988b",
+            runId: "recall-remeasure",
+            hypothesisId: "A",
+            location: "recall.ts:listItems",
+            message: "gatherer reply shape",
+            data: {
+              projectId: pid,
+              chunk: i,
+              attempt,
+              prefix: String(value).slice(0, 80),
+              startsWithArray: String(value).trimStart().startsWith("["),
+              startsWithObj: String(value).trimStart().startsWith("{"),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        parsedChunk = parseItems(value, idSet);
+        lastErr = null;
+        break;
+      } catch (e) {
+        if (e instanceof QuotaStop) throw e;
+        lastErr = e instanceof Error ? e : new Error(String(e));
+        process.stderr.write(`recall: list parse fail ${pid} chunk=${i} attempt=${attempt}: ${lastErr.message}\n`);
+      }
+    }
+    if (!parsedChunk) {
+      throw new GatherFailedError(
+        `gather-failed ${pid} chunk=${i}: ${lastErr?.message ?? "parse failed after retries"}`,
+      );
+    }
+    all.push(...parsedChunk);
   }
   return all;
 }
@@ -464,19 +571,23 @@ export function matchItems(
   });
 }
 
-export function recallFigure(perProject: ProjectRecall[]): RecallFigure {
+export function recallFigure(perProject: ProjectRecall[], gatherFailed = 0): RecallFigure {
   const items = perProject.reduce((s, p) => s + p.items, 0);
   const found = perProject.reduce((s, p) => s + p.found, 0);
   const droppedNonVerbatim = perProject.reduce((s, p) => s + p.droppedNonVerbatim, 0);
+  const contributing = perProject.filter((p) => p.items > 0).length;
   const recall = items === 0 ? 0 : found / items;
   return {
-    projects: perProject.length,
+    projects: perProject.length + gatherFailed,
+    contributing,
+    gatherFailed,
     items,
     found,
     recall,
     wilson95: wilson(found, items),
     bar: RECALL_BAR,
     withinThreshold: recall >= RECALL_BAR,
+    acceptanceMet: contributing >= MIN_CONTRIBUTING,
     droppedNonVerbatim,
     perProject,
   };
@@ -703,6 +814,7 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
   const ghToken = githubTokenFromEnv();
   const records: any[] = [];
   const perProject: ProjectRecall[] = [];
+  const gatherFailedRecords: any[] = [];
   let stopped = false;
 
   for (const hnId of subsets.recall as string[]) {
@@ -737,6 +849,7 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
         projectN: entry.n,
         provider: role.provider,
         model: role.model,
+        status: "ok",
         gatherFetchedAt: pages[0]?.fetchedAt ?? null,
         collectorFetchedAt: corpus.collectorFetchedAt,
         pages: pages.map((p) => ({ url: p.url, chars: p.text.length, rendered: p.rendered, fetchedAt: p.fetchedAt })),
@@ -759,25 +872,37 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
         console.error(`QuotaStop: ${e.message}`);
         break;
       }
+      if (e instanceof GatherFailedError || e instanceof RecallParseError) {
+        process.stderr.write(`recall: gather-failed ${hnId} (n=${entry.n}): ${(e as Error).message}\n`);
+        gatherFailedRecords.push({
+          hnId,
+          projectN: entry.n,
+          provider: role.provider,
+          model: role.model,
+          status: "gather-failed",
+          error: (e as Error).message,
+        });
+        continue;
+      }
       throw e;
     }
   }
 
-  const figure = recallFigure(perProject);
+  const figure = recallFigure(perProject, gatherFailedRecords.length);
   const payload = {
     provider: role.provider,
     model: role.model,
     seed: subsets.seeds?.collectionRecall ?? subsets.seeds?.recall ?? "cc45c03dd0094b92",
     recallIds: subsets.recall,
     figure,
-    records,
+    records: [...records, ...gatherFailedRecords],
     stopped,
     action: undefined as RecallAction | undefined,
     wording: undefined as string | null | undefined,
   };
 
-  // If already within threshold, record action none here so Task 3 is a no-op.
-  if (figure.withinThreshold) {
+  // Acceptance: ≥8/10 contributing. Threshold action only when acceptanceMet.
+  if (figure.acceptanceMet && figure.withinThreshold) {
     payload.action = { kind: "none" };
     payload.wording = null;
   }
@@ -786,17 +911,20 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
   console.log(
     `RECALL: ${JSON.stringify({
       projects: figure.projects,
+      contributing: figure.contributing,
+      gatherFailed: figure.gatherFailed,
       items: figure.items,
       found: figure.found,
       recall: figure.recall,
       wilson95: figure.wilson95,
       withinThreshold: figure.withinThreshold,
+      acceptanceMet: figure.acceptanceMet,
       droppedNonVerbatim: figure.droppedNonVerbatim,
       provider: role.provider,
       model: role.model,
     })}`,
   );
-  if (stopped) process.exitCode = 1;
+  if (stopped || !figure.acceptanceMet) process.exitCode = 1;
 }
 
 const invokedDirectly =

@@ -8,11 +8,14 @@ import { describe, test } from "node:test";
 
 import { SCREENER_MODEL } from "../../src/pipeline/select/screen-model.ts";
 import { ROLE_CONFIG } from "../../src/pipeline/validate/providers.ts";
+import { isPageLike } from "../../src/pipeline/evidence/tavily.ts";
 import {
   gatherOwnSources,
   listItems,
   matchItems,
   normalise,
+  parseItems,
+  RecallParseError,
   recallFigure,
   verifyItems,
   widenedRemeasure,
@@ -252,16 +255,81 @@ describe("listItems / verify / match / figure", () => {
       { hnId: "2", projectN: 2, items: 5, found: 3, droppedNonVerbatim: 1 },
     ]);
     assert.equal(fig.projects, 2);
+    assert.equal(fig.contributing, 2);
     assert.equal(fig.items, 10);
     assert.equal(fig.found, 7);
     assert.equal(fig.recall, 0.7);
     assert.equal(fig.withinThreshold, true);
+    assert.equal(fig.acceptanceMet, false); // only 2 < 8
     assert.equal(fig.bar, 0.7);
     assert.equal(fig.wilson95.length, 2);
     assert.equal(fig.droppedNonVerbatim, 1);
 
     const under = recallFigure([{ hnId: "1", projectN: 1, items: 10, found: 6, droppedNonVerbatim: 0 }]);
     assert.equal(under.withinThreshold, false);
+
+    const withFails = recallFigure(
+      Array.from({ length: 8 }, (_, i) => ({
+        hnId: String(i),
+        projectN: i,
+        items: 1,
+        found: 1,
+        droppedNonVerbatim: 0,
+      })),
+      2,
+    );
+    assert.equal(withFails.projects, 10);
+    assert.equal(withFails.gatherFailed, 2);
+    assert.equal(withFails.contributing, 8);
+    assert.equal(withFails.acceptanceMet, true);
+  });
+
+  test("parseItems accepts bare arrays; empty/non-JSON throw", () => {
+    const ids = new Set(["check.a"]);
+    const bare = parseItems(
+      JSON.stringify([{ checkId: "check.a", url: "https://example.com/", quote: "Hello", state: "pass" }]),
+      ids,
+    );
+    assert.equal(bare.length, 1);
+    const wrapped = parseItems(
+      JSON.stringify({ items: [{ checkId: "check.a", url: "https://example.com/", quote: "Hello", state: "pass" }] }),
+      ids,
+    );
+    assert.equal(wrapped.length, 1);
+    assert.throws(() => parseItems("[]", ids), RecallParseError);
+    assert.throws(() => parseItems('{"items":[]}', ids), RecallParseError);
+    assert.throws(() => parseItems("## Evidence found\nnothing", ids), RecallParseError);
+  });
+
+  test("isPageLike drops _next/static and css/js", () => {
+    assert.equal(isPageLike("https://a.example/docs"), true);
+    assert.equal(isPageLike("https://a.example/_next/static/chunks/main.js"), false);
+    assert.equal(isPageLike("https://a.example/assets/app.css"), false);
+    assert.equal(isPageLike("https://a.example/static/css/main.abc.css"), false);
+  });
+
+  test("listItems accepts bare-array reply", async () => {
+    const client = fakeClient([
+      JSON.stringify([{ checkId: "check.a", url: "https://example.com/", quote: "Hello world product", state: "pass" }]),
+    ]);
+    const pages = [
+      {
+        url: "https://example.com/",
+        text: "Hello world product page with enough characters.",
+        fetchedAt: "2026-10-21T00:00:00.000Z",
+        rendered: false,
+      },
+    ];
+    const items = await listItems({
+      client,
+      role: ROLE_CONFIG.gatherer,
+      codebook,
+      checkIds: ["check.a"],
+      pages,
+      cacheDir: tmpCache(),
+      projectId: "bare1",
+    });
+    assert.equal(items.length, 1);
   });
 });
 
