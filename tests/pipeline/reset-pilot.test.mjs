@@ -9,6 +9,7 @@ import { describe, test } from "node:test";
 
 import Database from "better-sqlite3";
 
+import { assertBackupWritable, PROTECTED_BACKUP_BASENAMES } from "../../src/pipeline/store/protected-backups.ts";
 import { resetPilot } from "../../src/pipeline/store/reset-pilot.ts";
 
 function seedDataDir() {
@@ -128,5 +129,26 @@ describe("resetPilot (D-61)", () => {
 
     fs.rmSync(dataDir, { recursive: true, force: true });
     fs.rmSync(backupDir, { recursive: true, force: true });
+  });
+
+  test("D-66: refuses protected basename 2026-10-21-tavily-142 (temp path only)", async () => {
+    assert.ok(PROTECTED_BACKUP_BASENAMES.has("2026-10-21-tavily-142"));
+    assert.equal(PROTECTED_BACKUP_BASENAMES.size, 1);
+
+    const dataDir = seedDataDir();
+    // Temp path whose basename matches the archive — never the real home tree.
+    const parent = fs.mkdtempSync(path.join(os.tmpdir(), "prism-prot-"));
+    const backupDir = path.join(parent, "2026-10-21-tavily-142");
+
+    assert.throws(() => assertBackupWritable(backupDir), /protected backup \(D-66\)/);
+    await assert.rejects(() => resetPilot({ dataDir, backupDir }), /protected backup \(D-66\)/);
+    assert.equal(fs.existsSync(backupDir), false);
+
+    // Nested under protected basename also refused.
+    const nested = path.join(parent, "2026-10-21-tavily-142", "subdir");
+    assert.throws(() => assertBackupWritable(nested), /protected backup \(D-66\)/);
+
+    fs.rmSync(dataDir, { recursive: true, force: true });
+    fs.rmSync(parent, { recursive: true, force: true });
   });
 });

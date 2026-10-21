@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 
 import { resolveDataDir } from "../../app/server/db.ts";
+import { assertBackupWritable } from "./protected-backups.ts";
 
 export type ResetPilotHooks = {
   /** Runs after backup + manifests are copied, before verification. Tests use this to corrupt the backup. */
@@ -117,6 +118,9 @@ export async function resetPilot({
   backupDir: string;
   hooks?: ResetPilotHooks;
 }): Promise<ResetPilotResult> {
+  // D-66: refuse protected archive basenames before any mkdir/overwrite check.
+  assertBackupWritable(backupDir);
+
   if (fs.existsSync(backupDir)) {
     throw new Error(`backupDir already exists (refusing overwrite): ${backupDir}`);
   }
