@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
-import { Route as ConfirmProjectNRouteImport } from './routes/confirm.$projectN'
+import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -30,9 +30,9 @@ const ApiReportDotpdfRoute = ApiReportDotpdfRouteImport.update({
   path: '/api/report.pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConfirmProjectNRoute = ConfirmProjectNRouteImport.update({
-  id: '/confirm/$projectN',
-  path: '/confirm/$projectN',
+const ReviewProjectNRoute = ReviewProjectNRouteImport.update({
+  id: '/review/$projectN',
+  path: '/review/$projectN',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -45,14 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
-  '/confirm/$projectN': typeof ConfirmProjectNRoute
+  '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
-  '/confirm/$projectN': typeof ConfirmProjectNRoute
+  '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -60,22 +60,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
-  '/confirm/$projectN': typeof ConfirmProjectNRoute
+  '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/sign-in' | '/api/report.pdf' | '/confirm/$projectN' | '/api/auth/$'
+    '/' | '/sign-in' | '/api/report.pdf' | '/review/$projectN' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    '/' | '/sign-in' | '/api/report.pdf' | '/confirm/$projectN' | '/api/auth/$'
+  to: '/' | '/sign-in' | '/api/report.pdf' | '/review/$projectN' | '/api/auth/$'
   id:
     | '__root__'
     | '/'
     | '/sign-in'
     | '/api/report.pdf'
-    | '/confirm/$projectN'
+    | '/review/$projectN'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -83,7 +82,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SignInRoute: typeof SignInRoute
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
-  ConfirmProjectNRoute: typeof ConfirmProjectNRoute
+  ReviewProjectNRoute: typeof ReviewProjectNRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -110,11 +109,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReportDotpdfRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/confirm/$projectN': {
-      id: '/confirm/$projectN'
-      path: '/confirm/$projectN'
-      fullPath: '/confirm/$projectN'
-      preLoaderRoute: typeof ConfirmProjectNRouteImport
+    '/review/$projectN': {
+      id: '/review/$projectN'
+      path: '/review/$projectN'
+      fullPath: '/review/$projectN'
+      preLoaderRoute: typeof ReviewProjectNRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -131,7 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SignInRoute: SignInRoute,
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
-  ConfirmProjectNRoute: ConfirmProjectNRoute,
+  ReviewProjectNRoute: ReviewProjectNRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

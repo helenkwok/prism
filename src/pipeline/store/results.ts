@@ -205,23 +205,6 @@ export async function recordInjectionFlags(db: Kysely<any>, projectN: number, fl
   });
 }
 
-/** D-45: open a confirmation-timing window for a project. */
-export async function startConfirmation(db: Kysely<any>, projectN: number): Promise<void> {
-  await db
-    .replaceInto("pipeline_confirmation_log")
-    .values({ project_n: projectN, started_at: new Date().toISOString(), ended_at: null })
-    .execute();
-}
-
-/** D-45: close the confirmation-timing window, leaving started_at untouched. */
-export async function endConfirmation(db: Kysely<any>, projectN: number): Promise<void> {
-  await db
-    .updateTable("pipeline_confirmation_log")
-    .set({ ended_at: new Date().toISOString() })
-    .where("project_n", "=", projectN)
-    .execute();
-}
-
 export type TallyCounts = { pass: number; fail: number; unknown: number; claimed: number };
 export interface TallyRow {
   checkId: string;
