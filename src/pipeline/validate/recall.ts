@@ -648,8 +648,6 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
     execFileSync(
       process.execPath,
       [
-        "--import",
-        "tsx",
         "src/pipeline/signoff/signoff.ts",
         "--doc",
         docPath,
