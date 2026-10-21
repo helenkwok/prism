@@ -1,7 +1,6 @@
 // D-66: exploratory Tavily vs free-collector cross-check for the archived 142.
 // Never feeds publishedStates / gate statistics. Archive is opened read-only.
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
