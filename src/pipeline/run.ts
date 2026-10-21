@@ -40,6 +40,7 @@ import {
   isQuotaResponse,
   type FetchImpl as NebiusFetchImpl,
 } from "./coding/nebius-client.ts";
+import { requireTfBudget } from "./coding/spend-guards.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
@@ -82,6 +83,8 @@ interface Overrides {
    * Set true only for Phase-7 / single-project Tavily bonus path (--use-tavily).
    */
   useTavily?: boolean;
+  /** D-67: Token Factory dollar cap; required for live TF (CLI --budget / PRISM_TF_BUDGET). */
+  tfBudget?: number;
 }
 
 /** One browser at a time across concurrent projects (D-55 / Pitfall 3). */
@@ -147,6 +150,10 @@ function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, 
       maxTokens: CODING_MAX_TOKENS,
     });
     const res = await client.request("/chat/completions", { method: "POST", body });
+    if (res.outcome === "too-large") {
+      throw new Error(`too-large: prompt estimate refused before Token Factory HTTP`);
+    }
+    if (client.dollarBudget) process.stdout.write(`${client.dollarBudget.budgetLine()}\n`);
     if (isQuotaResponse(res) || res.status === 402) {
       throw new QuotaStop(res.status, `nebius quota stop status ${res.status}`);
     }
@@ -436,7 +443,18 @@ async function processProject(
           return { valid: false as const, attempts: 0, allUnknown: true as const, checks: allUnknownChecks(contract.checkIds), chunks: 0, failedChunks: 0 };
         }
         const spansById = new Map<string, string>(segmented.spans.map((s: { id: string; text: string }) => [s.id, s.text]));
-        const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl });
+        // D-67: TF coding requires explicit --budget / PRISM_TF_BUDGET (no silent spend).
+        // Injected nebiusFetchImpl (unit tests) may skip the gate; live path never does.
+        const client = createClient({
+          baseUrl: PINNED_BASE_URL,
+          apiKey: apiKeys.nebius,
+          fetchImpl: overrides.nebiusFetchImpl,
+          ...(overrides.tfBudget != null
+            ? { budget: overrides.tfBudget }
+            : overrides.nebiusFetchImpl
+              ? { skipBudgetGate: true }
+              : { budget: requireTfBudget() }),
+        });
         const callOnce = makeNebiusCallOnce(codebook, spansById, model);
         const results: any[] = [];
         for (const chunk of chunks) {

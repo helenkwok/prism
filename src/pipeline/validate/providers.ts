@@ -7,6 +7,7 @@ import {
   SECOND_CODER_MODEL,
   type FetchImpl,
 } from "../coding/nebius-client.ts";
+import { requireTfBudget } from "../coding/spend-guards.ts";
 import { CONFIRMER_MODEL } from "../confirm/confirm.ts";
 import { SCREENER_MODEL } from "../select/screen-model.ts";
 
@@ -21,13 +22,33 @@ export interface RoleSpec {
   reasoning: "low" | "medium" | "high" | boolean;
 }
 
-/** Gold pinned from spikes/gold-labeller.md (option d-tf-glm-flash, 2026-10-20). */
+/**
+ * D-67 defaults: bulk gold/confirm/code2 → Ollama (free under Pro).
+ * Token Factory only with explicit --budget (coding showcase / capped recode).
+ * Confirm default model id (Task G): nemotron-3-ultra on Ollama.
+ * Code2 default: Super-VL on Ollama if available, else substitution recorded per A6.
+ */
 export const ROLE_CONFIG: Record<RoleName, RoleSpec> = {
-  gold: { provider: "token-factory", model: "zai-org/GLM-5.3-Flash", reasoning: "low" },
+  gold: { provider: "ollama", model: "glm-5.3-flash", reasoning: "low" },
   auditor: { provider: "ollama", model: "kimi-k3:cloud", reasoning: true },
   // low reasoning + larger num_predict: bare JSON items, fewer prose/empty replies (04-08 remasure)
   gatherer: { provider: "ollama", model: "kimi-k3:cloud", reasoning: "low" },
 };
+
+/** Task G hooks: concurrency 1–2, backoff, usage-cap stop; counters exportable. */
+export type OllamaUsageCounters = {
+  calls: number;
+  retries: number;
+  limit_hits: number;
+};
+
+export function createOllamaCounters(): OllamaUsageCounters {
+  return { calls: 0, retries: 0, limit_hits: 0 };
+}
+
+export function formatOllamaSummary(c: OllamaUsageCounters): string {
+  return `OLLAMA: ${JSON.stringify({ calls: c.calls, retries: c.retries, limit_hits: c.limit_hits })}`;
+}
 
 const FAMILY_NAMES = ["deepseek", "nemotron", "qwen", "glm", "kimi", "gemma", "llama"] as const;
 
@@ -59,11 +80,35 @@ export function ollamaClient({
   baseUrl = OLLAMA_BASE_URL,
   fetchImpl = fetch,
   maxRetries = 3,
+  /** D-67 Task G: keep ≤2 for bulk; wired here so counters exist before Task G runs. */
+  concurrency = 2,
+  counters = createOllamaCounters(),
 }: {
   baseUrl?: string;
   fetchImpl?: FetchImpl;
   maxRetries?: number;
+  concurrency?: number;
+  counters?: OllamaUsageCounters;
 } = {}) {
+  // ponytail: simple queue; raise only if Helen overrides (Task G).
+  let active = 0;
+  const waiters: (() => void)[] = [];
+  const acquire = () =>
+    new Promise<void>((resolve) => {
+      if (active < concurrency) {
+        active += 1;
+        resolve();
+      } else waiters.push(() => {
+        active += 1;
+        resolve();
+      });
+    });
+  const release = () => {
+    active -= 1;
+    const next = waiters.shift();
+    if (next) next();
+  };
+
   async function request(
     _path: string,
     { method = "POST", body }: { method?: string; body?: any } = {},
@@ -87,34 +132,49 @@ export function ollamaClient({
         ...(body.max_tokens !== undefined ? { num_predict: body.max_tokens } : {}),
       },
     };
-    for (let attempt = 1; ; attempt += 1) {
-      const res = await fetchImpl(`${baseUrl}/api/chat`, {
-        method,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(ollamaBody),
-      });
-      const text = await res.text();
-      let parsed: any = null;
-      try {
-        parsed = text ? JSON.parse(text) : null;
-      } catch {
-        parsed = null;
+    await acquire();
+    try {
+      for (let attempt = 1; ; attempt += 1) {
+        counters.calls += 1;
+        const res = await fetchImpl(`${baseUrl}/api/chat`, {
+          method,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(ollamaBody),
+        });
+        const text = await res.text();
+        let parsed: any = null;
+        try {
+          parsed = text ? JSON.parse(text) : null;
+        } catch {
+          parsed = null;
+        }
+        const blob = `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
+        const concurrent = res.status === 429 || /too many concurrent/.test(blob);
+        const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage/.test(blob);
+        if (usageCap) {
+          counters.limit_hits += 1;
+          throw new Error(`OLLAMA usage-cap: stop and report (${formatOllamaSummary(counters)})`);
+        }
+        if (concurrent && attempt <= maxRetries) {
+          counters.retries += 1;
+          counters.limit_hits += 1;
+          await sleep(400 * attempt);
+          continue;
+        }
+        const content = parsed?.message?.content ?? "";
+        const finish = parsed?.done_reason ?? (parsed?.done ? "stop" : undefined);
+        return {
+          ok: res.ok,
+          status: res.status,
+          text,
+          json: { choices: [{ message: { content }, finish_reason: finish }] },
+        };
       }
-      if (res.status === 429 && attempt <= maxRetries) {
-        await sleep(400 * attempt);
-        continue;
-      }
-      const content = parsed?.message?.content ?? "";
-      const finish = parsed?.done_reason ?? (parsed?.done ? "stop" : undefined);
-      return {
-        ok: res.ok,
-        status: res.status,
-        text,
-        json: { choices: [{ message: { content }, finish_reason: finish }] },
-      };
+    } finally {
+      release();
     }
   }
-  return { request };
+  return { request, counters };
 }
 
 export function roleClient(
@@ -131,7 +191,13 @@ export function roleClient(
   assertIndependent(role, spec.model);
   if (spec.provider === "token-factory") {
     if (!nebiusKey) throw new Error("token-factory role needs nebiusKey");
-    return createClient({ baseUrl: PINNED_BASE_URL, apiKey: nebiusKey, fetchImpl });
+    // D-67: TF roles need an explicit budget (env or caller-supplied via process argv).
+    return createClient({
+      baseUrl: PINNED_BASE_URL,
+      apiKey: nebiusKey,
+      fetchImpl,
+      budget: requireTfBudget(),
+    });
   }
   return ollamaClient({ fetchImpl });
 }

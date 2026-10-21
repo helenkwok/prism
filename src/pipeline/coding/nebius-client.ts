@@ -11,6 +11,16 @@
 // thinking false.
 
 import { scrubSecrets } from "../evidence/redact.ts";
+import {
+  assertRequestAllowed,
+  DEFAULT_TOKEN_CAP,
+  DollarBudget,
+  estimateCostUsd,
+  TooLargeError,
+  type BudgetSnapshot,
+} from "./spend-guards.ts";
+
+export { TooLargeError, DollarBudget, DEFAULT_TOKEN_CAP };
 
 export class NebiusError extends Error {
   status: number;
@@ -119,23 +129,66 @@ export function createClient({
   fetchImpl = fetch,
   maxRetries = 5,
   concurrency = 4,
+  /** Per-run $ cap (D-67). Required unless skipBudgetGate (unit tests of HTTP only). */
+  budget,
+  skipBudgetGate = false,
+  tokenCap = DEFAULT_TOKEN_CAP,
 }: {
   baseUrl: string;
   apiKey: string;
   fetchImpl?: FetchImpl;
   maxRetries?: number;
   concurrency?: number;
+  budget?: number | DollarBudget;
+  skipBudgetGate?: boolean;
+  tokenCap?: number;
 }) {
   if (!baseUrl) throw new NebiusError(0, "baseUrl is required");
   if (!apiKey) throw new NebiusError(0, "apiKey is required (set NEBIUS_API_KEY in the private env file)");
+  if (!skipBudgetGate && budget == null) {
+    throw new Error(
+      "Token Factory requires an explicit budget: pass --budget <dollars> (or --token-factory-budget) or set PRISM_TF_BUDGET",
+    );
+  }
+  const dollarBudget =
+    budget == null ? undefined : budget instanceof DollarBudget ? budget : new DollarBudget(budget);
   const limit = createLimiter(concurrency);
 
   async function request(
     path: string,
     { method = "GET", body, headers = {} }: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
-  ): Promise<NebiusResponse> {
+  ): Promise<NebiusResponse & { outcome?: "too-large"; budget?: BudgetSnapshot }> {
     return limit(async () => {
       const isMultipart = body instanceof FormData || body instanceof Blob;
+      // D-67: estimate + refuse before any HTTP for chat/completions with messages.
+      if (!isMultipart && body && typeof body === "object" && Array.isArray((body as any).messages)) {
+        const messages = (body as any).messages as { content?: string }[];
+        const model = String((body as any).model ?? "");
+        try {
+          assertRequestAllowed({
+            messages,
+            model: model || "deepseek-ai/DeepSeek-V4-Flash-0731",
+            budget: dollarBudget,
+            cap: tokenCap,
+            completionTokens: Number((body as any).max_tokens) || 4096,
+          });
+        } catch (e) {
+          if (e instanceof TooLargeError) {
+            return {
+              status: 0,
+              ok: false,
+              headers: {},
+              json: { error: "too-large", estimate: e.estimate, cap: e.cap },
+              text: e.message,
+              latencyMs: 0,
+              attempts: 0,
+              outcome: "too-large" as const,
+              budget: dollarBudget?.snapshot(),
+            };
+          }
+          throw e;
+        }
+      }
       for (let attempt = 1; ; attempt += 1) {
         const t0 = Date.now();
         let res: Response;
@@ -171,12 +224,32 @@ export function createClient({
         } catch {
           json = null;
         }
-        return { status: res.status, ok: res.ok, headers: rateHeaders, json, text, latencyMs, attempts: attempt };
+        if (dollarBudget && json && typeof json === "object" && (json as any).usage) {
+          const u = (json as any).usage;
+          const model = String((body as any)?.model ?? "deepseek-ai/DeepSeek-V4-Flash-0731");
+          try {
+            dollarBudget.recordSpent(
+              estimateCostUsd(model, Number(u.prompt_tokens) || 0, Number(u.completion_tokens) || 0),
+            );
+          } catch {
+            // unknown model price — leave spent unchanged
+          }
+        }
+        return {
+          status: res.status,
+          ok: res.ok,
+          headers: rateHeaders,
+          json,
+          text,
+          latencyMs,
+          attempts: attempt,
+          budget: dollarBudget?.snapshot(),
+        };
       }
     });
   }
 
-  return { request };
+  return { request, dollarBudget };
 }
 
 const OUTPUT_MODES = ["json_schema", "json_object"] as const;

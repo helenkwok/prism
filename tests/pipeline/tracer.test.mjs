@@ -121,7 +121,12 @@ describe("tracer: one project, every layer, wired end to end", () => {
       headers: { get: () => null },
       text: async () => JSON.stringify({ choices: [{ message: { content: cannedReplyText } }] }),
     });
-    const client = createClient({ baseUrl: "https://api.tokenfactory.nebius.com/v1", apiKey: "fake-nebius-key", fetchImpl: nebiusFetch });
+    const client = createClient({
+      baseUrl: "https://api.tokenfactory.nebius.com/v1",
+      apiKey: "fake-nebius-key",
+      fetchImpl: nebiusFetch,
+      skipBudgetGate: true,
+    });
     const body = buildChatBody({ model: PINNED_MODEL, messages: [{ role: "user", content: "code it" }], schema: jsonSchema, thinking: false });
     const response = await client.request("/chat/completions", { method: "POST", body });
     const rawReplyText = response.json.choices[0].message.content;

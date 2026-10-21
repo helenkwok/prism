@@ -306,7 +306,7 @@ export async function runSampleCli(argv: string[] = process.argv) {
   const posts: FramePost[] = JSON.parse(fs.readFileSync(path.join(dir, "frame.json"), "utf8")).posts;
   const apiKey = readKey("NEBIUS_API_KEY", "nebius.key");
   if (!apiKey) throw new Error("NEBIUS_API_KEY / nebius.key missing");
-  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey });
+  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey, skipBudgetGate: true });
   const screeners = makeScreeners({ client, cacheDir: defaultCacheDir(), preflightVersion: 2 });
 
   if (extendN !== undefined) {

@@ -374,6 +374,7 @@ export async function runScreeningAuditCli(argv = process.argv.slice(2)): Promis
     const screenerClient = createClient({
       baseUrl: PINNED_BASE_URL,
       apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+      skipBudgetGate: true,
     });
     const screeners = makeScreeners({ client: screenerClient as any, cacheDir, preflightVersion: 2 });
     const rescreen = await rescreenWithTightenedRule({

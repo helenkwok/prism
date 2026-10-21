@@ -25,8 +25,10 @@ import {
   QuotaStop,
   SECOND_CODER_MODEL,
 } from "../coding/nebius-client.ts";
+import { requireTfBudget } from "../coding/spend-guards.ts";
 import { segmentText } from "../evidence/segment.ts";
 
+/** TF Ultra id (legacy). D-67 default bulk confirmer → Ollama `nemotron-3-ultra` (Task G). */
 export const CONFIRMER_MODEL = "nvidia/Nemotron-3-Ultra-550b-a55b";
 
 export interface Positive {
@@ -466,6 +468,10 @@ export async function confirmWithModel(client: any, codebook: Codebook, p: Posit
   for (let i = 0; i < attempts; i++) {
     const body = buildChatBody({ model, messages: confirmMessages(codebook, p), mode: "json_schema", schema: { name: "confirm", schema: REPLY_SCHEMA, strict: true }, thinking: true, maxTokens: 8192 });
     const res = await client.request("/chat/completions", { method: "POST", body });
+    if (res.outcome === "too-large") {
+      throw new Error(`too-large: confirmation prompt refused before Token Factory HTTP`);
+    }
+    if (client.dollarBudget) process.stdout.write(`${client.dollarBudget.budgetLine()}\n`);
     if (isQuotaResponse(res)) throw new QuotaStop(res.status, `nebius quota stop status ${res.status}`);
     if (!res.ok) throw new Error(`nebius chat/completions returned status ${res.status}`);
     try {
@@ -513,7 +519,13 @@ async function main() {
   await ensureConfirmationSchema(db);
   await ensureEditsSchema(db);
   const codebook = loadCodebook(path.join(process.cwd(), "codebook.md"));
-  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!, concurrency: 4 });
+  // D-67: TF confirm CLI requires --budget / PRISM_TF_BUDGET (prefer Ollama bulk in Task G).
+  const client = createClient({
+    baseUrl: PINNED_BASE_URL,
+    apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+    concurrency: 4,
+    budget: requireTfBudget(),
+  });
 
   if (args.probe) {
     const fixture = JSON.parse(fs.readFileSync(args.probe, "utf8"));

@@ -69,7 +69,12 @@ async function main() {
   if (!docPath || all("--item").length === 0) throw new Error("usage: signoff.ts --doc <md> [--context <file>]... --item <name>...");
   const doc = fs.readFileSync(docPath, "utf8");
   const context = all("--context").map((p) => fs.readFileSync(p, "utf8")).join("\n\n");
-  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: readKey("NEBIUS_API_KEY", "nebius.key")! });
+  // Sign-off is not D-67 bulk coding/confirm; budget gate applies to those paths.
+  const client = createClient({
+    baseUrl: PINNED_BASE_URL,
+    apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+    skipBudgetGate: true,
+  });
   const dir = path.join(resolveDataDir(), "decisions");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   for (const item of all("--item")) {

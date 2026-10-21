@@ -61,7 +61,11 @@ export async function drawPilot({ targetN = 20, out = "pilot-projects.json", see
   const dataDir = resolveDataDir();
   const cacheDir = defaultCacheDir();
   const posts: FramePost[] = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "frame.json"), "utf8")).posts;
-  const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: readKey("NEBIUS_API_KEY", "nebius.key")! });
+  const client = createClient({
+    baseUrl: PINNED_BASE_URL,
+    apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+    skipBudgetGate: true,
+  });
 
   // Pilot keeps preflightVersion 1 so it still reproduces from its cached v1 entries.
   const screeners = makeScreeners({ client, cacheDir, preflightVersion: 1 });
