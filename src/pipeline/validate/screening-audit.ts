@@ -201,11 +201,24 @@ export async function auditExclusions({
         id,
         "audit2",
         { provider: role.provider, model: role.model, thinking, req: hash(messages) },
-        async () =>
-          screenCandidate(client as any, 2, candidate, {
-            model: role.model,
-            thinking,
-          }),
+        async () => {
+          // ponytail: serial Ollama cloud rate-limit backoff; raise sleeps if 429 persists under load
+          let last: unknown;
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+              return await screenCandidate(client as any, 2, candidate, {
+                model: role.model,
+                thinking,
+              });
+            } catch (err) {
+              last = err;
+              const msg = String((err as Error)?.message ?? err);
+              if (!/\b429\b/.test(msg) || attempt === 5) throw err;
+              await new Promise((r) => setTimeout(r, 2000 * attempt));
+            }
+          }
+          throw last;
+        },
       );
 
       records.push({
@@ -221,8 +234,15 @@ export async function auditExclusions({
         textChars,
         auditedAt: new Date().toISOString(),
       });
+      // Brief pause between live auditor calls (Ollama cloud).
+      await new Promise((r) => setTimeout(r, 500));
     } catch (err) {
       if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop") {
+        stopped = true;
+        break;
+      }
+      const msg = String((err as Error)?.message ?? err);
+      if (/\b429\b/.test(msg)) {
         stopped = true;
         break;
       }
