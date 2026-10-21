@@ -8,7 +8,11 @@ import path from "node:path";
 /** Exact backup directory basenames that must never be written or deleted. */
 export const PROTECTED_BACKUP_BASENAMES: ReadonlySet<string> = new Set([
   "2026-10-21-tavily-142",
+  "2026-10-21-whole-page-spans",
 ]);
+
+/** Canonical D-67 whole-page-spans archive basename. */
+export const WHOLE_PAGE_SPANS_BACKUP = "2026-10-21-whole-page-spans";
 
 /**
  * Throws if `backupDir` is a protected archive basename, or resolves inside a

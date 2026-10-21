@@ -131,22 +131,22 @@ describe("resetPilot (D-61)", () => {
     fs.rmSync(backupDir, { recursive: true, force: true });
   });
 
-  test("D-66: refuses protected basename 2026-10-21-tavily-142 (temp path only)", async () => {
+  test("D-66/D-67: refuses protected basenames tavily-142 and whole-page-spans (temp path only)", async () => {
     assert.ok(PROTECTED_BACKUP_BASENAMES.has("2026-10-21-tavily-142"));
-    assert.equal(PROTECTED_BACKUP_BASENAMES.size, 1);
+    assert.ok(PROTECTED_BACKUP_BASENAMES.has("2026-10-21-whole-page-spans"));
+    assert.equal(PROTECTED_BACKUP_BASENAMES.size, 2);
 
     const dataDir = seedDataDir();
     // Temp path whose basename matches the archive — never the real home tree.
     const parent = fs.mkdtempSync(path.join(os.tmpdir(), "prism-prot-"));
-    const backupDir = path.join(parent, "2026-10-21-tavily-142");
-
-    assert.throws(() => assertBackupWritable(backupDir), /protected backup \(D-66\)/);
-    await assert.rejects(() => resetPilot({ dataDir, backupDir }), /protected backup \(D-66\)/);
-    assert.equal(fs.existsSync(backupDir), false);
-
-    // Nested under protected basename also refused.
-    const nested = path.join(parent, "2026-10-21-tavily-142", "subdir");
-    assert.throws(() => assertBackupWritable(nested), /protected backup \(D-66\)/);
+    for (const name of ["2026-10-21-tavily-142", "2026-10-21-whole-page-spans"]) {
+      const backupDir = path.join(parent, name);
+      assert.throws(() => assertBackupWritable(backupDir), /protected backup \(D-66\)/);
+      await assert.rejects(() => resetPilot({ dataDir, backupDir }), /protected backup \(D-66\)/);
+      assert.equal(fs.existsSync(backupDir), false);
+      const nested = path.join(parent, name, "subdir");
+      assert.throws(() => assertBackupWritable(nested), /protected backup \(D-66\)/);
+    }
 
     fs.rmSync(dataDir, { recursive: true, force: true });
     fs.rmSync(parent, { recursive: true, force: true });
