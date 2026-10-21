@@ -709,11 +709,13 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
     const entry = byHn.get(hnId);
     if (!entry) throw new Error(`recall id ${hnId} missing from sample`);
     try {
+      process.stderr.write(`recall: gather ${hnId} (n=${entry.n})…\n`);
       const pages = await gatherOwnSources({
         entry,
         renderImpl: renderTextAsync,
         githubToken: ghToken,
       });
+      process.stderr.write(`recall: list ${hnId} (${pages.length} pages)…\n`);
       const listed = await listItems({
         client: client as any,
         role,
@@ -748,6 +750,9 @@ export async function runRecallCli(argv = process.argv.slice(2)): Promise<void> 
         found: matched.filter((m) => m.found).length,
         droppedNonVerbatim,
       });
+      process.stderr.write(
+        `recall: done ${hnId} listed=${listed.length} kept=${kept.length} found=${matched.filter((m) => m.found).length}\n`,
+      );
     } catch (e) {
       if (e instanceof QuotaStop) {
         stopped = true;
