@@ -20,11 +20,13 @@ import pLimit from "p-limit";
 
 import { resolveDataDir, getDb } from "../app/server/db.ts";
 import { deriveBoundary, hostClass, withinBoundary, type Boundary } from "./evidence/boundary.ts";
-import { collectProjectPages, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
+import { collectProjectPages, type CollectProjectPagesResult, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
+import { collectOwnSitePages, type FetchImpl as OwnSiteFetchImpl } from "./evidence/own-site.ts";
 import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImpl, type RepoEvidence } from "./evidence/github.ts";
 import { redactText } from "./evidence/redact.ts";
 import { renderTextAsync, type RenderImplAsync } from "./evidence/render.ts";
 import { findSiteRepos } from "./evidence/site-repos.ts";
+import { assertA8Signed } from "./signoff/a8.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
@@ -66,6 +68,8 @@ export interface SliceEntryLike {
 
 interface Overrides {
   tavilyFetchImpl?: TavilyFetchImpl;
+  /** D-66: inject fetch for the free own-site collector in tests. */
+  ownSiteFetchImpl?: OwnSiteFetchImpl;
   githubFetchImpl?: GithubFetchImpl;
   nebiusFetchImpl?: NebiusFetchImpl;
   gateSpawnImpl?: SpawnImpl;
@@ -73,6 +77,11 @@ interface Overrides {
   gateScriptPath?: string;
   /** D-55: inject a fake renderer in tests; production uses renderTextAsync. */
   renderImpl?: RenderImplAsync;
+  /**
+   * D-66: default is the free own-site collector (bulk COD-07).
+   * Set true only for Phase-7 / single-project Tavily bonus path (--use-tavily).
+   */
+  useTavily?: boolean;
 }
 
 /** One browser at a time across concurrent projects (D-55 / Pitfall 3). */
@@ -222,17 +231,36 @@ async function processProject(
     if (parts.length >= 2) githubOwnerRepo = { owner: parts[0], repo: parts[1] };
   }
 
-  // 2. evidence — Tavily collection + (when GitHub-hosted) repo evidence.
+  // 2. evidence — free own-site collector by default (D-66); Tavily only when useTavily.
   // D-51: never cache a result that hit a Tavily usage-limit status (resume must re-try the call).
+  // collector key bumps cache so prior Tavily evidence is not reused after the collector switch.
+  const useTavily = overrides.useTavily === true;
+  const collectPages = async (b: Boundary, startUrl: string): Promise<CollectProjectPagesResult> => {
+    if (useTavily) {
+      return collectProjectPages({
+        boundary: b,
+        startUrl,
+        apiKey: apiKeys.tavily,
+        fetchImpl: overrides.tavilyFetchImpl,
+      });
+    }
+    return collectOwnSitePages({ boundary: b, startUrl, fetchImpl: overrides.ownSiteFetchImpl });
+  };
   const evidenceStage = await withStageCache(
     cacheDir,
     projectId,
     "evidence",
     // homepageFollow is set only for GitHub-entry projects, so other projects' cached evidence keeps its key.
-    { finalUrl: project.final_url, boundary, githubOwnerRepo, ...(githubOwnerRepo ? { homepageFollow: 1 } : {}) },
+    {
+      finalUrl: project.final_url,
+      boundary,
+      githubOwnerRepo,
+      collector: useTavily ? "tavily" : "own-site-v1",
+      ...(githubOwnerRepo ? { homepageFollow: 1 } : {}),
+    },
     async () => {
       const [tavilyResult, githubResult] = await Promise.all([
-        collectProjectPages({ boundary, startUrl: project.final_url, apiKey: apiKeys.tavily, fetchImpl: overrides.tavilyFetchImpl }),
+        collectPages(boundary, project.final_url),
         githubOwnerRepo
           ? fetchRepoEvidence({
               owner: githubOwnerRepo.owner,
@@ -245,7 +273,7 @@ async function processProject(
       // too, inside its own boundary, so "GitHub-only" means the repo really is the only own source.
       const homepage = homepageToFollow(githubResult);
       if (!homepage) return { tavily: tavilyResult, github: githubResult, homepage: null };
-      const site = await collectProjectPages({ boundary: deriveBoundary(homepage), startUrl: homepage, apiKey: apiKeys.tavily, fetchImpl: overrides.tavilyFetchImpl });
+      const site = await collectPages(deriveBoundary(homepage), homepage);
       const seen = new Set(tavilyResult.pages.map((p) => p.url));
       return {
         tavily: {
@@ -780,6 +808,7 @@ if (invokedDirectly) {
       secondCoderIds = new Set(subsets.secondModel.map(String));
     }
 
+    const useTavily = args.includes("--use-tavily");
     const tavily = readKey("TAVILY_API_KEY", "tavily.key");
     const nebius = readKey("NEBIUS_API_KEY", "nebius.key");
     // GITHUB_TOKEN in the environment wins when set; otherwise fall back to
@@ -796,7 +825,7 @@ if (invokedDirectly) {
       }
     }
     const missing = [
-      !tavily ? `TAVILY_API_KEY (or ${path.join(keyDir(), "tavily.key")})` : null,
+      useTavily && !tavily ? `TAVILY_API_KEY (or ${path.join(keyDir(), "tavily.key")})` : null,
       !nebius ? `NEBIUS_API_KEY (or ${path.join(keyDir(), "nebius.key")})` : null,
       !github ? "GITHUB_TOKEN (and `gh auth token` also failed — run `gh auth login` or set GITHUB_TOKEN)" : null,
     ].filter((v): v is string => v !== null);
@@ -805,12 +834,18 @@ if (invokedDirectly) {
       process.exit(1);
     }
 
+    // D-66: free-collector results must not count until A8 is signed (digest-bound).
+    if (!useTavily) {
+      assertA8Signed();
+    }
+
     const accounting = await runPipeline({
-      apiKeys: { tavily: tavily!, nebius: nebius!, github: github! },
+      apiKeys: { tavily: tavily ?? "", nebius: nebius!, github: github! },
       projectFilter,
       sliceProjectsPath,
       concurrency,
       secondCoderIds,
+      overrides: { useTavily },
     });
     for (const o of accounting.outcomes) {
       if (o.status === "failed") process.stderr.write(`project n=${o.n}: FAILED: ${o.error}\n`);

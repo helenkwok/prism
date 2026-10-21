@@ -335,3 +335,25 @@ Reason: recall measures the collector against an independent gatherer that does 
 Changed rule: strata remain the window-aligned quarters already signed in register row R03 (equal 75 per quarter), walked in chronological order. Across quarters, a project already included from an earlier post is excluded under the existing \`duplicate\` reason code (R13 / section 2), using one shared set of included hosts so the same launch is not counted twice. N stays 300 (A1/A2). Robots-blocked at preflight is not collectable (A5), while a drawn project whose collection fails stays in N with a sensitivity line (section 3). Pilot rows are removed after a verified backup and statistics are limited to the sample list. Coding runs in real time because the Batch API was unavailable.
 
 Reason: restates R03 and the pre-registered N for the bulk sample; pilot and sample must not share project numbers in one store.
+
+## Addendum 2026-10-21 (A8)
+
+Adopted on Helen's 2026-10-21 decision D-66 (Tavily usage-limit halt at 142/300; no new paid collection spend). Through the A6 sign-off role. No free-collector coded result counts until this addendum is signed digest-bound.
+
+### A8.1 Free own-site collector for bulk coding
+
+Changed rule: the bulk COD-07 run for all 300 projects uses one free own-site collector (homepage, sitemap.xml, and in-boundary links; about 20 pages per project; at most one request per second per host; robots.txt before any page; thin pages rendered as in A7.3; GitHub via the authenticated `gh` API). It does not call Tavily or any other paid search/extract API. Tavily remains available only as an explicit single-project / Phase 7 bonus path (`--use-tavily`), not for bulk.
+
+Reason: the Tavily key hit its plan limit mid-sample; mixing collectors across quarters would confound cohort findings; the rules require a Token Factory runtime call and an NVIDIA open model, not Tavily, for coding.
+
+### A8.2 Tavily-142 archive retained read-only
+
+Changed rule: every Tavily-coded result from the halted run is kept forever as proof at `~/.prism-data/backups/2026-10-21-tavily-142/` (sqlite, snapshots, manifests, cache, SHA256SUMS, bulk log). No pipeline path may delete or overwrite that basename. The live store is recollected with the free collector.
+
+Reason: the 142 are the only honest Tavily proof for this sample; discarding them would erase the halt evidence.
+
+### A8.3 Tavily-vs-free cross-check is exploratory only
+
+Changed rule: for each of the 142 archived projects, a per-project comparison of Tavily vs free-collector pages, spans, and check states is written under `validation/` and reported as exploratory. It never feeds `publishedStates`, gate statistics, or any published figure.
+
+Reason: the cross-check shows what the free collector adds or misses without contaminating the pre-registered statistics.
