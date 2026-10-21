@@ -788,27 +788,47 @@ export async function supportJudgeItem(
     thinking: false,
     maxTokens: 1024,
   });
-  const res = await client.request("/chat/completions", { method: "POST", body });
-  if (!res.ok) throw new Error(`support-judge status ${res.status}`);
-  const raw = (res.json as any)?.choices?.[0]?.message?.content;
-  let parsed: any;
-  try {
-    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch {
-    const start = String(raw).indexOf("{");
-    const end = String(raw).lastIndexOf("}");
-    parsed = start >= 0 && end > start ? JSON.parse(String(raw).slice(start, end + 1)) : null;
+  let lastErr: Error | null = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const res = await client.request("/chat/completions", { method: "POST", body });
+    if (!res.ok) {
+      lastErr = new Error(`support-judge status ${res.status}`);
+      continue;
+    }
+    const raw = (res.json as any)?.choices?.[0]?.message?.content;
+    let parsed: any = null;
+    try {
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      const start = String(raw).indexOf("{");
+      const end = String(raw).lastIndexOf("}");
+      if (start >= 0 && end > start) {
+        try {
+          parsed = JSON.parse(String(raw).slice(start, end + 1));
+        } catch {
+          parsed = null;
+        }
+      }
+    }
+    if (!parsed || typeof parsed.supported !== "boolean") {
+      lastErr = new Error(`support-judge off-contract reply: ${String(raw).slice(0, 120)}`);
+      continue;
+    }
+    const boilerplate = Boolean(parsed.boilerplate) || isBoilerplateQuote(item.quote);
+    const reason =
+      typeof parsed.reason === "string"
+        ? parsed.reason
+        : typeof parsed.evidence === "string"
+          ? parsed.evidence
+          : "";
+    return {
+      supported: boilerplate ? false : Boolean(parsed.supported),
+      boilerplate,
+      reason,
+      model,
+    };
   }
-  if (!parsed || typeof parsed.supported !== "boolean") {
-    throw new Error("support-judge off-contract reply");
-  }
-  const boilerplate = Boolean(parsed.boilerplate) || isBoilerplateQuote(item.quote);
-  return {
-    supported: boilerplate ? false : Boolean(parsed.supported),
-    boilerplate,
-    reason: typeof parsed.reason === "string" ? parsed.reason : "",
-    model,
-  };
+  throw lastErr ?? new Error("support-judge failed");
 }
 
 export type SupportFigure = {
@@ -1123,8 +1143,12 @@ const invokedDirectly =
   fs.realpathSync.native(process.argv[1]) === fs.realpathSync.native(fileURLToPath(import.meta.url));
 
 if (invokedDirectly) {
-  runRecallCli().catch((err) => {
-    console.error(err?.stack ?? err);
-    process.exitCode = 1;
-  });
+  runRecallCli()
+    .then(() => {
+      if (process.exitCode && process.exitCode !== 0) process.exit(process.exitCode);
+    })
+    .catch((err) => {
+      console.error(err?.stack ?? err);
+      process.exit(1);
+    });
 }
