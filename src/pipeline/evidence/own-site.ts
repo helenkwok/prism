@@ -23,10 +23,20 @@ const USER_AGENT = "PRISM-research/0.1 (+https://github.com/helenkwok/prism)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Visible text from HTML (same crude strip as pick-projects pageText). */
+/** Block-level tags that should become line breaks (D-67; keep structure for segmenter). */
+const BLOCK_CLOSE_RE =
+  /<\/(?:p|div|li|h[1-6]|tr|section|article|header|footer|nav|main|aside|blockquote|pre|ul|ol|table|thead|tbody|tfoot)\s*>/gi;
+const BR_RE = /<br\s*\/?>/gi;
+
+/**
+ * Visible text from HTML. Inserts newlines at block boundaries; collapses
+ * horizontal whitespace within a line only (does not flatten the whole page).
+ */
 export function pageText(html: string): string {
   return String(html ?? "")
     .replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(BR_RE, "\n")
+    .replace(BLOCK_CLOSE_RE, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -34,7 +44,9 @@ export function pageText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 

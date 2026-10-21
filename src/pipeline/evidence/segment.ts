@@ -48,6 +48,57 @@ function splitOnHeadings(block: string): string[] {
 
 const cleanBlock = (block: string): string => block.replace(/[ \t]+/g, " ").trim();
 
+/** Hard cap per span (D-67). No slack. */
+export const MAX_SPAN_CHARS = 1500;
+
+const SENTENCE_END = /[.?!]\s+/g;
+
+/**
+ * Split one string into chunks ≤ MAX_SPAN_CHARS.
+ * Prefer sentence boundary (.?! + whitespace); else last whitespace before cap; else hard split at cap.
+ */
+export function splitOversized(block: string, max = MAX_SPAN_CHARS): string[] {
+  if (block.length <= max) return block.length >= 2 ? [block] : [];
+  const out: string[] = [];
+  let rest = block;
+  while (rest.length > max) {
+    const window = rest.slice(0, max);
+    let cut = -1;
+    SENTENCE_END.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = SENTENCE_END.exec(window)) !== null) cut = m.index + m[0].length;
+    if (cut <= 0) {
+      let lastWs = -1;
+      for (let i = window.length - 1; i >= 0; i--) {
+        if (/\s/.test(window[i])) {
+          lastWs = i;
+          break;
+        }
+      }
+      cut = lastWs > 0 ? lastWs : max; // exclude the whitespace from the piece when splitting on it
+    }
+    let piece: string;
+    let next: string;
+    if (cut === max) {
+      piece = rest.slice(0, max);
+      next = rest.slice(max);
+    } else {
+      piece = rest.slice(0, cut).trimEnd();
+      next = rest.slice(cut).trimStart();
+    }
+    if (piece.length >= 2) out.push(piece);
+    if (next.length >= rest.length) {
+      // no progress — hard split
+      out.push(rest.slice(0, max));
+      rest = rest.slice(max);
+    } else {
+      rest = next;
+    }
+  }
+  if (rest.length >= 2) out.push(rest);
+  return out;
+}
+
 /** Deterministic span split: same input text always yields the same ordered span ids and text. */
 export function segmentText(text: string): Span[] {
   const rawBlocks = String(text ?? "").split(/\r?\n\s*\r?\n/);
@@ -60,7 +111,8 @@ export function segmentText(text: string): Span[] {
     deduped.push(block);
   }
 
-  return deduped.map((text, i) => ({ id: `s${String(i + 1).padStart(3, "0")}`, text }));
+  const capped = deduped.flatMap((b) => splitOversized(b));
+  return capped.map((text, i) => ({ id: `s${String(i + 1).padStart(3, "0")}`, text }));
 }
 
 /**

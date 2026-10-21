@@ -32,7 +32,8 @@ export const renderText: RenderImpl = (url) => {
     }
     const raw = ab(["eval", "document.body ? document.body.innerText : ''"]).trim();
     const v = JSON.parse(raw);
-    return typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "";
+    // D-67: keep innerText block newlines; only collapse horizontal runs.
+    return typeof v === "string" ? v.replace(/[^\S\n]+/g, " ").replace(/ *\n */g, "\n").trim() : "";
   } catch {
     return "";
   } finally {
@@ -65,7 +66,8 @@ export const renderTextAsync: RenderImplAsync = async (url) => {
     }
     const raw = (await ab(["eval", "document.body ? document.body.innerText : ''"])).trim();
     const v = JSON.parse(raw);
-    return typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "";
+    // D-67: keep innerText block newlines; only collapse horizontal runs.
+    return typeof v === "string" ? v.replace(/[^\S\n]+/g, " ").replace(/ *\n */g, "\n").trim() : "";
   } catch {
     return "";
   } finally {

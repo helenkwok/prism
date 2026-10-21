@@ -56,4 +56,34 @@ describe("segmentText (EVD-04)", () => {
     assert.equal(b.visibility, "provider-extracted");
     assert.notEqual(a.snapshotHash, b.snapshotHash);
   });
+
+  test("10k-char paragraph splits on sentence boundaries into spans ≤1500", () => {
+    const pad = "word ".repeat(20);
+    const sentences = Array.from({ length: 80 }, (_, i) => `Sentence number ${i + 1} ${pad}ends here.`);
+    const text = sentences.join(" ");
+    assert.ok(text.length > 10_000, text.length);
+    const spans = segmentText(text);
+    assert.ok(spans.length > 1);
+    for (const s of spans) assert.ok(s.text.length <= 1500, s.text.length);
+    assert.deepEqual(segmentText(text), spans);
+  });
+
+  test("50k-char no-punctuation fixture: every span ≤1500 (whitespace then hard split)", () => {
+    const text = ("navitem" + " ").repeat(8000).trim(); // ~56k, spaces only, no .?!
+    assert.ok(text.length > 50_000);
+    assert.ok(!/[.?!]/.test(text));
+    const spans = segmentText(text);
+    assert.ok(spans.length >= 30);
+    for (const s of spans) assert.ok(s.text.length <= 1500, `len=${s.text.length}`);
+    assert.deepEqual(segmentText(text).map((s) => s.id), spans.map((s) => s.id));
+  });
+
+  test("no-whitespace mega string hard-splits at exactly 1500", () => {
+    const text = "a".repeat(4000);
+    const spans = segmentText(text);
+    assert.equal(spans.length, 3);
+    assert.equal(spans[0].text.length, 1500);
+    assert.equal(spans[1].text.length, 1500);
+    assert.equal(spans[2].text.length, 1000);
+  });
 });

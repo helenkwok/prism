@@ -62,6 +62,12 @@ describe("own-site helpers", () => {
     assert.equal(pageText("<p>Hello <b>world</b></p>"), "Hello world");
   });
 
+  test("pageText keeps block newlines (D-67)", () => {
+    const t = pageText("<div><p>First block</p><p>Second block</p></div>");
+    assert.match(t, /First block\nSecond block/);
+    assert.ok(!t.includes("First block Second block"));
+  });
+
   test("extractLinks resolves relative hrefs", () => {
     const links = extractLinks('<a href="/about">x</a><a href="https://other.example/">y</a>', "https://ex.example/");
     assert.ok(links.includes("https://ex.example/about"));
