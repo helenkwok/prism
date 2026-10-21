@@ -10,7 +10,9 @@ import { SCREENER_MODEL } from "../../src/pipeline/select/screen-model.ts";
 import { ROLE_CONFIG } from "../../src/pipeline/validate/providers.ts";
 import { isPageLike } from "../../src/pipeline/evidence/tavily.ts";
 import {
+  EmptyItemsError,
   gatherOwnSources,
+  isBoilerplateQuote,
   listItems,
   matchItems,
   normalise,
@@ -284,7 +286,7 @@ describe("listItems / verify / match / figure", () => {
     assert.equal(withFails.acceptanceMet, true);
   });
 
-  test("parseItems accepts bare arrays; empty/non-JSON throw", () => {
+  test("parseItems accepts bare arrays; empty vs prose errors", () => {
     const ids = new Set(["check.a"]);
     const bare = parseItems(
       JSON.stringify([{ checkId: "check.a", url: "https://example.com/", quote: "Hello", state: "pass" }]),
@@ -296,9 +298,38 @@ describe("listItems / verify / match / figure", () => {
       ids,
     );
     assert.equal(wrapped.length, 1);
-    assert.throws(() => parseItems("[]", ids), RecallParseError);
-    assert.throws(() => parseItems('{"items":[]}', ids), RecallParseError);
+    assert.throws(() => parseItems("[]", ids), EmptyItemsError);
+    assert.throws(() => parseItems('{"items":[]}', ids), EmptyItemsError);
     assert.throws(() => parseItems("## Evidence found\nnothing", ids), RecallParseError);
+  });
+
+  test("listItems accepts repeated empty [] as zero items", async () => {
+    const client = fakeClient(["[]", "[]"]);
+    const pages = [
+      {
+        url: "https://example.com/",
+        text: "Hello world product page with enough characters.",
+        fetchedAt: "2026-10-21T00:00:00.000Z",
+        rendered: false,
+      },
+    ];
+    const items = await listItems({
+      client,
+      role: ROLE_CONFIG.gatherer,
+      codebook,
+      checkIds: ["check.a"],
+      pages,
+      cacheDir: tmpCache(),
+      projectId: "empty-ok",
+    });
+    assert.equal(items.length, 0);
+    assert.equal(client.seen.length, 2);
+  });
+
+  test("isBoilerplateQuote catches CTAs", () => {
+    assert.equal(isBoilerplateQuote("Go to app Demo Book a demo Install"), true);
+    assert.equal(isBoilerplateQuote("Start for Free"), true);
+    assert.equal(isBoilerplateQuote("Our API returns signed manifests for every run."), false);
   });
 
   test("isPageLike drops _next/static and css/js", () => {
