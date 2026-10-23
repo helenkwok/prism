@@ -1,8 +1,9 @@
 // Smoke check for the built app. Node built-ins only.
 //   node scripts/app-smoke.mjs --spawn        start .output/server/index.mjs and check it
-//   node scripts/app-smoke.mjs --base <url> [--email <e> --password <p>]
+//   node scripts/app-smoke.mjs --base <url> --email <e> --password-file <mode-600 file>
 //                                             check an already running server; the
-//                                             credentials must already be seeded there
+//                                             credentials must already be seeded there.
+// Passwords never travel on argv and are never printed.
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
@@ -133,6 +134,68 @@ async function assertions(base, creds) {
   }
 }
 
+// better-auth rate-limits sign-in (T-07-06); the smoke signs in five times, so
+// on a 429 it waits the server's own retry-after once instead of loosening the limit.
+async function signIn(base, email, password) {
+  const attempt = () =>
+    fetch(`${base}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: base },
+      body: JSON.stringify({ email, password }),
+    });
+  let res = await attempt();
+  if (res.status === 429) {
+    const wait = Math.min(Number(res.headers.get("x-retry-after")) || 10, 30);
+    await sleep(wait * 1000 + 250);
+    res = await attempt();
+  }
+  const cookie = res.headers
+    .getSetCookie()
+    .map((c) => c.split(";")[0])
+    .join("; ");
+  return { status: res.status, cookie };
+}
+
+// APP-01 / Pitfall 2: the admin plugin's endpoints answer every signed-in user,
+// so judge and company sessions must be refused there while admin is served.
+async function accessChecks(base, accounts) {
+  const sessions = {};
+  for (const role of ["admin", "judge", "company"]) {
+    const s = await signIn(base, accounts[role].email, accounts[role].password);
+    check(`ACCESS ${role} sign-in returns 200`, s.status === 200, `status ${s.status}`);
+    sessions[role] = s.cookie;
+  }
+  const listUsers = (role) => fetch(`${base}/api/auth/admin/list-users`, { headers: { cookie: sessions[role] } });
+  const setRole = (role) =>
+    fetch(`${base}/api/auth/admin/set-role`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: base, cookie: sessions[role] },
+      body: JSON.stringify({ userId: accounts.company.id, role: "admin" }),
+    });
+  for (const role of ["judge", "company"]) {
+    const list = await listUsers(role);
+    check(`ACCESS ${role} GET /api/auth/admin/list-users returns 403`, list.status === 403, `status ${list.status}`);
+    const set = await setRole(role);
+    check(`ACCESS ${role} POST /api/auth/admin/set-role returns 403`, set.status === 403, `status ${set.status}`);
+  }
+  const adminList = await listUsers("admin");
+  const listed = await adminList.json().catch(() => ({}));
+  check("ACCESS admin GET /api/auth/admin/list-users returns 200", adminList.status === 200, `status ${adminList.status}`);
+  const company = (listed.users ?? []).find((u) => u.email === accounts.company.email);
+  check("ACCESS company role unchanged after the refused set-role calls", company?.role === "company", `role ${company?.role}`);
+}
+
+/** A password file must grant no group or other access; one trailing newline is dropped. */
+function readPasswordFile(file) {
+  const mode = fs.statSync(file).mode;
+  if ((mode & 0o077) !== 0) {
+    throw new Error(`--password-file must not grant group or other access (chmod 600); mode is ${(mode & 0o777).toString(8)}`);
+  }
+  const password = fs.readFileSync(file, "utf8").replace(/\r?\n$/, "");
+  if (!password) throw new Error("--password-file is empty");
+  return password;
+}
+
 // Start the built server with a broken configuration and expect it to exit
 // non-zero within 10 seconds, its output naming the failed setting. The
 // process never stays alive: it is killed if it does not exit in time.
@@ -183,14 +246,22 @@ try {
       TRUSTED_ORIGINS: base,
       PRISM_DATA_DIR: dataDir,
     };
-    // The seed script is the only account path: random credentials, never printed.
-    creds = randomCreds();
-    const seed = spawnSync(
-      process.execPath,
-      ["src/app/server/seed-account.ts", "--email", creds.email, "--role", "admin", "--password", creds.password],
-      { env: serverEnv, encoding: "utf8" },
-    );
-    check("seed script created the account", seed.status === 0, (seed.stderr ?? "").trim());
+    // The seed script is the only account path: random credentials, passed on
+    // stdin (never argv) and never printed.
+    const accounts = { admin: randomCreds(), judge: randomCreds(), company: randomCreds() };
+    creds = accounts.admin;
+    let seeded = true;
+    for (const role of ["admin", "judge", "company"]) {
+      const seed = spawnSync(
+        process.execPath,
+        ["src/app/server/seed-account.ts", "--email", accounts[role].email, "--role", role, "--password-stdin"],
+        { env: serverEnv, encoding: "utf8", input: `${accounts[role].password}\n` },
+      );
+      accounts[role].id = /id=([^,)]+)/.exec(seed.stdout ?? "")?.[1];
+      const ok = seed.status === 0 && !`${seed.stdout}${seed.stderr}`.includes(accounts[role].password);
+      check(`seed script created the ${role} account`, ok, (seed.stderr ?? "").trim());
+      seeded &&= ok;
+    }
     child = spawn(process.execPath, [".output/server/index.mjs"], {
       env: serverEnv,
       stdio: ["ignore", "inherit", "inherit"],
@@ -201,7 +272,10 @@ try {
     });
     const up = await waitFor(base, 30_000);
     check("built server answers within 30 seconds", up && !exited);
-    if (up && !exited && seed.status === 0) await assertions(base, creds);
+    if (up && !exited && seeded) {
+      await assertions(base, creds);
+      await accessChecks(base, accounts);
+    }
 
     // Boot refusals: a mis-configured server must stop, not serve.
     await bootRefusal(
@@ -218,13 +292,17 @@ try {
     );
     check("in-repo data directory was not created", !fs.existsSync(path.join(process.cwd(), ".prism-smoke-data")));
   } else {
-    const email = flagValue("--email");
-    const password = flagValue("--password");
-    if (!email || !password) {
-      console.error("--base mode needs --email and --password for an account seeded elsewhere");
+    if (args.includes("--password")) {
+      console.error("passwords are never taken on the command line; use --password-file <mode-600 file>");
       process.exit(2);
     }
-    await assertions(base.replace(/\/$/, ""), { email, password });
+    const email = flagValue("--email");
+    const passwordFile = flagValue("--password-file");
+    if (!email || !passwordFile) {
+      console.error("--base mode needs --email and --password-file for an account seeded elsewhere");
+      process.exit(2);
+    }
+    await assertions(base.replace(/\/$/, ""), { email, password: readPasswordFile(passwordFile) });
   }
 } catch (err) {
   check("smoke run completed", false, err instanceof Error ? err.message : String(err));

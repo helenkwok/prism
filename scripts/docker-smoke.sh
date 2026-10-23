@@ -98,9 +98,15 @@ SMOKE_EMAIL="smoke-$(rand_hex 4)@example.test"
 SMOKE_PASSWORD=$(rand_hex 16)
 
 log "seeding an account into ${DATA_DIR} (host-side, outside the repo)"
-PRISM_DATA_DIR="$DATA_DIR" BETTER_AUTH_SECRET="$SEED_SECRET" \
-  node src/app/server/seed-account.ts --email "$SMOKE_EMAIL" --role admin --password "$SMOKE_PASSWORD" \
+# The password goes over stdin (printf is a shell builtin, so the value is on
+# no process argv) and later to app-smoke through a mode-600 file.
+printf '%s\n' "$SMOKE_PASSWORD" | PRISM_DATA_DIR="$DATA_DIR" BETTER_AUTH_SECRET="$SEED_SECRET" \
+  node src/app/server/seed-account.ts --email "$SMOKE_EMAIL" --role admin --password-stdin \
   || fatal "host-side seed script failed"
+SMOKE_PASSWORD_FILE=$(mktemp "${TMPDIR:-/tmp}/prism-docker-smoke-pw.XXXXXX")
+TMP_FILES+=("$SMOKE_PASSWORD_FILE")
+chmod 600 "$SMOKE_PASSWORD_FILE"
+printf '%s\n' "$SMOKE_PASSWORD" >"$SMOKE_PASSWORD_FILE"
 
 # The container's node user must be able to open and extend the SQLite files
 # the host just created.
@@ -154,7 +160,7 @@ fi
 SMOKE_OUT=$(mktemp "${TMPDIR:-/tmp}/prism-docker-smoke-app.XXXXXX")
 TMP_FILES+=("$SMOKE_OUT")
 set +e
-node scripts/app-smoke.mjs --base "$BASE_URL" --email "$SMOKE_EMAIL" --password "$SMOKE_PASSWORD" >"$SMOKE_OUT" 2>&1
+node scripts/app-smoke.mjs --base "$BASE_URL" --email "$SMOKE_EMAIL" --password-file "$SMOKE_PASSWORD_FILE" >"$SMOKE_OUT" 2>&1
 SMOKE_EXIT=$?
 set -e
 cat "$SMOKE_OUT" >&2
