@@ -121,3 +121,33 @@ test("the runtime image ships the codebook and gap text that /review and /method
   assert.match(runtimeStage, /COPY\s+protocol\/gap-text\.json\s+\.\/protocol\/gap-text\.json/);
   for (const allow of ["!codebook.md", "!protocol", "!protocol/gap-text.json"]) assert.ok(dockerignoreLines.includes(allow), allow);
 });
+
+// T-07-SC-12 / nodejs/node#65446: only the published better-sqlite3 binding, checked per architecture.
+const BINDING = "node_modules/better-sqlite3/build/Release/better_sqlite3.node";
+const buildStage = dockerfile.slice(dockerfile.indexOf(fromLines[0]), dockerfile.indexOf(fromLines[1]));
+
+test("the build stage copies the binding checksums before npm ci and checks them on the next line", () => {
+  const lines = buildStage.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== "" && !l.startsWith("#"));
+  const ci = lines.indexOf("RUN npm ci");
+  const copy = lines.findIndex((l) => /^COPY\s+docker\/better-sqlite3\s+\.\/docker\/better-sqlite3$/.test(l));
+  assert.ok(copy >= 0 && copy < ci, "COPY docker/better-sqlite3 must come before RUN npm ci");
+  assert.equal(lines[ci + 1], 'RUN sha256sum -c "docker/better-sqlite3/linux-$(node -p process.arch).sha256"');
+});
+
+test("each binding checksum file is one sha256sum line for the better-sqlite3 binding", () => {
+  for (const arch of ["arm64", "x64"]) {
+    const text = fs.readFileSync(path.join(root, "docker", "better-sqlite3", `linux-${arch}.sha256`), "utf8");
+    assert.match(text, new RegExp(`^[0-9a-f]{64}  ${BINDING.replaceAll(".", "\\.")}\\n?$`), arch);
+  }
+});
+
+test("the Dockerfile, comments included, names no compiler, make, node-gyp or source-build option", () => {
+  const tokens = dockerfile.toLowerCase().split(/[^a-z0-9+_-]+/).map((t) => t.replace(/^-+/, ""));
+  const forbidden = ["gcc", "g++", "cc", "c++", "clang", "clang++", "make", "cmake", "node-gyp", "build-essential"];
+  for (const word of forbidden) assert.ok(!tokens.includes(word), `Dockerfile names ${word}`);
+  assert.doesNotMatch(dockerfile, /build[-_]from[-_]source|npm_config_build/i);
+});
+
+test(".dockerignore lets docker/better-sqlite3 into the build context", () => {
+  for (const allow of ["!docker", "!docker/better-sqlite3", "!docker/better-sqlite3/**"]) assert.ok(dockerignoreLines.includes(allow), allow);
+});

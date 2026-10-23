@@ -8,17 +8,21 @@
 # The server bundle keeps better-sqlite3 and takumi-pdf external (they load a
 # native binding and a WASM file from their own package), so the runtime stage
 # takes the build stage's node_modules after `npm prune --omit=dev`; the native
-# binding compiled or fetched by `npm ci` is reused, not rebuilt.
+# binding fetched by `npm ci` is reused, not rebuilt.
 #
-# If the better-sqlite3 prebuilt binary cannot be fetched for this platform,
-# add `python3 make g++` to the BUILD stage's apt-get line (research Pitfall
-# 12); do not add them to the runtime stage.
+# The better-sqlite3 binding must be the published prebuilt for this
+# architecture, checked by sha256 right after `npm ci` below (linux-arm64 and
+# linux-x64). If `npm ci` cannot fetch it, the build fails; the remedy is a
+# retry, never a source build (nodejs/node#65446: a binding built against
+# Node >= 24.19.0 headers aborts in GC).
 
 FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY docker/better-sqlite3 ./docker/better-sqlite3
 RUN npm ci
+RUN sha256sum -c "docker/better-sqlite3/linux-$(node -p process.arch).sha256"
 COPY rsbuild.config.ts postcss.config.mjs tsconfig.json ./
 COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
 COPY src ./src

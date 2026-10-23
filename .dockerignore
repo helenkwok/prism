@@ -13,6 +13,9 @@
 !rsbuild.config.ts
 !postcss.config.mjs
 !tsconfig.json
+!docker
+!docker/better-sqlite3
+!docker/better-sqlite3/**
 !src
 !src/**
 !scripts
