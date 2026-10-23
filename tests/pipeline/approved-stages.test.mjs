@@ -79,3 +79,39 @@ test("spike excludes A3 before checking gold locks", async () => {
   assert.equal(out.ok, false);
   await f.db.destroy();
 });
+test("two project slots overlap and await both completions", async () => {
+  const f = fixture(); let active = 0; let maximum = 0; const ready = Promise.withResolvers();
+  const release = Promise.withResolvers(); let calls = 0;
+  const client = { request: async () => {
+    calls++; active++; maximum = Math.max(maximum, active);
+    if (calls === 2) ready.resolve();
+    await release.promise; active--;
+    return { ok: true, status: 200, json: { choices: [{ message: { content: JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] } };
+  } };
+  const running = runApprovedStage({ ...f, stage: "second-coder", concurrency: 2, client, log: () => {} });
+  await ready.promise;
+  assert.equal(active, 2); release.resolve();
+  const out = await running;
+  assert.equal(maximum, 2); assert.equal(active, 0); assert.equal(out.success, 2); assert.equal(out.ok, true);
+  await f.db.destroy();
+});
+test("cap stop does not schedule queued projects and waits for the other in-flight request", async () => {
+  const f = fixture(); f.entries.push({ n: 3, hn_id: "3" });
+  const ready = Promise.withResolvers(); const fail = Promise.withResolvers(); const finish = Promise.withResolvers();
+  let calls = 0; let returned = false; const lines = [];
+  const client = { request: async () => {
+    const call = ++calls; if (calls === 2) ready.resolve();
+    if (call === 1) { await fail.promise; const error = new Error("cap reached"); error.name = "BudgetExceededError"; throw error; }
+    await finish.promise;
+    return { ok: true, status: 200, json: { choices: [{ message: { content: JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] } };
+  } };
+  const running = runApprovedStage({ ...f, stage: "second-coder", concurrency: 2, client, log: line => lines.push(line) }).then(out => { returned = true; return out; });
+  await ready.promise; fail.resolve();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(returned, false); assert.equal(calls, 2);
+  finish.resolve(); const out = await running;
+  assert.equal(calls, 2); assert.equal(out.success, 1); assert.equal(out.stopped, 2); assert.equal(out.failed, 0); assert.equal(out.ok, false);
+  const printed = JSON.parse(lines.at(-1).slice("ACCOUNTING: ".length));
+  assert.equal(printed.accounted + printed.stopped, printed.total);
+  await f.db.destroy();
+});

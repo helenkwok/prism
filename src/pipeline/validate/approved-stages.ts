@@ -25,6 +25,7 @@ export type ApprovedStageOptions = {
   db: Kysely<any>; dataDir: string; cacheDir?: string; codebook: Codebook; contract: RetryContract;
   entries: { n: number; hn_id: string; title?: string }[]; client: Client; role: RoleSpec;
   gateFile?: GateFile; log?: (line: string) => void; repoRoot?: string;
+  concurrency?: 1 | 2;
 };
 export type StageAccounting = { stage: string; total: number; accounted: number; success: number; failed: number; stopped: number; reason: string | null; ok: boolean };
 
@@ -87,6 +88,8 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
 
 /** Explicit client injection keeps approval, credentials and the shared budget in the caller. */
 export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAccounting> {
+  const concurrency = o.concurrency ?? 1;
+  if (concurrency !== 1 && concurrency !== 2) throw new Error("Stage concurrency must be 1–2");
   assertA9Signed({ protocolPath: path.join(o.repoRoot ?? process.cwd(), "protocol", "PROTOCOL.md"), signoffPath: path.join(o.dataDir, "decisions", "signoff.jsonl") });
   if (o.stage === "gold" && !await a7Signed({ protocolPath: path.join(o.repoRoot ?? process.cwd(), "protocol", "PROTOCOL.md"), signoffPath: path.join(o.dataDir, "decisions", "signoff.jsonl") })) throw new Error("A7 not signed");
   const log = o.log ?? console.log;
@@ -112,20 +115,36 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
         log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", projectN: p.projectN, checkId: p.checkId, setting, decision: cache.value.decision, fromCache: cache.fromCache })}`);
       }
     } else {
-      for (const e of o.entries) {
-        if (o.stage === "gold") {
-          if (String(e.hn_id) === ARTCRAFT_HN_ID) {
-            await writeExcludedA3({ db: o.db, projectN: e.n, codebookVersion: o.codebook.codebookVersion, role: o.role, digest: spansDigest([]) });
+      let next = 0;
+      let stop = false;
+      // An in-flight project may finish its reserved request, but cannot start another after a stop.
+      const client: Client = { ...o.client, request: (p, init) => {
+        if (stop) { const error = new Error("stage scheduling stopped"); error.name = "StageStoppedError"; throw error; }
+        return o.client.request(p, init);
+      } };
+      const execute = async () => {
+        while (!stop && next < o.entries.length) {
+          const e = o.entries[next++];
+          try {
+            if (o.stage === "gold") {
+              if (String(e.hn_id) === ARTCRAFT_HN_ID) {
+                await writeExcludedA3({ db: o.db, projectN: e.n, codebookVersion: o.codebook.codebookVersion, role: o.role, digest: spansDigest([]) });
+              } else {
+                const outcome = await labelProject({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), projectN: e.n, hnId: String(e.hn_id), codebook: o.codebook, codebookVersion: o.codebook.codebookVersion, contract: o.contract, role: o.role, client });
+                if (outcome.outcome !== "labelled") throw new Error(`project ${e.n}: ${outcome.outcome}`);
+              }
+            } else await codingProject({ ...o, client }, e);
             out.success++; out.accounted++;
-            log(`ACCOUNTING: ${JSON.stringify({ ...out, excludedA3: e.n, complete: false })}`);
-            continue;
+          } catch (error) {
+            stop = true;
+            out.reason ??= (error as Error).message;
+            if (!["BudgetExceededError", "QuotaStop", "TooLargeError", "StageStoppedError"].includes((error as Error).name)) { out.failed++; out.accounted++; }
           }
-          const outcome = await labelProject({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), projectN: e.n, hnId: String(e.hn_id), codebook: o.codebook, codebookVersion: o.codebook.codebookVersion, contract: o.contract, role: o.role, client: o.client });
-          if (outcome.outcome !== "labelled") throw new Error(`project ${e.n}: ${outcome.outcome}`);
-        } else await codingProject(o, e);
-        out.success++; out.accounted++;
-        log(`ACCOUNTING: ${JSON.stringify({ ...out, total: o.entries.length, remaining: o.entries.length - out.accounted, complete: false })}`);
-      }
+          log(`ACCOUNTING: ${JSON.stringify({ ...out, remaining: o.entries.length - out.accounted, complete: false })}`);
+        }
+      };
+      await Promise.all(Array.from({ length: concurrency }, execute));
+      out.stopped = out.total - out.accounted;
     }
   } catch (error) {
     out.reason = (error as Error).message;

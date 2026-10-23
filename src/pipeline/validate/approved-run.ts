@@ -77,7 +77,7 @@ export async function runApproved(stage: ApprovedStage) {
       role = { provider: "token-factory", model: stage === "signoff" ? SIGNOFF_MODEL : PINNED_MODEL, reasoning: false };
     } else {
       role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : false };
-      client = ollamaClient({ budget: opened.budget, concurrency: 1, maxRetries: 1, onUsage, stage });
+      client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage });
     }
     if (stage === "signoff") {
       const proposal = a9Section(protocol);
@@ -109,7 +109,7 @@ export async function runApproved(stage: ApprovedStage) {
       if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
       const gateFile = loadGateFile(resolveGatesPath());
       db = getDb();
-      const accounting = await runApprovedStage({ stage, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
+      const accounting = await runApprovedStage({ stage, concurrency: stage === "recode" ? 1 : 2, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
       if (!accounting.ok) throw new Error(`stage incomplete: ${accounting.reason ?? accounting.failed}`);
     }
     if ("counters" in client) log(formatOllamaSummary(client.counters));
