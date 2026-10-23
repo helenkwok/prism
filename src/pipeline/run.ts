@@ -194,7 +194,12 @@ export interface ProjectOutcome {
 }
 
 export interface RunAccounting {
+  totalProjects: number;
+  accountedProjects: number;
+  /** Projects actually started; queued projects skipped after a stop do not count. */
   ranProjects: number;
+  ok: boolean;
+  status: "complete" | "failed" | "stopped" | "empty";
   succeeded: number;
   failed: number;
   stopped: number;
@@ -650,6 +655,7 @@ export async function runPipeline({
   const resolvedCacheDir = cacheDir ?? defaultCacheDir();
 
   let stopReason: string | undefined;
+  let attemptedProjects = 0;
   const onStop = (reason: string) => {
     if (!stopReason) stopReason = reason;
   };
@@ -661,6 +667,7 @@ export async function runPipeline({
         if (stopReason) {
           return { n: project.n, hnId: String(project.hn_id), status: "stopped", error: stopReason };
         }
+        attemptedProjects += 1;
         try {
           return await processProject(project, {
             apiKeys,
@@ -687,7 +694,11 @@ export async function runPipeline({
   );
 
   const accounting: RunAccounting = {
-    ranProjects: outcomes.length,
+    totalProjects: projects.length,
+    accountedProjects: outcomes.length,
+    ranProjects: attemptedProjects,
+    ok: outcomes.length > 0 && outcomes.every(o => o.status === "ok"),
+    status: outcomes.some(o => o.status === "failed") ? "failed" : outcomes.some(o => o.status === "stopped") ? "stopped" : outcomes.length ? "complete" : "empty",
     succeeded: outcomes.filter((o) => o.status === "ok").length,
     failed: outcomes.filter((o) => o.status === "failed").length,
     stopped: outcomes.filter((o) => o.status === "stopped").length,
@@ -700,6 +711,19 @@ export async function runPipeline({
     outcomes,
   };
   return accounting;
+}
+
+/** Emit the authoritative result before any optional reporting can fail. */
+export function reportRunAccounting(accounting: RunAccounting, {
+  stdout = (line: string) => process.stdout.write(line),
+  stderr = (line: string) => process.stderr.write(line),
+  setExitCode = (code: number) => { process.exitCode = code; },
+} = {}): void {
+  for (const outcome of accounting.outcomes) {
+    if (outcome.status !== "ok") stderr(`project n=${outcome.n}: ${outcome.status.toUpperCase()}: ${outcome.error}\n`);
+  }
+  stdout(`ACCOUNTING: ${JSON.stringify({ ...accounting, outcomes: undefined })}\n`);
+  setExitCode(accounting.ok ? 0 : 1);
 }
 
 // ---- chunked coding ----------------------------------------------------------
@@ -875,14 +899,9 @@ if (invokedDirectly) {
       secondCoderIds,
       overrides: { useTavily },
     });
-    for (const o of accounting.outcomes) {
-      if (o.status === "failed") process.stderr.write(`project n=${o.n}: FAILED: ${o.error}\n`);
-      if (o.status === "stopped") process.stderr.write(`project n=${o.n}: STOPPED: ${o.error}\n`);
-    }
-    process.stdout.write(`ACCOUNTING: ${JSON.stringify({ ...accounting, outcomes: undefined })}\n`);
-    const projectNs = accounting.outcomes.map((o) => o.n);
-    await printTally({ projectNs });
-    if (accounting.failed > 0 || accounting.stopped > 0) process.exitCode = 1;
+    reportRunAccounting(accounting);
+    const projectNs = accounting.outcomes.filter((o) => o.status === "ok").map((o) => o.n);
+    if (projectNs.length) await printTally({ projectNs });
   })().catch((err) => {
     process.stderr.write(`${err?.stack ?? err}\n`);
     process.exit(1);

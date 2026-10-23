@@ -6,7 +6,8 @@
 // attempted — that test asserts CLI wiring, never a live run.
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -17,7 +18,10 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
-import { runPipeline } from "../../src/pipeline/run.ts";
+import { runPipeline, reportRunAccounting } from "../../src/pipeline/run.ts";
+import { A8_ITEMS, a8Section } from "../../src/pipeline/signoff/a8.ts";
+import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
+import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
 import { PINNED_MODEL, SECOND_CODER_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -38,6 +42,16 @@ function writeSliceProjects(dir, entries) {
   const file = path.join(dir, "slice-projects.json");
   fs.writeFileSync(file, JSON.stringify(entries));
   return file;
+}
+
+function writeFixtureApprovals(dataDir, includeA9 = true) {
+  const protocol = fs.readFileSync(path.join(root, "protocol", "PROTOCOL.md"), "utf8");
+  const addenda = [[A8_ITEMS, a8Section(protocol)], ...(includeA9 ? [[A9_ITEMS, a9Section(protocol)]] : [])];
+  const records = addenda.flatMap(([items, section]) =>
+    items.map(item => ({ item, decision: "approved", docDigest: crypto.createHash("sha256").update(section).digest("hex") })),
+  );
+  fs.mkdirSync(path.join(dataDir, "decisions"), { recursive: true });
+  fs.writeFileSync(path.join(dataDir, "decisions", "signoff.jsonl"), records.map(r => JSON.stringify(r)).join("\n"));
 }
 
 function jsonResponse(body) {
@@ -61,6 +75,17 @@ function fakeGateSpawnImpl(_command, args) {
 }
 
 const gateOverrides = { gateSpawnImpl: fakeGateSpawnImpl, pythonPath: "fake-python", gateScriptPath: "fake-gate.py" };
+
+function captureAccounting(accounting) {
+  let stdout = "", stderr = "", signal;
+  reportRunAccounting(accounting, {
+    stdout: line => { stdout += line; },
+    stderr: line => { stderr += line; },
+    setExitCode: code => { signal = code; },
+  });
+  assert.match(stdout, /^ACCOUNTING: /);
+  return { summary: JSON.parse(stdout.trim().slice(12)), stderr, signal };
+}
 
 /** Always replies with every check "unknown", spanIds: [] — trivially schema-valid. */
 function makeAllUnknownNebiusFetch(counter) {
@@ -136,12 +161,14 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       db,
       gatesPath,
       // n=9 has zero pages → D-55 would open a browser; keep tests offline.
-      overrides: { tavilyFetchImpl, githubFetchImpl, nebiusFetchImpl, renderImpl: async () => "", ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, githubFetchImpl, nebiusFetchImpl, renderImpl: async () => "", ...gateOverrides },
     });
 
     assert.equal(accounting.ranProjects, 10, "every synthetic project must be attempted — the batch never aborts early");
     assert.equal(accounting.succeeded, 9);
     assert.equal(accounting.failed, 1);
+    assert.equal(accounting.ok, false);
+    assert.equal(accounting.status, "failed");
 
     const failed = accounting.outcomes.find((o) => o.n === 10);
     assert.equal(failed.status, "failed");
@@ -212,7 +239,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       dataDir,
       db: db1,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeThrowingNebiusFetch(nebiusCounter), ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeThrowingNebiusFetch(nebiusCounter), ...gateOverrides },
     });
     const firstOutcome = firstAccounting.outcomes[0];
     assert.equal(firstOutcome.status, "failed", "the simulated kill must surface as this project's own failure");
@@ -233,9 +260,14 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       dataDir,
       db: db2,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
     });
     const secondOutcome = secondAccounting.outcomes[0];
+    const resumedReport = captureAccounting(secondAccounting);
+    assert.equal(resumedReport.summary.ok, true);
+    assert.equal(resumedReport.summary.status, "complete");
+    assert.equal(resumedReport.summary.succeeded, 1);
+    assert.equal(resumedReport.signal, 0);
     assert.equal(secondOutcome.status, "ok");
 
     // evidence/redact/segment: no new Tavily calls, and each reports fromCache:true.
@@ -293,7 +325,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 2);
 
@@ -349,7 +381,7 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
       db,
       gatesPath,
       // zero-pages project would hit D-55 start-URL render; keep the offline missing_data case.
-      overrides: { tavilyFetchImpl, nebiusFetchImpl, renderImpl: async () => "", ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl, renderImpl: async () => "", ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 2, "the zero-pages project must still succeed via the existing D-29/D-30 zero-span skip, not fail");
 
@@ -361,9 +393,69 @@ describe("runPipeline (COD-06, D-29, D-30)", () => {
     // A second database fed by the same, fully warm cache must still receive the project's rows:
     // recording is never served from cache (it once was, which left a fresh database empty).
     const db2 = freshDb();
-    await runPipeline({ sliceProjectsPath, apiKeys: { tavily: "k", nebius: "k", github: "k" }, cacheDir, dataDir, db: db2, gatesPath, overrides: { tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides } });
+    await runPipeline({ sliceProjectsPath, apiKeys: { tavily: "k", nebius: "k", github: "k" }, cacheDir, dataDir, db: db2, gatesPath, overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides } });
     const rows2 = await db2.selectFrom("pipeline_project_results").select(["project_n"]).execute();
     assert.equal(rows2.length, 2, "both projects are recorded into the second database from a warm cache");
+  });
+});
+
+describe("aggregate failure reporting", () => {
+  test("all failed projects remain failures in ACCOUNTING and signal failure", async () => {
+    const dataDir = tempDir("prism-all-failed-");
+    const projects = [1, 2].map(n => ({ n, hn_id: `failed-${n}`, title: "Fixture", final_url: "invalid-url" }));
+    const accounting = await runPipeline({
+      sliceProjectsPath: writeSliceProjects(dataDir, projects), dataDir, cacheDir: tempDir("prism-failed-cache-"), db: freshDb(), gatesPath,
+      apiKeys: { tavily: "test", nebius: "test", github: "test" },
+      overrides: { useTavily: true, nebiusFetchImpl: async () => { throw Error("network must not run"); }, ...gateOverrides },
+    });
+    const { summary, signal, stderr } = captureAccounting(accounting);
+    assert.equal(summary.totalProjects, 2);
+    assert.equal(summary.accountedProjects, 2);
+    assert.equal(summary.ranProjects, 2);
+    assert.equal(summary.succeeded, 0);
+    assert.equal(summary.failed, 2);
+    assert.equal(summary.stopped, 0);
+    assert.equal(summary.ok, false);
+    assert.equal(summary.status, "failed");
+    assert.match(stderr, /FAILED/);
+    assert.equal(signal, 1);
+  });
+
+  test("budget exhaustion stops queued projects without calling the model or reporting success", async () => {
+    const dataDir = tempDir("prism-budget-stopped-");
+    const projects = [1, 2].map(n => ({ n, hn_id: `budget-${n}`, title: "Fixture", final_url: `https://budget-${n}.example.test/` }));
+    let modelCalls = 0;
+    const accounting = await runPipeline({
+      sliceProjectsPath: writeSliceProjects(dataDir, projects), dataDir, cacheDir: tempDir("prism-budget-cache-"), db: freshDb(), gatesPath, concurrency: 1,
+      apiKeys: { tavily: "test", nebius: "test", github: "test" },
+      overrides: {
+        useTavily: true, tfBudget: new DollarBudget(.000001),
+        tavilyFetchImpl: async (url, init) => { const body = JSON.parse(init.body); return jsonResponse(url.endsWith("/map") ? { results: [body.url], usage: { credits: 0 } } : { results: body.urls.map(u => ({ url: u, raw_content: "Fixture content. ".repeat(50) })), usage: { credits: 0 } }); },
+        nebiusFetchImpl: async () => { modelCalls++; throw Error("must not send"); }, renderImpl: async () => "", ...gateOverrides,
+      },
+    });
+    const { summary, signal } = captureAccounting(accounting);
+    assert.equal(modelCalls, 0);
+    assert.equal(summary.totalProjects, 2);
+    assert.equal(summary.accountedProjects, 2);
+    assert.equal(summary.ranProjects, 1, "the queued project is accounted but never attempted");
+    assert.equal(summary.succeeded, 0);
+    assert.equal(summary.failed, 0);
+    assert.equal(summary.stopped, 2);
+    assert.equal(summary.ok, false);
+    assert.equal(summary.status, "stopped");
+    assert.match(summary.stopReason, /BUDGET:/);
+    assert.equal(signal, 1);
+  });
+
+  test("empty selections do not report successful completion", async () => {
+    const dataDir = tempDir("prism-empty-run-");
+    const accounting = await runPipeline({ sliceProjectsPath: writeSliceProjects(dataDir, []), dataDir, db: freshDb(), gatesPath, apiKeys: { tavily: "test", nebius: "test", github: "test" }, overrides: { useTavily: true, nebiusFetchImpl: async () => { throw Error("no network"); } } });
+    const { summary, signal } = captureAccounting(accounting);
+    assert.equal(summary.status, "empty");
+    assert.equal(summary.ok, false);
+    assert.equal(summary.succeeded, 0);
+    assert.equal(signal, 1);
   });
 });
 
@@ -399,7 +491,7 @@ describe("D-55 render stage (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 1);
     assert.equal(renderCalls.length, 1);
@@ -441,7 +533,7 @@ describe("D-55 render stage (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 1);
     assert.deepEqual(renderCalls, []);
@@ -474,7 +566,7 @@ describe("D-55 render stage (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 1);
     assert.deepEqual(renderCalls, [project.final_url]);
@@ -521,7 +613,7 @@ describe("D-55 render stage (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl, ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 3);
     assert.equal(maxInFlight, 1, "pLimit(1) must serialise renders across concurrent projects");
@@ -556,7 +648,7 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
       db,
       gatesPath,
       secondCoderIds: new Set(["hn-in-subset"]),
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
     });
     assert.equal(accounting.succeeded, 2);
     assert.equal(nebiusCounter.byModel[PINNED_MODEL], 2);
@@ -589,7 +681,7 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch(nebiusCounter), ...gateOverrides },
     });
     assert.equal(nebiusCounter.byModel[SECOND_CODER_MODEL], 2);
     const second = await db.selectFrom("pipeline_second_coder_states").select(["project_n"]).execute();
@@ -622,7 +714,7 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
     });
     assert.ok(accounting.stopped > 0);
     assert.match(accounting.stopReason ?? "", /432/);
@@ -644,7 +736,7 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
       dataDir,
       db: freshDb(),
       gatesPath,
-      overrides: { tavilyFetchImpl: tavily2, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl: tavily2, nebiusFetchImpl: makeAllUnknownNebiusFetch({ calls: 0 }), renderImpl: async () => "", ...gateOverrides },
     });
     assert.ok(mapHits >= 1, "usage-limit evidence must not be served from the stage cache");
   });
@@ -678,7 +770,7 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl: nebius402, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl: nebius402, ...gateOverrides },
     });
     assert.ok(accounting.stopped > 0);
     assert.match(accounting.stopReason ?? "", /402|quota/i);
@@ -690,6 +782,20 @@ describe("D-48 / D-51 second coder, stop-on-limit, real-N (04-03)", () => {
 });
 
 describe("run.ts's --slice flag (03-09)", () => {
+  test("CLI preserves A8 and A9 refusal before reporting any project as completed", () => {
+    const dataDir = tempDir("prism-cli-unsigned-");
+    const sliceProjectsPath = writeSliceProjects(dataDir, [{ n: 1, hn_id: "unsigned", title: "Fixture", final_url: "invalid-url" }]);
+    const env = { ...process.env, PRISM_DATA_DIR: dataDir, TAVILY_API_KEY: "test", NEBIUS_API_KEY: "test", GITHUB_TOKEN: "test", PRISM_TF_BUDGET: "1" };
+    const run = () => spawnSync(process.execPath, [path.join(root, "src/pipeline/run.ts"), "--slice", sliceProjectsPath], { cwd: root, env, encoding: "utf8" });
+    const missingA8 = run();
+    assert.match(missingA8.stderr, /A8: sign-off file missing/);
+    assert.doesNotMatch(missingA8.stdout, /ACCOUNTING:/);
+    writeFixtureApprovals(dataDir, false);
+    const missingA9 = run();
+    assert.match(missingA9.stderr, /A9: item not approved/);
+    assert.doesNotMatch(missingA9.stdout, /ACCOUNTING:/);
+  });
+
   test("runPipeline({sliceProjectsPath}) reads from exactly that path, not the default slice-projects.json", async () => {
     const cacheDir = tempDir("prism-run-slice-cache-");
     const dataDir = tempDir("prism-run-slice-data-");
@@ -718,7 +824,7 @@ describe("run.ts's --slice flag (03-09)", () => {
       dataDir,
       db,
       gatesPath,
-      overrides: { tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides },
+      overrides: { useTavily: true, tavilyFetchImpl, nebiusFetchImpl, ...gateOverrides },
     });
 
     assert.equal(accounting.ranProjects, 1, "runPipeline must read exactly the project(s) named in sliceProjectsPath, not the default slice file");
@@ -739,7 +845,9 @@ describe("run.ts's --slice flag (03-09)", () => {
       TAVILY_API_KEY: "fake-tavily-key",
       NEBIUS_API_KEY: "fake-nebius-key",
       GITHUB_TOKEN: "fake-github-token",
+      PRISM_TF_BUDGET: "1",
     };
+    writeFixtureApprovals(dataDir);
 
     let stdout = "";
     let stderr = "";
@@ -759,6 +867,12 @@ describe("run.ts's --slice flag (03-09)", () => {
     assert.doesNotMatch(stderr, /missing required env var/, "with all three env vars set, run.ts must never reach the missing-env-var branch");
     assert.match(stdout, /ACCOUNTING:/, "the CLI must still print its ACCOUNTING line — proof --slice reached runPipeline");
     assert.match(stdout, /"failed":1/, "the malformed-URL project is accounted as failed");
+    const accounting = JSON.parse(stdout.split("\n").find(line => line.startsWith("ACCOUNTING: ")).slice(12));
+    assert.equal(accounting.succeeded, 0);
+    assert.equal(accounting.status, "failed");
+    assert.equal(accounting.ok, false);
+    assert.equal(accounting.ranProjects, 1);
+    assert.equal(accounting.accountedProjects, 1);
     assert.ok(threw, "run.ts exits non-zero when any project failed, so a run with failures can never pass on exit status");
   });
 });
