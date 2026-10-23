@@ -7,6 +7,11 @@ export interface Row { id: string; label: string; state: RowState; c?: number; n
 export interface Figure { id: string; title: string; measure: string; rows: Row[] }
 export interface Statement { id: string; kind: string; text: string }
 interface Agent { modelId: string; host: string }
+export interface Hypothesis {
+  row?: Row
+  test: { tested?: boolean; reason?: string; pAdjusted?: number; supported?: boolean }
+  statementId: string
+}
 export interface Release {
   schema: 1
   kind: 'fixture' | 'findings'
@@ -23,6 +28,12 @@ export interface Release {
     personEdits: { count: number; total: number }
   }
   methods: { codebook: { checkId: string; shortTitle: string; decisionId: string }[] }
+  hypotheses: { h1: Hypothesis; h2: Hypothesis; h3: Hypothesis }
+  sensitivity: { excluded: number; rows: Record<string, Row> }
+  validation?: {
+    screeningAudit: { errors: number; audited: number; pct: number; ci: [number, number]; bar: number }
+    collectionRecall: { supportedFound: number; supported: number; recall: number; rawFound: number; raw: number; rawRecall: number }
+  }
   statements: Statement[]
 }
 
@@ -63,12 +74,34 @@ export function parseRelease(input: unknown): Release | null {
   num(obj(c.total, 'howWeKnow.confirmation.total').pct, 'howWeKnow.confirmation.total.pct')
   checkRow(c.rejected, 'howWeKnow.confirmation.rejected'); checkRow(c.downgraded, 'howWeKnow.confirmation.downgraded')
   const p = obj(h.personEdits, 'howWeKnow.personEdits'); num(p.count, 'howWeKnow.personEdits.count'); num(p.total, 'howWeKnow.personEdits.total')
+  for (const k of ['h1', 'h2', 'h3']) {
+    const hy = obj(obj(r.hypotheses, 'hypotheses')[k], `hypotheses.${k}`)
+    str(hy.statementId, `hypotheses.${k}.statementId`); obj(hy.test, `hypotheses.${k}.test`)
+    if (hy.row !== undefined) checkRow(hy.row, `hypotheses.${k}.row`)
+  }
+  const sens = obj(r.sensitivity, 'sensitivity')
+  num(sens.excluded, 'sensitivity.excluded')
+  for (const [id, row] of Object.entries(obj(sens.rows, 'sensitivity.rows'))) checkRow(row, `sensitivity.rows.${id}`)
+  if (r.validation !== undefined) {
+    const v = obj(r.validation, 'validation')
+    const s = obj(v.screeningAudit, 'validation.screeningAudit')
+    for (const k of ['errors', 'audited', 'pct', 'bar']) num(s[k], `validation.screeningAudit.${k}`)
+    arr(s.ci, 'validation.screeningAudit.ci').forEach((b, i) => num(b, `validation.screeningAudit.ci[${i}]`))
+    const c = obj(v.collectionRecall, 'validation.collectionRecall')
+    for (const k of ['supportedFound', 'supported', 'recall', 'rawFound', 'raw', 'rawRecall']) num(c[k], `validation.collectionRecall.${k}`)
+  }
   arr(obj(r.methods, 'methods').codebook, 'methods.codebook').forEach((e, i) => { const x = obj(e, `methods.codebook[${i}]`); str(x.checkId, `methods.codebook[${i}].checkId`); str(x.shortTitle, `methods.codebook[${i}].shortTitle`) })
   arr(r.statements, 'statements').forEach((s, i) => { const x = obj(s, `statements[${i}]`); str(x.id, `statements[${i}].id`); str(x.kind, `statements[${i}].kind`); str(x.text, `statements[${i}].text`) })
   return r as unknown as Release
 }
 
 export const release = parseRelease(raw)
+
+/** A statement's text by id, or undefined. */
+export const statementText = (id: string) => release?.statements.find(s => s.id === id)?.text
+
+/** "X of N (p%, 95% CI a–b%)" for a released row, else its explicit-state text. */
+export const shareText = (r: Row) => (r.state === 'released' ? `${r.c} of ${r.n} (${r.pct}%, 95% CI ${r.ci![0]}–${r.ci![1]}%)` : stateText(r)!)
 
 /** "chk|<checkId>|pass|all" -> "<checkId>". */
 export const checkIdOf = (rowId: string) => rowId.split('|')[1] ?? rowId
@@ -99,7 +132,5 @@ export function stateCell(r: Row): string {
 
 /** One sentence per row, for the chart's <desc>, each row's <title> and the share text. */
 export function rowSentence(r: Row): string {
-  return r.state === 'released'
-    ? `${r.label}: ${r.c} of ${r.n} (${r.pct}%, 95% CI ${r.ci![0]}–${r.ci![1]}%)`
-    : `${r.label}: ${stateText(r)}`
+  return `${r.label}: ${shareText(r)}`
 }

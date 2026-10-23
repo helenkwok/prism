@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { checkIdOf, release, type Figure as FigureData } from '../data'
-import { Figure, NotReleased, StatementText } from '../components/figure'
+import { Figure, figureNumber, NotReleased, StatementText } from '../components/figure'
 import { codedStateRows } from '../components/how-we-know'
 
 export const Route = createFileRoute('/findings/checks')({
@@ -11,13 +11,13 @@ export const Route = createFileRoute('/findings/checks')({
 function Checks() {
   if (!release) return <><h1>Evidence by check</h1><NotReleased /></>
   // One figure per decision ("checks:<decisionId>"), or the single "checks" figure of an early release.
-  const figures = Object.entries(release.figures).filter(([key]) => key === 'checks' || key.startsWith('checks:')).map(([, f]) => f)
+  const figures = Object.keys(release.figures).filter(key => key === 'checks' || key.startsWith('checks:'))
   return (
     <>
       <p className="kicker">PRISM · Release {release.version}</p>
       <h1>Evidence by check</h1>
       <p>Each bar is the share of all {release.n} included launches that publicly evidence the check with an artefact linked. Launches with no public evidence found stay in every denominator.</p>
-      {figures.map((f, i) => <CheckFigure key={f.id} figure={f} number={i + 1} />)}
+      {figures.map(key => <CheckFigure key={key} figure={release.figures[key]!} number={figureNumber(release, key)} />)}
     </>
   )
 }
