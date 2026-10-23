@@ -1,5 +1,6 @@
-// Nitro server plugin: runs once when the built server starts, never during
-// `vite build`. A mis-configured deployment exits here instead of serving requests.
+// Start-up checks, run once by the server entry (src/app/server.ts) when the built
+// server starts, never during `rsbuild build`. A mis-configured deployment exits
+// here instead of serving requests.
 import { getAuth } from "./auth.ts";
 import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";

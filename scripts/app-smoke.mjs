@@ -1,5 +1,5 @@
 // Smoke check for the built app. Node built-ins only.
-//   node scripts/app-smoke.mjs --spawn        start .output/server/index.mjs and check it
+//   node scripts/app-smoke.mjs --spawn        start scripts/serve.mjs (the built app) and check it
 //   node scripts/app-smoke.mjs --base <url> --email <e> --password-file <mode-600 file>
 //                                             check an already running server; the
 //                                             credentials must already be seeded there.
@@ -203,7 +203,7 @@ function bootRefusal(name, envOverrides, unset, expectText) {
   return new Promise((resolve) => {
     const env = { ...process.env, NODE_ENV: "production", HOST: "127.0.0.1", ...envOverrides };
     for (const key of unset) delete env[key];
-    const proc = spawn(process.execPath, [".output/server/index.mjs"], {
+    const proc = spawn(process.execPath, ["scripts/serve.mjs"], {
       env: { ...env, PORT: "0" },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -262,7 +262,7 @@ try {
       check(`seed script created the ${role} account`, ok, (seed.stderr ?? "").trim());
       seeded &&= ok;
     }
-    child = spawn(process.execPath, [".output/server/index.mjs"], {
+    child = spawn(process.execPath, ["scripts/serve.mjs"], {
       env: serverEnv,
       stdio: ["ignore", "inherit", "inherit"],
     });

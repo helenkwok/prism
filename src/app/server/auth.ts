@@ -1,4 +1,4 @@
-// The better-auth instance. Nothing here runs at import time: `vite build`
+// The better-auth instance. Nothing here runs at import time: `rsbuild build`
 // needs no secret and opens no database. getAuth() checks the secret on first use.
 import { betterAuth } from "better-auth";
 import type { BetterAuthOptions } from "better-auth";
