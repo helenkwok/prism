@@ -675,7 +675,7 @@ export async function runPipeline({
             onStop,
           });
         } catch (err) {
-          if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop") {
+          if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop" || (err as Error)?.name === "BudgetExceededError") {
             const reason = (err as QuotaStop).message || `nebius quota stop status ${(err as QuotaStop).status}`;
             onStop(reason);
             return { n: project.n, hnId: String(project.hn_id), status: "stopped", error: reason };

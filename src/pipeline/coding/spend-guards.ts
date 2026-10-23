@@ -128,14 +128,14 @@ export function requireTfBudget(opts?: {
   for (let i = 0; i < argv.length; i++) {
     if ((argv[i] === "--budget" || argv[i] === "--token-factory-budget") && argv[i + 1]) {
       const n = Number(argv[i + 1]);
-      if (!(n > 0)) throw new Error(`Token Factory budget flag must be a positive number, got ${argv[i + 1]}`);
+      if (!Number.isFinite(n) || !(n > 0)) throw new Error(`Token Factory budget flag must be a finite positive number, got ${argv[i + 1]}`);
       return n;
     }
   }
   const fromEnv = env.PRISM_TF_BUDGET;
   if (fromEnv != null && fromEnv !== "") {
     const n = Number(fromEnv);
-    if (!(n > 0)) throw new Error(`PRISM_TF_BUDGET must be a positive number, got ${fromEnv}`);
+    if (!Number.isFinite(n) || !(n > 0)) throw new Error(`PRISM_TF_BUDGET must be a finite positive number, got ${fromEnv}`);
     return n;
   }
   throw new Error(

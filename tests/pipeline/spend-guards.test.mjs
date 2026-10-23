@@ -88,6 +88,12 @@ describe("requireTfBudget", () => {
   test("reads PRISM_TF_BUDGET", () => {
     assert.equal(requireTfBudget({ argv: ["node", "x"], env: { PRISM_TF_BUDGET: "2.5" } }), 2.5);
   });
+  test("rejects unbounded or invalid caps", () => {
+    for (const value of ["Infinity", "NaN", "0", "-1"]) {
+      assert.throws(() => requireTfBudget({ argv: ["--budget", value], env: {} }), /finite positive/);
+      assert.throws(() => new DollarBudget(Number(value)), /finite/);
+    }
+  });
 });
 
 describe("DollarBudget + BUDGET line", () => {
