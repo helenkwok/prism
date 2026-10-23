@@ -160,18 +160,19 @@ export function createClient({
   ): Promise<NebiusResponse & { outcome?: "too-large"; budget?: BudgetSnapshot }> {
     return limit(async () => {
       const isMultipart = body instanceof FormData || body instanceof Blob;
+      let projectedUsd = 0;
       // D-67: estimate + refuse before any HTTP for chat/completions with messages.
       if (!isMultipart && body && typeof body === "object" && Array.isArray((body as any).messages)) {
         const messages = (body as any).messages as { content?: string }[];
         const model = String((body as any).model ?? "");
         try {
-          assertRequestAllowed({
+          ({ projectedUsd } = assertRequestAllowed({
             messages,
             model: model || "deepseek-ai/DeepSeek-V4-Flash-0731",
             budget: dollarBudget,
             cap: tokenCap,
             completionTokens: Number((body as any).max_tokens) || 4096,
-          });
+          }));
         } catch (e) {
           if (e instanceof TooLargeError) {
             return {
@@ -190,6 +191,7 @@ export function createClient({
         }
       }
       for (let attempt = 1; ; attempt += 1) {
+        dollarBudget?.reserve(projectedUsd);
         const t0 = Date.now();
         let res: Response;
         try {
@@ -203,6 +205,7 @@ export function createClient({
             body: body === undefined ? undefined : isMultipart ? (body as BodyInit) : JSON.stringify(body),
           });
         } catch (e: any) {
+          dollarBudget?.settle(projectedUsd);
           if (attempt <= maxRetries) {
             await sleep(jitteredDelayMs(attempt));
             continue;
@@ -214,6 +217,7 @@ export function createClient({
         const rateHeaders = pickRateHeaders(res.headers);
         const overLimit = res.status === 429 || rateHeaders["x-ratelimit-over-limit"] === "yes";
         if (overLimit && attempt <= maxRetries) {
+          dollarBudget?.settle(projectedUsd);
           await sleep(jitteredDelayMs(attempt));
           continue;
         }
@@ -224,17 +228,18 @@ export function createClient({
         } catch {
           json = null;
         }
+        let actualUsd = projectedUsd;
         if (dollarBudget && json && typeof json === "object" && (json as any).usage) {
           const u = (json as any).usage;
           const model = String((body as any)?.model ?? "deepseek-ai/DeepSeek-V4-Flash-0731");
           try {
-            dollarBudget.recordSpent(
-              estimateCostUsd(model, Number(u.prompt_tokens) || 0, Number(u.completion_tokens) || 0),
-            );
+            if (Number.isFinite(u.prompt_tokens) && Number.isFinite(u.completion_tokens) && u.prompt_tokens >= 0 && u.completion_tokens >= 0)
+              actualUsd = estimateCostUsd(model, u.prompt_tokens, u.completion_tokens);
           } catch {
             // unknown model price — leave spent unchanged
           }
         }
+        dollarBudget?.settle(projectedUsd, actualUsd);
         return {
           status: res.status,
           ok: res.ok,

@@ -7,7 +7,7 @@ import {
   SECOND_CODER_MODEL,
   type FetchImpl,
 } from "../coding/nebius-client.ts";
-import { requireTfBudget } from "../coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, assertRequestAllowed, estimateCostUsd } from "../coding/spend-guards.ts";
 import { CONFIRMER_MODEL } from "../confirm/confirm.ts";
 import { SCREENER_MODEL } from "../select/screen-model.ts";
 
@@ -23,7 +23,7 @@ export interface RoleSpec {
 }
 
 /**
- * D-67 defaults: bulk gold/confirm/code2 → Ollama (free under Pro).
+ * D-67 defaults: bulk gold/confirm/code2 → Ollama (billed against Pro credit).
  * Token Factory only with explicit --budget (coding showcase / capped recode).
  * Confirm default model id (Task G): nemotron-3-ultra on Ollama.
  * Code2 default: Super-VL on Ollama if available, else substitution recorded per A6.
@@ -83,14 +83,19 @@ export function ollamaClient({
   /** D-67 Task G: keep ≤2 for bulk; wired here so counters exist before Task G runs. */
   concurrency = 2,
   counters = createOllamaCounters(),
+  budget = 5,
+  tokenCap = DEFAULT_TOKEN_CAP,
 }: {
   baseUrl?: string;
   fetchImpl?: FetchImpl;
   maxRetries?: number;
   concurrency?: number;
   counters?: OllamaUsageCounters;
+  budget?: number | DollarBudget;
+  tokenCap?: number;
 } = {}) {
-  // ponytail: simple queue; raise only if Helen overrides (Task G).
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 2) throw new Error("Ollama concurrency must be 1–2");
+  const dollarBudget = budget instanceof DollarBudget ? budget : new DollarBudget(budget);
   let active = 0;
   const waiters: (() => void)[] = [];
   const acquire = () =>
@@ -135,12 +140,15 @@ export function ollamaClient({
     await acquire();
     try {
       for (let attempt = 1; ; attempt += 1) {
+        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap: tokenCap, completionTokens: body.max_tokens ?? 4096 });
+        dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
-        const res = await fetchImpl(`${baseUrl}/api/chat`, {
+        let res: Response;
+        try { res = await fetchImpl(`${baseUrl}/api/chat`, {
           method,
           headers: { "content-type": "application/json" },
           body: JSON.stringify(ollamaBody),
-        });
+        }); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
         const text = await res.text();
         let parsed: any = null;
         try {
@@ -148,6 +156,11 @@ export function ollamaClient({
         } catch {
           parsed = null;
         }
+        const prompt = parsed?.prompt_eval_count;
+        const completion = parsed?.eval_count;
+        const actual = Number.isFinite(prompt) && Number.isFinite(completion) && prompt >= 0 && completion >= 0
+          ? estimateCostUsd(body.model, prompt, completion) : projectedUsd;
+        dollarBudget.settle(projectedUsd, actual);
         const blob = `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
         const concurrent = res.status === 429 || /too many concurrent/.test(blob);
         const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage/.test(blob);
@@ -174,7 +187,7 @@ export function ollamaClient({
       release();
     }
   }
-  return { request, counters };
+  return { request, counters, dollarBudget };
 }
 
 export function roleClient(

@@ -13,6 +13,17 @@ export const LIST_PRICES: Record<string, { prompt: number; completion: number }>
   "deepseek-ai/DeepSeek-V4-Flash-0731": { prompt: 0.00000014, completion: 0.00000028 },
   "nvidia/Nemotron-3-Ultra-550b-a55b": { prompt: 0.000001, completion: 0.000003 },
   "nvidia/Nemotron-3.5-Super-VL": { prompt: 0.0000003, completion: 0.0000009 },
+  // https://nebius.com/services/token-factory/models/qwen-models-inference
+  "Qwen/Qwen3.5-397B-A17B": { prompt: 0.60 / 1e6, completion: 3.60 / 1e6 },
+  // USD per token; D-65/D-67 correction 2026-10-23, Pro monthly credit is $60.
+  "glm-5.3-flash": { prompt: 0.15 / 1e6, completion: 0.50 / 1e6 },
+  "nemotron-3-ultra": { prompt: 0.10 / 1e6, completion: 3 / 1e6 },
+  "nemotron-3-super": { prompt: 0.015 / 1e6, completion: 0.60 / 1e6 },
+  // Standard rates, no cache or off-peak discount assumed: https://ollama.com/pricing
+  "deepseek-v4.1-flash": { prompt: 0.30 / 1e6, completion: 1.20 / 1e6 },
+  "kimi-k3": { prompt: 3 / 1e6, completion: 15 / 1e6 },
+  "glm-5.3": { prompt: 1.40 / 1e6, completion: 4.40 / 1e6 },
+  "minimax-m3.1-flash": { prompt: 0.15 / 1e6, completion: 0.60 / 1e6 },
 };
 
 /** Heuristic: ~4 chars per token. */
@@ -27,7 +38,7 @@ export function estimateMessagesTokens(messages: { content?: string }[]): number
 }
 
 export function priceOf(model: string): { prompt: number; completion: number } {
-  const p = LIST_PRICES[model];
+  const p = LIST_PRICES[model.replace(/:cloud$/, "")];
   if (!p) throw new Error(`spend-guards: no list price for model ${model}`);
   return p;
 }
@@ -53,8 +64,9 @@ export class DollarBudget {
   cap: number;
   estimated = 0;
   spent = 0;
+  reserved = 0;
   constructor(cap: number) {
-    if (!(cap > 0)) throw new Error("DollarBudget: cap must be > 0");
+    if (!Number.isFinite(cap) || !(cap > 0)) throw new Error("DollarBudget: cap must be finite and > 0");
     this.cap = cap;
   }
   snapshot(): BudgetSnapshot {
@@ -65,7 +77,15 @@ export class DollarBudget {
   }
   /** True when adding `projected` spend still fits under the cap. */
   allows(projected: number): boolean {
-    return this.spent + projected <= this.cap + 1e-12;
+    return this.spent + this.reserved + projected <= this.cap + 1e-12;
+  }
+  reserve(usd: number): void {
+    if (!this.allows(usd)) throw new BudgetExceededError(this.snapshot());
+    this.reserved += usd;
+  }
+  settle(reserved: number, actual = reserved): void {
+    this.reserved = Math.max(0, this.reserved - reserved);
+    this.recordSpent(actual);
   }
   addEstimated(usd: number): void {
     this.estimated += usd;
