@@ -115,7 +115,7 @@ async function assertions(base, creds) {
   const location = anon.headers.get("location") ?? "";
   check(
     "GET / without a session redirects to /sign-in",
-    anon.status >= 300 && anon.status < 400 && location.endsWith("/sign-in"),
+    anon.status >= 300 && anon.status < 400 && new URL(location, base).pathname === "/sign-in",
     `status ${anon.status} location ${location}`,
   );
 
@@ -207,6 +207,47 @@ function materialize(dataDir, env) {
 async function page(base, cookie, p = "/") {
   const res = await fetch(`${base}${p}`, { headers: cookie ? { cookie } : {}, redirect: "manual" });
   return { status: res.status, body: await res.text(), headers: res.headers };
+}
+
+const mainOf = (html) => /<main[^>]*>([\s\S]*?)<\/main>/.exec(html)?.[1] ?? "";
+const h1Of = (html) => /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html)?.[1]?.replace(/<[^>]+>/g, "") ?? "";
+const nextValue = (html) => /name="next"[^>]*value="([^"]*)"|value="([^"]*)"[^>]*name="next"/.exec(html)?.slice(1).find((v) => v !== undefined);
+
+// 07-UI-SPEC refused and forbidden states, sign-in return path, noindex (T-07-25..27).
+async function stateChecks(base, sessions) {
+  const r1 = await page(base, sessions.judge, "/review/1");
+  const r399 = await page(base, sessions.judge, "/review/399");
+  console.log(`INFO judge GET /review/1 status ${r1.status}`);
+  check("STATE judge GET /review/1 answers status 403", r1.status === 403, `status ${r1.status}`);
+  check("STATE judge GET /review/399 answers status 403", r399.status === 403, `status ${r399.status}`);
+  check("STATE 403 page h1 is Not available to your account", h1Of(r1.body) === "Not available to your account", h1Of(r1.body));
+  check("STATE 403 body has no /j/ address", !r1.body.includes("/j/") && !r399.body.includes("/j/"));
+  check("STATE 403 page is identical for /review/1 and /review/399", mainOf(r1.body) !== "" && mainOf(r1.body) === mainOf(r399.body));
+  check("STATE 403 page links Go to your projects and, for a judge, the method audit", r1.body.includes(">Go to your projects<") && r1.body.includes(">Open the method audit<"));
+  const c403 = await page(base, sessions.company, "/review/1");
+  check("STATE company 403 page has no method audit link", c403.status === 403 && c403.body.includes(">Go to your projects<") && !c403.body.includes(">Open the method audit<"), `status ${c403.status}`);
+
+  const anon = await page(base, null, "/");
+  check("STATE anonymous GET / redirects to /sign-in?next=%2F", anon.status >= 300 && anon.status < 400 && anon.headers.get("location")?.endsWith("/sign-in?next=%2F"), `${anon.status} ${anon.headers.get("location")}`);
+  const anonReview = await page(base, null, "/review/1");
+  check("STATE anonymous GET /review/1 redirects with next", anonReview.headers.get("location")?.endsWith("/sign-in?next=%2Freview%2F1"), `${anonReview.status} ${anonReview.headers.get("location")}`);
+  for (const [next, want] of [["//evil.example", "/"], ["/\\evil.example", "/"], ["https://evil.example/", "/"], ["/review/2", "/review/2"]]) {
+    const si = await page(base, null, `/sign-in?next=${encodeURIComponent(next)}`);
+    check(`STATE /sign-in?next=${next} returns to ${want}`, nextValue(si.body) === want, `got ${nextValue(si.body)}`);
+  }
+
+  const nf = await page(base, sessions.judge, "/no-such-page");
+  check("STATE GET /no-such-page answers 404", nf.status === 404, `status ${nf.status}`);
+  check("STATE 404 page h1 is Page not found", h1Of(nf.body) === "Page not found", h1Of(nf.body));
+  const nfAnon = await page(base, null, "/no-such-page");
+  check("STATE anonymous GET /no-such-page answers 404 with the 404 page", nfAnon.status === 404 && h1Of(nfAnon.body) === "Page not found", `status ${nfAnon.status}`);
+
+  for (const [p, cookie] of [["/sign-in", null], ["/", sessions.admin], ["/api/report.pdf", null], ["/robots.txt", null], ["/review/1", sessions.judge], ["/no-such-page", null]]) {
+    const res = await page(base, cookie, p);
+    check(`STATE X-Robots-Tag on ${p} is noindex, nofollow`, res.headers.get("x-robots-tag") === "noindex, nofollow", `${res.status} ${res.headers.get("x-robots-tag")}`);
+  }
+  const robots = await page(base, null, "/robots.txt");
+  check("STATE /robots.txt answers 200 text/plain with Disallow: /", robots.status === 200 && (robots.headers.get("content-type") ?? "").startsWith("text/plain") && robots.body.includes("User-agent: *") && robots.body.includes("Disallow: /"), `${robots.status} ${robots.headers.get("content-type")}`);
 }
 
 // APP-01 / 07-UI-SPEC project list: each role's GET / shows exactly the rows it may open.
@@ -342,6 +383,7 @@ try {
       await assertions(base, creds);
       const sessions = await accessChecks(base, accounts);
       await listChecks(base, accounts, sessions);
+      await stateChecks(base, sessions);
     }
 
     // Boot refusals: a mis-configured server must stop, not serve.
