@@ -152,27 +152,41 @@ test.describe("report print layout (/p/P01, admin)", () => {
       .evaluate((e) => e.getBoundingClientRect().bottom + window.scrollY);
     expect(bottom).toBeGreaterThan(0);
     expect(bottom).toBeLessThanOrEqual(printable.height);
-    test
-      .info()
-      .annotations.push({
-        type: "disclaimer bottom / page height (px)",
-        description: `${bottom.toFixed(1)} / ${printable.height.toFixed(1)}`,
-      });
+    test.info().annotations.push({
+      type: "disclaimer bottom / page height (px)",
+      description: `${bottom.toFixed(1)} / ${printable.height.toFixed(1)}`,
+    });
   });
 
-  test("every check card, quote card and the decisions block computes break-inside: avoid", async ({ page }) => {
-    const values = await page
-      .locator("[data-check-card], [data-quote-card], [data-decisions]")
-      .evaluateAll((els) =>
-        els.map(
-          (e) =>
-            `${e.getAttribute("data-check-card") !== null ? "check" : e.getAttribute("data-quote-card") !== null ? "quote" : "decisions"}:${getComputedStyle(e).breakInside}`,
-        ),
-      );
-    expect(values.filter((v) => v.startsWith("check")).length).toBeGreaterThan(0);
-    expect(values.filter((v) => v.startsWith("quote")).length).toBeGreaterThan(0);
-    expect(values.filter((v) => v.startsWith("decisions")).length).toBe(1);
-    for (const v of values) expect(v).toMatch(/:avoid$/);
+  test("check cards, quote cards and each decision row keep together; the Decisions block may break between rows", async ({
+    page,
+  }) => {
+    const avoid = (sel: string) => page.locator(sel).evaluateAll((els) => els.map((e) => getComputedStyle(e).breakInside));
+    for (const sel of ["[data-check-card]", "[data-quote-card]", "[data-verdict-row]"]) {
+      const v = await avoid(sel);
+      expect(v.length, sel).toBeGreaterThan(0);
+      for (const b of v) expect(b, sel).toBe("avoid");
+    }
+    expect(await avoid("[data-decisions]")).toEqual(["auto"]);
+  });
+
+  test("the Checks heading and each decision heading print together with their first check card", async ({ page }) => {
+    const groups = await page.evaluate(() => {
+      const keepOf = (e: Element | null) => e?.closest("[data-keep]") ?? null;
+      const headings = [document.getElementById("checks"), ...document.querySelectorAll("section[aria-labelledby=checks] h3")];
+      return headings.map((h) => {
+        const keep = keepOf(h);
+        const firstCard = h?.parentElement?.closest("[data-check-group]")?.querySelector("[data-check-card]") ?? null;
+        return {
+          id: h?.id,
+          keep: !!keep,
+          avoid: keep ? getComputedStyle(keep).breakInside : null,
+          withCard: !!keep && !!firstCard && keepOf(firstCard) === keep,
+        };
+      });
+    });
+    expect(groups.length).toBe(6);
+    for (const g of groups) expect(g, g.id).toEqual({ id: g.id, keep: true, avoid: "avoid", withCard: true });
   });
 
   test("page.pdf A4 gives at least one A4 page", async ({ page }) => {

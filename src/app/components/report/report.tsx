@@ -337,26 +337,33 @@ export function ReportBody({ view }: { view: ReportView }) {
         </ul>
       </section>
       <section aria-labelledby="checks" className="mt-12">
-        <h2 id="checks" className="text-[1.25rem] font-semibold">
-          Checks
-        </h2>
-        <p className="mt-2 text-[0.8125rem] text-muted-foreground">
-          Chips show how each check maps to a standard: addresses, supports or partial. EU AI Act mappings are informational.
-        </p>
-        {view.decisions.map((d) => (
-          <div key={d.decisionId} className="mt-8">
-            <h3 id={decisionAnchor(d.decisionId)} className="font-semibold">
-              {d.label}
-            </h3>
-            <div className="mt-4 flex flex-col gap-6">
-              {view.checks
-                .filter((c) => c.decision === d.decisionId)
-                .map((c) => (
-                  <CheckCard key={c.checkId} c={c} projectRef={view.projectRef} howMade={view.howMade} />
-                ))}
+        {view.decisions.map((d, i) => {
+          const [first, ...rest] = view.checks.filter((c) => c.decision === d.decisionId);
+          const card = (c: CheckView) => <CheckCard key={c.checkId} c={c} projectRef={view.projectRef} howMade={view.howMade} />;
+          return (
+            <div key={d.decisionId} data-check-group="" className={i > 0 ? "mt-8" : undefined}>
+              {/* data-keep: in print a heading stays with its first card (Chromium ignores break-after: avoid here). */}
+              <div data-keep="">
+                {i === 0 ? (
+                  <>
+                    <h2 id="checks" className="text-[1.25rem] font-semibold">
+                      Checks
+                    </h2>
+                    <p className="mt-2 text-[0.8125rem] text-muted-foreground">
+                      Chips show how each check maps to a standard: addresses, supports or partial. EU AI Act mappings are
+                      informational.
+                    </p>
+                  </>
+                ) : null}
+                <h3 id={decisionAnchor(d.decisionId)} className={cn("font-semibold", i === 0 && "mt-8")}>
+                  {d.label}
+                </h3>
+                {first ? <div className="mt-4">{card(first)}</div> : null}
+              </div>
+              {rest.length ? <div className="mt-6 flex flex-col gap-6">{rest.map(card)}</div> : null}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
       <section aria-labelledby="how-made" className="mt-12">
         <h2 id="how-made" className="text-[1.25rem] font-semibold">

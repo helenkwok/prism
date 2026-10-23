@@ -144,7 +144,8 @@
   }
   [data-check-card],
   [data-quote-card],
-  [data-decisions],
+  [data-verdict-row],
+  [data-keep],
   figure,
   table {
     break-inside: avoid;
