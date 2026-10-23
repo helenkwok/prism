@@ -329,6 +329,32 @@ async function proxyRateChecks(base) {
   check("RATE client B is not limited by client A's bucket", b.status === 401, statuses);
 }
 
+/**
+ * D-79 on disk, run against the second boot on the first server's data directory:
+ * its migrations were no-ops (a seeded account still signs in), and an online
+ * backup of the live database verifies while it serves.
+ */
+async function diskChecks(base, accounts, env) {
+  const res = await fetch(`${base}/api/auth/sign-in/email`, {
+    method: "POST",
+    // A client bucket of its own: the proxy rate checks filled the earlier ones.
+    headers: { "content-type": "application/json", origin: base, "x-real-ip": "198.51.100.30" },
+    body: JSON.stringify({ email: accounts.judge.email, password: accounts.judge.password }),
+  });
+  await res.arrayBuffer();
+  check("DISK second boot on the same data directory signs in a seeded account", res.status === 200, `status ${res.status}`);
+
+  const backup = spawnSync(process.execPath, ["scripts/export-hosted-db.mjs"], { env, encoding: "utf8" });
+  const line = backup.stdout.trim();
+  console.log(`INFO DISK ${line.replace(/ rows=.*/, "")}`);
+  const users = Number(/(?:^|[ ,=])user:(\d+)/.exec(line)?.[1]);
+  const file = /file=(\S+)/.exec(line)?.[1];
+  const mode = file ? fs.statSync(path.join(env.PRISM_DATA_DIR, "backups", file)).mode & 0o777 : undefined;
+  check("DISK backup of the live database passes integrity_check", backup.status === 0 && line.includes(" integrity=ok "), line || backup.stderr.trim());
+  check("DISK backup user count equals the accounts seeded", users === Object.keys(accounts).length, `users ${users}`);
+  check("DISK backup file mode is 600", mode === 0o600, `mode ${mode?.toString(8)}`);
+}
+
 /** A password file must grant no group or other access; one trailing newline is dropped. */
 function readPasswordFile(file) {
   const mode = fs.statSync(file).mode;
@@ -446,8 +472,10 @@ try {
       },
       stdio: ["ignore", "inherit", "inherit"],
     });
-    if (await waitFor(proxyBase, 30_000)) await proxyRateChecks(proxyBase);
-    else check("proxy-mode server answers within 30 seconds", false);
+    if (await waitFor(proxyBase, 30_000)) {
+      await proxyRateChecks(proxyBase);
+      await diskChecks(proxyBase, accounts, serverEnv);
+    } else check("proxy-mode server answers within 30 seconds", false);
 
     // Boot refusals: a mis-configured server must stop, not serve.
     await bootRefusal(
