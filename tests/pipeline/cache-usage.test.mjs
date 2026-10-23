@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { summarizeCacheUsage } from "../../src/pipeline/validate/approved-run.ts";
+import { runApproved, summarizeCacheUsage } from "../../src/pipeline/validate/approved-run.ts";
 const row = { provider: "ollama", stage: "gold", model: "glm-5.3-flash", inputTokens: 1000, outputTokens: 100, prefixDigest: "stable", chargedUsd: .0002, measured: true, status: 200, attempt: 1, latencyMs: 1 };
 test("cache measurement distinguishes absent metadata from a measured zero or hit", () => {
   let [summary] = summarizeCacheUsage([{ ...row, cachedInputTokens: null }, { ...row, cachedInputTokens: null }]);
@@ -17,4 +17,12 @@ test("verified primary-host cache pricing is distinguished from retained ledger 
   assert.equal(summary.cachedInputPricePerMillion, .01);
   assert.equal(summary.chargedUsd, .000168);
   assert.ok(Math.abs(summary.publishedPriceUsd - .000064) < 1e-12);
+});
+
+test("full confirmation is held before any network call until spike review", async () => {
+  const original = globalThis.fetch; let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error("must not send"); };
+  try { await assert.rejects(runApproved("full-confirm"), /held until/); }
+  finally { globalThis.fetch = original; }
+  assert.equal(calls, 0);
 });
