@@ -1,0 +1,294 @@
+{
+  "synthetic": true,
+  "note": "Synthetic fixture for the method audit (plan 07-10). Every figure is invented to test the app and is not a finding. agreement[].status uses the Phase 4 gate record statuses (04-11): released, released-not-estimable, withheld. Generated once by a throwaway script and then edited by hand; edit this file directly.",
+  "generatedAt": "2026-10-23T00:00:00Z",
+  "labeller": {
+    "role": "independent labeller",
+    "modelId": "zai-org/GLM-5.3",
+    "host": "inference.example"
+  },
+  "agreement": [
+    {
+      "checkId": "output-reproducible",
+      "status": "released",
+      "ac1": 0.72,
+      "ac1CI": [
+        0.63,
+        0.78
+      ],
+      "precision": {
+        "c": 11,
+        "m": 12
+      }
+    },
+    {
+      "checkId": "assumptions-catalogued",
+      "status": "released",
+      "ac1": 0.79,
+      "ac1CI": [
+        0.7,
+        0.85
+      ],
+      "precision": {
+        "c": 16,
+        "m": 17
+      }
+    },
+    {
+      "checkId": "intended-use-defined",
+      "status": "released",
+      "ac1": 0.86,
+      "ac1CI": [
+        0.77,
+        0.92
+      ],
+      "precision": {
+        "c": 21,
+        "m": 22
+      }
+    },
+    {
+      "checkId": "acceptance-criteria-defined",
+      "status": "released",
+      "ac1": 0.93,
+      "ac1CI": [
+        0.84,
+        0.99
+      ],
+      "precision": {
+        "c": 26,
+        "m": 27
+      }
+    },
+    {
+      "checkId": "acceptance-criteria-met",
+      "status": "withheld",
+      "reason": "agreement below the pre-registered threshold"
+    },
+    {
+      "checkId": "failure-modes-tested",
+      "status": "released",
+      "ac1": 0.82,
+      "ac1CI": [
+        0.73,
+        0.88
+      ],
+      "precision": {
+        "c": 18,
+        "m": 20
+      }
+    },
+    {
+      "checkId": "limitations-stated",
+      "status": "released",
+      "ac1": 0.89,
+      "ac1CI": [
+        0.8,
+        0.95
+      ],
+      "precision": {
+        "c": 23,
+        "m": 25
+      }
+    },
+    {
+      "checkId": "deliverable-gate-passed",
+      "status": "released",
+      "ac1": 0.96,
+      "ac1CI": [
+        0.87,
+        0.99
+      ],
+      "precision": {
+        "c": 13,
+        "m": 13
+      }
+    },
+    {
+      "checkId": "operational-owner-assigned",
+      "status": "released",
+      "ac1": 0.78,
+      "ac1CI": [
+        0.69,
+        0.84
+      ],
+      "precision": {
+        "c": 18,
+        "m": 18
+      }
+    },
+    {
+      "checkId": "assurance-defined",
+      "status": "released",
+      "ac1": 0.85,
+      "ac1CI": [
+        0.76,
+        0.91
+      ],
+      "precision": {
+        "c": 21,
+        "m": 23
+      }
+    },
+    {
+      "checkId": "fallback-defined",
+      "status": "released",
+      "ac1": 0.92,
+      "ac1CI": [
+        0.83,
+        0.98
+      ],
+      "precision": {
+        "c": 26,
+        "m": 28
+      }
+    },
+    {
+      "checkId": "recovery-tested",
+      "status": "withheld",
+      "reason": "agreement below the pre-registered threshold"
+    },
+    {
+      "checkId": "support-maintenance-defined",
+      "status": "released",
+      "ac1": 0.81,
+      "ac1CI": [
+        0.72,
+        0.87
+      ],
+      "precision": {
+        "c": 21,
+        "m": 21
+      }
+    },
+    {
+      "checkId": "operating-cost-known",
+      "status": "released",
+      "ac1": 0.88,
+      "ac1CI": [
+        0.79,
+        0.94
+      ],
+      "precision": {
+        "c": 23,
+        "m": 26
+      }
+    },
+    {
+      "checkId": "outcome-measure-defined",
+      "status": "released",
+      "ac1": 0.95,
+      "ac1CI": [
+        0.86,
+        0.99
+      ],
+      "precision": {
+        "c": 13,
+        "m": 14
+      }
+    },
+    {
+      "checkId": "baseline-defined",
+      "status": "released-not-estimable",
+      "reason": "too few gold passes to estimate agreement"
+    },
+    {
+      "checkId": "outcome-measured",
+      "status": "withheld",
+      "reason": "agreement below the pre-registered threshold"
+    },
+    {
+      "checkId": "measurement-definition-consistent",
+      "status": "released",
+      "ac1": 0.91,
+      "ac1CI": [
+        0.82,
+        0.97
+      ],
+      "precision": {
+        "c": 12,
+        "m": 12
+      }
+    },
+    {
+      "checkId": "important-confounds-named",
+      "status": "released-not-estimable",
+      "reason": "too few gold passes to estimate agreement"
+    },
+    {
+      "checkId": "outcome-evidence-available",
+      "status": "released",
+      "ac1": 0.8,
+      "ac1CI": [
+        0.71,
+        0.86
+      ],
+      "precision": {
+        "c": 21,
+        "m": 22
+      }
+    },
+    {
+      "checkId": "full-cost-accounted",
+      "status": "released-not-estimable",
+      "reason": "too few gold passes to estimate agreement"
+    },
+    {
+      "checkId": "risk-tradeoffs-assessed",
+      "status": "released",
+      "ac1": 0.94,
+      "ac1CI": [
+        0.85,
+        0.99
+      ],
+      "precision": {
+        "c": 15,
+        "m": 15
+      }
+    },
+    {
+      "checkId": "alternatives-compared",
+      "status": "released-not-estimable",
+      "reason": "too few gold passes to estimate agreement"
+    },
+    {
+      "checkId": "value-rule-explicit",
+      "status": "released",
+      "ac1": 0.83,
+      "ac1CI": [
+        0.74,
+        0.89
+      ],
+      "precision": {
+        "c": 23,
+        "m": 25
+      }
+    }
+  ],
+  "prisma": [
+    {
+      "label": "Show HN posts in the window",
+      "count": 5412
+    },
+    {
+      "label": "Excluded at screening",
+      "count": 4870
+    },
+    {
+      "label": "AI products with their own website",
+      "count": 542
+    },
+    {
+      "label": "Sampled",
+      "count": 300
+    },
+    {
+      "label": "Not collected",
+      "count": 4
+    },
+    {
+      "label": "Included in the analysis",
+      "count": 296
+    }
+  ]
+}
