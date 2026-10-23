@@ -3,6 +3,8 @@
 //   node scripts/app-smoke.mjs --base <url> --email <e> --password-file <mode-600 file>
 //                                             check an already running server; the
 //                                             credentials must already be seeded there.
+//        [--forwarded-for <ip>]               send that X-Forwarded-For on every request
+//        [--expect-fixture-notice]            require the fixture notice on GET / (synthetic rows loaded)
 // Passwords never travel on argv and are never printed.
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -120,6 +122,7 @@ async function assertions(base, creds) {
   );
 
   // Skeleton PDF: read SQLite first, then takumi renders.
+  creds.cookie = cookie;
   const pdfRes = await fetch(`${base}/api/report.pdf`);
   const pdf = Buffer.from(await pdfRes.arrayBuffer());
   const pdfType = pdfRes.headers.get("content-type") ?? "";
@@ -131,6 +134,26 @@ async function assertions(base, creds) {
   const text = spawnSync("pdftotext", ["-", "-"], { input: pdf, encoding: "utf8" });
   if (text.status === 0 && !text.error) {
     console.log(`INFO pdftotext shows SQLite version line: ${/SQLite version \d/.test(text.stdout)}`);
+  }
+}
+
+/**
+ * Base mode against a deployment (07-12c): noindex on a page and a static file, no
+ * fixture runner on /run (PRISM_LIVE_RUNNER unset), and the fixture notice on the
+ * project list while only synthetic rows are loaded.
+ */
+async function deployChecks(base, cookie) {
+  const signInPage = await page(base, null, "/sign-in");
+  check("STATE X-Robots-Tag on /sign-in is noindex, nofollow", signInPage.headers.get("x-robots-tag") === "noindex, nofollow", `${signInPage.status} ${signInPage.headers.get("x-robots-tag")}`);
+  const asset = /(?:src|href)="(\/assets\/[^"]+)"/.exec(signInPage.body)?.[1];
+  const assetRes = asset ? await fetch(`${base}${asset}`) : null;
+  check("STATE X-Robots-Tag on a static asset is noindex, nofollow", assetRes?.status === 200 && assetRes.headers.get("x-robots-tag") === "noindex, nofollow", `${asset} ${assetRes?.status}`);
+  const run = await page(base, cookie, "/run");
+  check("DEPLOY /run shows no fixture-runner notice", run.status === 200 && !run.body.includes('data-notice="fixture"') && !run.body.includes("Fixture:"), `status ${run.status}`);
+  // Only while the synthetic rows are loaded (07-12c until 07-14 replaces them).
+  if (args.includes("--expect-fixture-notice")) {
+    const home = await page(base, cookie, "/");
+    check("DEPLOY / shows the fixture notice on the synthetic rows", home.status === 200 && home.body.includes("Synthetic test data."), `status ${home.status}`);
   }
 }
 
@@ -502,7 +525,16 @@ try {
       console.error("--base mode needs --email and --password-file for an account seeded elsewhere");
       process.exit(2);
     }
-    await assertions(base.replace(/\/$/, ""), { email, password: readPasswordFile(passwordFile) });
+    // --forwarded-for <ip>: send this X-Forwarded-For on every request, to prove the
+    // deployment never records a client-sent address (session-ip-check on the VM).
+    const forwardedFor = flagValue("--forwarded-for");
+    if (forwardedFor) {
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = (url, init = {}) => realFetch(url, { ...init, headers: { ...init.headers, "x-forwarded-for": forwardedFor } });
+    }
+    const target = { email, password: readPasswordFile(passwordFile) };
+    await assertions(base.replace(/\/$/, ""), target);
+    if (target.cookie) await deployChecks(base.replace(/\/$/, ""), target.cookie);
   }
 } catch (err) {
   check("smoke run completed", false, err instanceof Error ? err.message : String(err));
