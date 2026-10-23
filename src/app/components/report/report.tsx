@@ -184,13 +184,20 @@ export function QuoteCard({ q, projectRef, checkId }: { q: CheckView["quotes"][n
   );
 }
 
+/** "GAICC AIMS" + "AIMS artefact: Scope" reads "GAICC AIMS artefact: Scope": a word shared by the name's end and the locator's start is shown once. */
+function chipName(standard: string, locator: string) {
+  const name = STANDARD[standard] ?? standard;
+  const last = name.split(" ").at(-1)!;
+  return locator.startsWith(`${last} `) ? `${name.slice(0, -last.length)}${locator}` : `${name} ${locator}`;
+}
+
 export function CrosswalkChip({ chip }: { chip: CheckView["crosswalk"][number] }) {
   return (
     <span
       data-chip=""
       className={cn("inline-flex rounded-md border border-border px-2 py-0.5 text-[0.8125rem]", chip.informational && "border-dashed")}
     >
-      {`${STANDARD[chip.standard] ?? chip.standard} ${chip.locator} · ${chip.relationType}${chip.informational ? " · informational" : ""}`}
+      {`${chipName(chip.standard, chip.locator)} · ${chip.relationType}${chip.informational ? " · informational" : ""}`}
     </span>
   );
 }

@@ -49,6 +49,18 @@ test("evaluative text uses evidence language; raw gate statuses only in data-gat
   await expect(page.locator('[data-state="fail"]').first()).toContainText("own page shows the check is not met");
 });
 
+test("crosswalk chips name the standard once: the locator's leading word is not repeated", async ({ page }) => {
+  await page.goto("/p/P01");
+  const chips = await page.locator("[data-chip]").allInnerTexts();
+  expect(chips.length).toBeGreaterThan(0);
+  for (const c of chips) {
+    expect(c, c).not.toMatch(/\b(\w+) \1\b/);
+    expect(c, c).toMatch(/\S · \S/);
+  }
+  expect(chips.some((c) => c.startsWith("GAICC AIMS artefact: "))).toBe(true);
+  expect(chips.some((c) => c.startsWith("ISO/IEC 42001 "))).toBe(true);
+});
+
 test("quote cards: URL as truncated text with title, snapshot link with #span-, live link rel and target", async ({ page }) => {
   await page.goto("/p/P01");
   const q = card(page, "output-reproducible").locator("[data-quote-card]").first();
