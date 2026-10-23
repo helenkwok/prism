@@ -4,6 +4,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute, useRouterState } from "@
 // discover the generated stylesheet as a route asset and link it in the head.
 import "../styles.css";
 import { AppShell } from "../components/AppShell";
+import { AppError, NotFound } from "../components/Forbidden";
 import { getSessionUser } from "../server/session.ts";
 
 export const Route = createRootRoute({
@@ -17,6 +18,9 @@ export const Route = createRootRoute({
   // The signed-in user (or null) for the shell and every route's guard.
   beforeLoad: async () => ({ user: await getSessionUser() }),
   component: RootComponent,
+  // AccessError 403 renders the 403 page (status set by the guard), 401 goes to sign-in.
+  errorComponent: AppError,
+  notFoundComponent: NotFound,
 });
 
 function RootComponent() {

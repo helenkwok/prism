@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { AccessError, requireRole } from "../server/access.ts";
+import { requireRole } from "../server/access.ts";
 import { getDb, resolveDataDir } from "../server/db.ts";
 import { getSessionUser } from "../server/session.ts";
 import { loadGateFile, resolveGatesPath, PROPOSED_STATES } from "../../pipeline/coding/contract.ts";
@@ -117,16 +117,23 @@ export const submitGold = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// The page guard: the 403 for other roles is raised on the server, where it
+// also sets the document's HTTP status (plan 07-07, Pitfall 3).
+export const reviewAccess = createServerFn({ method: "GET" }).handler(async () => {
+  await requireRole("admin");
+  return true;
+});
+
 type ReviewSearch = { blind?: string };
 
 export const Route = createFileRoute("/review/$projectN")({
   validateSearch: (s: Record<string, unknown>): ReviewSearch => ({
     blind: typeof s.blind === "string" ? s.blind : undefined,
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const user = await getSessionUser();
-    if (!user) throw redirect({ to: "/sign-in" });
-    if (user.role !== "admin") throw new AccessError(403);
+    if (!user) throw redirect({ to: "/sign-in", search: { next: location.href } });
+    await reviewAccess();
     return { user };
   },
   component: ReviewPage,

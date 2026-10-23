@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
 import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
@@ -18,6 +19,11 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -43,6 +49,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/review/$projectN': typeof ReviewProjectNRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/review/$projectN': typeof ReviewProjectNRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/review/$projectN': typeof ReviewProjectNRoute
@@ -66,12 +75,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/sign-in' | '/api/report.pdf' | '/review/$projectN' | '/api/auth/$'
+    | '/'
+    | '/robots.txt'
+    | '/sign-in'
+    | '/api/report.pdf'
+    | '/review/$projectN'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/api/report.pdf' | '/review/$projectN' | '/api/auth/$'
+  to:
+    | '/'
+    | '/robots.txt'
+    | '/sign-in'
+    | '/api/report.pdf'
+    | '/review/$projectN'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
+    | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
     | '/review/$projectN'
@@ -80,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignInRoute: typeof SignInRoute
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
   ReviewProjectNRoute: typeof ReviewProjectNRoute
@@ -93,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -128,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SignInRoute: SignInRoute,
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
   ReviewProjectNRoute: ReviewProjectNRoute,
@@ -138,10 +168,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

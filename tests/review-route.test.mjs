@@ -39,17 +39,17 @@ async function importRouteModule() {
   }
 }
 
-test("the route exports getTrail, submitEdit, submitDecision, submitGold and Route", async () => {
+test("the route exports getTrail, submitEdit, submitDecision, submitGold, the reviewAccess page guard and Route", async () => {
   const mod = await importRouteModule();
   assert.deepEqual(
     Object.keys(mod).sort(),
-    ["Route", "getTrail", "submitDecision", "submitEdit", "submitGold"],
+    ["Route", "getTrail", "reviewAccess", "submitDecision", "submitEdit", "submitGold"],
   );
 });
 
-test("route source has no dangerouslySetInnerHTML and exactly four requireRole(\"admin\") calls", () => {
+test("route source has no dangerouslySetInnerHTML and exactly five requireRole(\"admin\") calls", () => {
   assert.equal((routeSource.match(/dangerouslySetInnerHTML/g) ?? []).length, 0);
-  assert.equal((routeSource.match(/requireRole\("admin"\)/g) ?? []).length, 4);
+  assert.equal((routeSource.match(/requireRole\("admin"\)/g) ?? []).length, 5);
 });
 
 test("getTrail with no request context throws before any database write", async () => {

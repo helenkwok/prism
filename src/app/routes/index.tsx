@@ -11,8 +11,8 @@ export const Route = createFileRoute("/")({
     const n = Number(s.page);
     return Number.isInteger(n) && n > 1 ? { page: n } : {};
   },
-  beforeLoad: ({ context }) => {
-    if (!context.user) throw redirect({ to: "/sign-in" });
+  beforeLoad: ({ context, location }) => {
+    if (!context.user) throw redirect({ to: "/sign-in", search: { next: location.href } });
   },
   loaderDeps: ({ search }) => ({ page: search.page ?? 1 }),
   loader: ({ deps }) => listProjects({ data: { page: deps.page } }),

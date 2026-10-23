@@ -4,7 +4,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createAuthClient } from "better-auth/react";
 import { Button } from "../../components/ui/button";
 
+/**
+ * ?next= is honoured only for a same-origin path: it starts with "/" and not
+ * "//" or "/\\" (browsers read both as another host). Anything else returns to "/" (T-07-26).
+ */
+function safeNext(next: unknown): string {
+  return typeof next === "string" && /^\/(?![/\\])/.test(next) && !/[\u0000-\u001f]/.test(next) ? next : "/";
+}
+
 export const Route = createFileRoute("/sign-in")({
+  validateSearch: (s: Record<string, unknown>): { next?: string } => (typeof s.next === "string" ? { next: s.next } : {}),
   component: SignIn,
 });
 
@@ -19,6 +28,7 @@ const inputClass =
   "h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground aria-invalid:border-destructive";
 
 function SignIn() {
+  const next = safeNext(Route.useSearch().next);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -43,7 +53,7 @@ function SignIn() {
       return;
     }
     // A full navigation so the guarded page loads with the new session cookie.
-    window.location.assign("/");
+    window.location.assign(next);
   }
 
   const invalid = error ? true : undefined;
@@ -60,6 +70,7 @@ function SignIn() {
           <p className="mt-4">Signing in needs JavaScript. Turn it on for this site and reload the page.</p>
         </noscript>
         <form method="post" onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
+          <input type="hidden" name="next" value={next} />
           {error ? (
             <div
               id="sign-in-error"

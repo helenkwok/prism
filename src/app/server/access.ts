@@ -112,18 +112,36 @@ async function requestContext() {
   return getRequestHeaders() as unknown as Headers;
 }
 
+/**
+ * A 403 also becomes the HTTP status of the response, so a page whose guard
+ * refuses during server render is a real 403, not a 500 (Pitfall 3, measured in plan 07-07).
+ */
+async function withStatus<T>(guard: Promise<T>): Promise<T> {
+  try {
+    return await guard;
+  } catch (err) {
+    if (err instanceof AccessError && err.status === 403) {
+      const { setResponseStatus } = await import("@tanstack/react-start/server");
+      setResponseStatus(403);
+    }
+    throw err;
+  }
+}
+
 /** First awaited call of every admin- or role-only handler. */
 export async function requireRole(...roles: Role[]) {
-  return checkRole({ headers: await requestContext(), roles });
+  return withStatus(checkRole({ headers: await requestContext(), roles }));
 }
 
 /** First awaited call of every per-project handler. ref is a project id (identifiable) or a pseudonym (de-identified). */
 export async function requireProjectAccess(view: View, ref: string) {
   const headers = await requestContext();
   const { getDb } = await import("./db.ts");
-  return checkAccess(
-    view === "identifiable"
-      ? { headers, db: getDb(), view, projectId: ref }
-      : { headers, db: getDb(), view, pseudonym: ref },
+  return withStatus(
+    checkAccess(
+      view === "identifiable"
+        ? { headers, db: getDb(), view, projectId: ref }
+        : { headers, db: getDb(), view, pseudonym: ref },
+    ),
   );
 }
