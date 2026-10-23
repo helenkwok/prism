@@ -157,6 +157,39 @@ jobs:
       - name: Every spike record is present and final
         run: node scripts/check-spike-records.mjs --require-final
 
+  # The public site (PUB-06): synthetic release -> static pages read with JavaScript off, then the wording
+  # lint and the identifier scan over what was built. Never deploys.
+  site:
+    name: site
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      # Root packages for the lint and identifier CLIs; the site installs its own, scripts off.
+      - run: npm ci
+      - run: npm --prefix site ci --ignore-scripts
+      - run: npm --prefix site exec -- playwright install --with-deps chromium
+      - name: Build the synthetic release
+        run: PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run build
+      - run: npm --prefix site run check
+      - run: npm --prefix site run typecheck
+      - name: Wording lint over the finding text
+        run: node src/publish/lint.ts site/_shots/findings-text.json
+      - name: Identifier scan over the built site
+        run: node src/publish/identifiers.ts --store tests/fixtures/publish/synthetic-store.json site/dist/client
+      - name: With no release, every findings page shows the empty state
+        run: |
+          mkdir -p "$RUNNER_TEMP/empty-public-data"
+          PUBLIC_DATA_DIR="$RUNNER_TEMP/empty-public-data" npm --prefix site run build
+          for f in site/dist/client/findings/*/index.html; do
+            grep -q "Findings not yet released" "$f" || { echo "no empty state: $f"; exit 1; }
+          done
+
   docker-smoke:
     name: docker-smoke
     runs-on: ubuntu-latest

@@ -61,8 +61,28 @@ test("the guard steps are present", () => {
 
 test("the test job installs with npm ci (scripts enabled) and runs npm test", () => {
   assert.match(text, /run:\s*npm ci\s*$/m);
-  assert.doesNotMatch(text, /--ignore-scripts/);
+  // Only the separate site package installs with scripts off; the root install never does.
+  assert.doesNotMatch(text, /run:\s*npm ci\b[^\n]*--ignore-scripts/);
   assert.match(text, /run:\s*npm test\s*$/m);
+});
+
+test("the site job builds the synthetic release, checks it with JS off, lints and scans it, and never deploys", () => {
+  const jobStart = text.indexOf("\n  site:");
+  const jobEnd = text.indexOf("\n  docker-smoke:");
+  assert.ok(jobStart >= 0 && jobEnd > jobStart);
+  const job = text.slice(jobStart, jobEnd);
+  for (const needle of [
+    "run: npm --prefix site ci --ignore-scripts",
+    "PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run build",
+    "run: npm --prefix site run check",
+    "run: npm --prefix site run typecheck",
+    "run: node src/publish/lint.ts site/_shots/findings-text.json",
+    "run: node src/publish/identifiers.ts --store tests/fixtures/publish/synthetic-store.json site/dist/client",
+    "Findings not yet released",
+  ]) {
+    assert.ok(job.includes(needle), `site job is missing: ${needle}`);
+  }
+  assert.doesNotMatch(text, /run:[^\n]*\b(run deploy|pages deploy|cf deploy|wrangler)\b/);
 });
 
 test("the gate job installs the pinned requirements and runs the gate tests", () => {
@@ -71,7 +91,7 @@ test("the gate job installs the pinned requirements and runs the gate tests", ()
 });
 
 test("every required job is present", () => {
-  for (const job of ["guards", "test", "gate", "vendor-remote", "protocol-order", "spike-records", "docker-smoke"]) {
+  for (const job of ["guards", "test", "gate", "vendor-remote", "protocol-order", "spike-records", "docker-smoke", "site"]) {
     assert.ok(codeLines.includes(`  ${job}:`), `missing job: ${job}`);
   }
 });
