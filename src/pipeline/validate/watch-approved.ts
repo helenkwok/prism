@@ -108,7 +108,7 @@ export function watchApproved(options: WatchOptions): Promise<Record<string, unk
       try {
         const result = validateLines(text);
         const consistent = ledger.verified && Math.abs(ledger.stageSpent! - result.stageSpent) <= EPSILON && Math.abs(ledger.hostSpent! - result.hostSpent) <= EPSILON;
-        const settled = consistent && ledger.stageReserved === 0 && ledger.hostReserved === 0;
+        const settled = consistent && ledger.stageReserved! <= EPSILON && ledger.hostReserved! <= EPSILON;
         finish({ ...result, status: settled ? result.status : "incomplete", complete: result.complete && settled, reason: !consistent ? "ledger-not-verified" : !settled ? "unsettled-reservations" : result.reason, stageReserved: ledger.stageReserved, hostReserved: ledger.hostReserved, verifiedLedger: consistent });
         return;
       } catch (error) {

@@ -60,6 +60,25 @@ test("unknown reservations remain unknown and cannot produce verified completion
   assert.equal(report.complete, false); assert.equal(report.status, "incomplete"); assert.equal(report.stageReserved, null); assert.equal(report.hostReserved, null); assert.equal(report.verifiedLedger, false);
 });
 
+test("floating-point reservation residue preserves the verified partial stop reason", async () => {
+  const f = fixture(lines({ ...partial, reason: "TooLargeError" }));
+  const ledgerPath = path.join(f.validation, "approved-budget-2026-10-23.json");
+  const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+  ledger.stages.gold.reserved = 1.6306400674181987e-16;
+  fs.writeFileSync(ledgerPath, JSON.stringify(ledger));
+  const report = await watchApproved({ dataDir: f.dataDir, offset: 0, log: () => {} });
+  assert.equal(report.status, "partial"); assert.equal(report.reason, "TooLargeError");
+  assert.equal(report.complete, false); assert.equal(report.verifiedLedger, true);
+  assert.equal(report.hostReserved, 1.6306400674181987e-16);
+});
+
+test("a significant outstanding reservation remains incomplete", async () => {
+  const f = fixture(lines(partial), 0.25);
+  const report = await watchApproved({ dataDir: f.dataDir, offset: 0, log: () => {} });
+  assert.equal(report.status, "incomplete"); assert.equal(report.reason, "unsettled-reservations");
+  assert.equal(report.complete, false); assert.equal(report.stageReserved, 0.25); assert.equal(report.verifiedLedger, true);
+});
+
 test("dead-process grace accepts terminal records flushed shortly afterwards", async () => {
   const f = fixture(""); let reported = 0;
   const running = watchApproved({ dataDir: f.dataDir, offset: 0, pid: 123, pollMs: 5, deathGraceMs: 100, isAlive: () => false, log: () => reported++ });
