@@ -15,6 +15,8 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
 import { Route as PProjectIdRouteImport } from './routes/p.$projectId'
 import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
+import { Route as RunIndexRouteImport } from './routes/run.index'
+import { Route as RunJobIdRouteImport } from './routes/run.$jobId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as PProjectIdSnapshotHashRouteImport } from './routes/p.$projectId_.snapshot.$hash'
 
@@ -48,6 +50,16 @@ const ReviewProjectNRoute = ReviewProjectNRouteImport.update({
   path: '/review/$projectN',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RunIndexRoute = RunIndexRouteImport.update({
+  id: '/run/',
+  path: '/run/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RunJobIdRoute = RunJobIdRouteImport.update({
+  id: '/run/$jobId',
+  path: '/run/$jobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -66,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
+  '/run/$jobId': typeof RunJobIdRoute
+  '/run/': typeof RunIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/p/$projectId/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
@@ -76,6 +90,8 @@ export interface FileRoutesByTo {
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
+  '/run/$jobId': typeof RunJobIdRoute
+  '/run': typeof RunIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/p/$projectId/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
@@ -87,6 +103,8 @@ export interface FileRoutesById {
   '/api/report.pdf': typeof ApiReportDotpdfRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
+  '/run/$jobId': typeof RunJobIdRoute
+  '/run/': typeof RunIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/p/$projectId_/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
@@ -99,6 +117,8 @@ export interface FileRouteTypes {
     | '/api/report.pdf'
     | '/p/$projectId'
     | '/review/$projectN'
+    | '/run/$jobId'
+    | '/run/'
     | '/api/auth/$'
     | '/p/$projectId/snapshot/$hash'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +129,8 @@ export interface FileRouteTypes {
     | '/api/report.pdf'
     | '/p/$projectId'
     | '/review/$projectN'
+    | '/run/$jobId'
+    | '/run'
     | '/api/auth/$'
     | '/p/$projectId/snapshot/$hash'
   id:
@@ -119,6 +141,8 @@ export interface FileRouteTypes {
     | '/api/report.pdf'
     | '/p/$projectId'
     | '/review/$projectN'
+    | '/run/$jobId'
+    | '/run/'
     | '/api/auth/$'
     | '/p/$projectId_/snapshot/$hash'
   fileRoutesById: FileRoutesById
@@ -130,6 +154,8 @@ export interface RootRouteChildren {
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
   PProjectIdRoute: typeof PProjectIdRoute
   ReviewProjectNRoute: typeof ReviewProjectNRoute
+  RunJobIdRoute: typeof RunJobIdRoute
+  RunIndexRoute: typeof RunIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   PProjectIdSnapshotHashRoute: typeof PProjectIdSnapshotHashRoute
 }
@@ -178,6 +204,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewProjectNRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/run/': {
+      id: '/run/'
+      path: '/run'
+      fullPath: '/run/'
+      preLoaderRoute: typeof RunIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/run/$jobId': {
+      id: '/run/$jobId'
+      path: '/run/$jobId'
+      fullPath: '/run/$jobId'
+      preLoaderRoute: typeof RunJobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -202,6 +242,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
   PProjectIdRoute: PProjectIdRoute,
   ReviewProjectNRoute: ReviewProjectNRoute,
+  RunJobIdRoute: RunJobIdRoute,
+  RunIndexRoute: RunIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   PProjectIdSnapshotHashRoute: PProjectIdSnapshotHashRoute,
 }

@@ -5,6 +5,7 @@ import { getAuth } from "./auth.ts";
 import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
 import { ensureReportViewSchema } from "../../report/store.ts";
+import { ensureLiveRunSchema, runnerFromEnv } from "./live-run.ts";
 
 function refuse(check: string, err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
@@ -39,5 +40,14 @@ export default async function boot(): Promise<void> {
     await ensureReportViewSchema(getDb());
   } catch (err) {
     refuse("report view table", err);
+  }
+  try {
+    await ensureLiveRunSchema(getDb());
+  } catch (err) {
+    refuse("live-run tables", err);
+  }
+  // T-07-36: a fixture runner left on in production is visible in the log.
+  if (runnerFromEnv().name === "fixture") {
+    console.log("[prism] live run: fixture runner active (no network, no model calls, reports flagged fixture)");
   }
 }
