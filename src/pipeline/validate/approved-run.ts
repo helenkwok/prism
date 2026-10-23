@@ -43,8 +43,9 @@ export function summarizeCacheUsage(observations: UsageObservation[]) {
   }));
 }
 
-export async function runApproved(stage: ApprovedStage) {
+export async function runApproved(stage: ApprovedStage, options: { splitNemotronThinking?: boolean } = {}) {
   if (stage === "full-confirm") throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
+  if (!["signoff", "recode", "gold", "second-coder", "spike"].includes(stage)) throw new Error("explicit approved stage required");
   const dataDir = resolveDataDir();
   const validation = path.join(dataDir, "validation");
   fs.mkdirSync(validation, { recursive: true, mode: 0o700 });
@@ -84,7 +85,10 @@ export async function runApproved(stage: ApprovedStage) {
       role = { provider: "token-factory", model: stage === "signoff" ? SIGNOFF_MODEL : PINNED_MODEL, reasoning: false };
     } else {
       role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : false };
-      client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage });
+      client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage,
+        splitNemotronThinking: options.splitNemotronThinking === true,
+        onThinkingEnvelope: options.splitNemotronThinking === true ? audit => fs.appendFileSync(path.join(validation, "thinking-envelope-audit.jsonl"), JSON.stringify({ ...audit, stage, at: new Date().toISOString() }) + "\n", { mode: 0o600 }) : undefined,
+      });
     }
     if (stage === "signoff") {
       const records = fs.existsSync(signoffPath) ? fs.readFileSync(signoffPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];

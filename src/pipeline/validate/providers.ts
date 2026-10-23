@@ -76,6 +76,15 @@ export function assertIndependent(role: RoleName, model: string): void {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export type ThinkingEnvelopeAudit = { model: string; rawContent: string; reasoningContent: string | null; content: string; split: boolean };
+
+/** Split one leading channel envelope only. Final-answer validation remains the caller's job. */
+export function splitLeadingThinkingBlock(raw: string): { reasoning: string; content: string } | null {
+  const match = /^\s*<think>([\s\S]*?)<\/think>([\s\S]*)$/.exec(raw);
+  if (!match || /<\/?think\b/i.test(match[1]) || /<\/?think\b/i.test(match[2])) return null;
+  return { reasoning: match[1], content: match[2] };
+}
+
 /** Translate an OpenAI-style chat body into Ollama /api/chat; return OpenAI-shaped json. */
 export function ollamaClient({
   baseUrl = OLLAMA_BASE_URL,
@@ -87,6 +96,7 @@ export function ollamaClient({
   budget = 5,
   tokenCap = DEFAULT_TOKEN_CAP,
   onUsage, stage,
+  splitNemotronThinking = false, onThinkingEnvelope,
 }: {
   baseUrl?: string;
   fetchImpl?: FetchImpl;
@@ -97,6 +107,8 @@ export function ollamaClient({
   tokenCap?: number;
   onUsage?: UsageObserver;
   stage?: string;
+  splitNemotronThinking?: boolean;
+  onThinkingEnvelope?: (audit: ThinkingEnvelopeAudit) => void;
 } = {}) {
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 2) throw new Error("Ollama concurrency must be 1–2");
   const dollarBudget = budget instanceof DollarBudget ? budget : new DollarBudget(budget);
@@ -188,13 +200,21 @@ export function ollamaClient({
           continue;
         }
         if (concurrent) throw new QuotaStop(res.status, `OLLAMA concurrency limit: stop and report (${formatOllamaSummary(counters)})`);
-        const content = parsed?.message?.content ?? "";
+        const rawContent = parsed?.message?.content ?? "";
+        let content = rawContent;
+        let channelFields = {};
+        if (splitNemotronThinking && /(?:^|\/)nemotron(?:-|$)/i.test(body.model.replace(/:cloud$/, "")) && typeof rawContent === "string") {
+          const envelope = splitLeadingThinkingBlock(rawContent);
+          if (envelope) content = envelope.content;
+          channelFields = { raw_content: rawContent, ...(envelope ? { reasoning_content: envelope.reasoning } : {}) };
+          onThinkingEnvelope?.({ model: body.model, rawContent, reasoningContent: envelope?.reasoning ?? null, content, split: envelope !== null });
+        }
         const finish = parsed?.done_reason ?? (parsed?.done ? "stop" : undefined);
         return {
           ok: res.ok,
           status: res.status,
           text,
-          json: { choices: [{ message: { content }, finish_reason: finish }],
+          json: { choices: [{ message: { content, ...channelFields }, finish_reason: finish }],
             usage: { prompt_tokens: prompt, completion_tokens: completion,
               prompt_tokens_details: { cached_tokens: cached } },
             prompt_eval_count: prompt, eval_count: completion, prompt_eval_cached_count: cached },
@@ -212,9 +232,10 @@ export function roleClient(
   {
     nebiusKey,
     fetchImpl,
-    roleSpec, budget, counters, concurrency, onUsage, stage,
+    roleSpec, budget, counters, concurrency, onUsage, stage, splitNemotronThinking, onThinkingEnvelope,
   }: { nebiusKey?: string; fetchImpl?: FetchImpl; roleSpec?: RoleSpec; budget?: number | DollarBudget;
-    counters?: OllamaUsageCounters; concurrency?: number; onUsage?: UsageObserver; stage?: string } = {},
+    counters?: OllamaUsageCounters; concurrency?: number; onUsage?: UsageObserver; stage?: string;
+    splitNemotronThinking?: boolean; onThinkingEnvelope?: (audit: ThinkingEnvelopeAudit) => void } = {},
 ) {
   const spec = roleSpec ?? ROLE_CONFIG[role];
   if (!spec) throw new Error(`unknown role: ${role}`);
@@ -231,5 +252,5 @@ export function roleClient(
       onUsage, stage, concurrency,
     });
   }
-  return ollamaClient({ fetchImpl, budget, counters, concurrency, onUsage, stage });
+  return ollamaClient({ fetchImpl, budget, counters, concurrency, onUsage, stage, splitNemotronThinking, onThinkingEnvelope });
 }
