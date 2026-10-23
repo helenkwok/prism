@@ -432,7 +432,8 @@ const REPLY_SCHEMA = {
 };
 
 export function confirmMessages(codebook: Codebook, p: Positive) {
-  const flagged = p.flaggedSpanIds ?? [];
+  const cited = new Set(p.spans.map(s => s.id));
+  const flagged = (p.flaggedSpanIds ?? []).filter(id => cited.has(id));
   const flagNote = flagged.length
     ? ` Flagged span ids (injection-detection, D-41): ${flagged.join(", ")}. ` +
       "You must reject any positive whose cited spans include a flagged id — never confirm or downgrade it."
@@ -461,26 +462,43 @@ function citesFlagged(p: Positive): boolean {
   return p.spans.some((s) => flagged.has(s.id));
 }
 
-export async function confirmWithModel(client: any, codebook: Codebook, p: Positive, model = CONFIRMER_MODEL, attempts = 3, reasoning: boolean | "low" = true) {
+export class InvalidConfirmationError extends Error {
+  readonly reason: "json-parse" | "off-contract";
+  constructor(reason: "json-parse" | "off-contract") {
+    super(`confirmer gave no valid reply: ${reason}`);
+    this.name = "InvalidConfirmationError";
+    this.reason = reason;
+  }
+}
+
+export type ConfirmationResponseDiagnostic = {
+  projectN: number; checkId: string; setting: boolean | "low"; attempt: number;
+  spanIds: string[]; requestDigest: string; finishReason: string | null; content: string | null;
+};
+
+export async function confirmWithModel(client: any, codebook: Codebook, p: Positive, model = CONFIRMER_MODEL, attempts = 3, reasoning: boolean | "low" = true, options: { onResponse?: (response: ConfirmationResponseDiagnostic) => void } = {}) {
   if (model === PINNED_MODEL || model === SECOND_CODER_MODEL) throw new Error(`A2: ${model} coded these projects and cannot confirm them`);
   let last: unknown;
+  let failureReason: "json-parse" | "off-contract" = "off-contract";
   let flaggedHits = 0;
   for (let i = 0; i < attempts; i++) {
     const body = buildChatBody({ model, messages: confirmMessages(codebook, p), mode: "json_schema", schema: { name: "confirm", schema: REPLY_SCHEMA, strict: true }, thinking: reasoning === true, ...(reasoning === "low" ? { reasoningEffort: "low" } : {}), maxTokens: 8192 });
     const res = await client.request("/chat/completions", { method: "POST", body });
+    options.onResponse?.({ projectN: p.projectN, checkId: p.checkId, spanIds: p.spans.map(s => s.id), setting: reasoning, attempt: i + 1, requestDigest: crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex"), finishReason: res.json?.choices?.[0]?.finish_reason ?? null, content: typeof res.json?.choices?.[0]?.message?.content === "string" ? res.json.choices[0].message.content : null });
     if (res.outcome === "too-large") {
-      throw new Error(`too-large: confirmation prompt refused before Token Factory HTTP`);
+      const error = new Error("too-large: confirmation prompt refused before HTTP"); error.name = "TooLargeError"; throw error;
     }
     if (client.dollarBudget) process.stdout.write(`${client.dollarBudget.budgetLine()}\n`);
     if (isQuotaResponse(res)) throw new QuotaStop(res.status, `nebius quota stop status ${res.status}`);
     if (!res.ok) throw new Error(`nebius chat/completions returned status ${res.status}`);
     try {
       const v = JSON.parse((res.json as any)?.choices?.[0]?.message?.content);
-      const okKind =
+      const okKind = v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 2 && (
         v.decision === "confirmed" ||
         v.decision === "rejected" ||
-        (v.decision === "downgraded" && p.state === "pass");
+        (v.decision === "downgraded" && p.state === "pass"));
       if (!okKind || typeof v.reason !== "string") {
+        failureReason = "off-contract";
         last = new Error("off-contract reply");
         continue;
       }
@@ -493,12 +511,13 @@ export async function confirmWithModel(client: any, codebook: Codebook, p: Posit
       return v as { decision: ConfirmDecisionKind; reason: string };
     } catch (err) {
       last = err;
+      failureReason = err instanceof SyntaxError ? "json-parse" : "off-contract";
     }
   }
   if (flaggedHits >= attempts || (last instanceof FlaggedRuleError) || (last as Error)?.name === "FlaggedRuleError") {
     throw new FlaggedRuleError(`flagged-span rule: no valid reject in ${attempts} attempts: ${(last as Error)?.message}`);
   }
-  throw new Error(`confirmer gave no valid reply in ${attempts} attempts: ${(last as Error)?.message}`);
+  throw new InvalidConfirmationError(failureReason);
 }
 
 function parseArgs(argv: string[]) {

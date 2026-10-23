@@ -7,7 +7,7 @@ import { test } from "node:test";
 import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 import { runApprovedStage, spikeSample } from "../../src/pipeline/validate/approved-stages.ts";
-import { confirmWithModel, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
+import { confirmMessages, confirmWithModel, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildContract, loadGateFile, resolveGatesPath } from "../../src/pipeline/coding/contract.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
@@ -87,6 +87,8 @@ test("spike sample is stable and paired confirmation settings send only cited sp
   assert.equal(bodies[1].reasoning_effort, undefined);
   assert.deepEqual(bodies[0].messages, bodies[1].messages);
   assert.ok(bodies[0].messages[1].content.includes("CITED FIXTURE"));
+  const flaggedPrompt = JSON.stringify(confirmMessages(codebook, { ...p, flaggedSpanIds: ["p1-s1", "p99-unrelated"] }));
+  assert.ok(flaggedPrompt.includes("p1-s1")); assert.ok(!flaggedPrompt.includes("p99-unrelated"));
 });
 test("spike excludes A3 before checking gold locks", async () => {
   const f = fixture(); await ensurePipelineSchema(f.db); await ensureGoldSchema(f.db);
@@ -132,5 +134,51 @@ test("cap stop does not schedule queued projects and waits for the other in-flig
   assert.equal(calls, 2); assert.equal(out.success, 1); assert.equal(out.stopped, 2); assert.equal(out.failed, 0); assert.equal(out.ok, false);
   const printed = JSON.parse(lines.at(-1).slice("ACCOUNTING: ".length));
   assert.equal(printed.accounted + printed.stopped, printed.total);
+  await f.db.destroy();
+});
+
+async function spikeFixture() {
+  const f = fixture(); await ensurePipelineSchema(f.db); await ensureGoldSchema(f.db);
+  for (const n of [1, 2]) {
+    const spans = projectSpans(f.dataDir, n);
+    await f.db.insertInto("pipeline_gold_outcomes").values({ project_n: n, codebook_version: codebook.codebookVersion, labeller_id: "fixture", input_digest: spansDigest(spans), outcome: "labelled" }).execute();
+    for (const checkId of contract.checkIds.slice(0, 15)) await f.db.insertInto("pipeline_check_states").values({ project_n: n, check_id: checkId, filtered_state: "pass", proposed_state: "pass", span_ids_json: JSON.stringify([spans[0].id]) }).execute();
+  }
+  return { ...f, stage: "spike", role: { ...f.role, model: "nemotron-3-ultra" } };
+}
+const confirmationReply = content => ({ ok: true, status: 200, json: { choices: [{ message: { content }, finish_reason: "stop" }] } });
+test("spike records malformed on conditions, completes off conditions and does not rebuy failures", async () => {
+  const f = await spikeFixture(); let calls = 0; const lines = [];
+  const client = { request: async (_p, { body }) => { calls++; return confirmationReply(body.chat_template_kwargs.enable_thinking ? "malformed" : '{"decision":"rejected","reason":"cited span lacks evidence"}'); } };
+  const run = () => runApprovedStage({ ...f, client, log: line => lines.push(line) });
+  const out = await run();
+  assert.equal(out.ok, true); assert.equal(out.completedExperiment, true); assert.equal(out.accounted, 60); assert.equal(out.failed, 30); assert.equal(out.success, 30); assert.equal(calls, 120);
+  const report = JSON.parse(fs.readFileSync(path.join(f.dataDir, "validation", "confirmation-spike.json"), "utf8"));
+  assert.equal(report.decisions.length, 60); assert.equal(report.failureCounts["on:json-parse"], 30);
+  assert.ok(report.decisions.filter(d => d.setting).every(d => d.failed && d.decision === null));
+  assert.ok(report.decisions.filter(d => !d.setting).every(d => !d.failed && d.decision === "rejected"));
+  const diagnostics = fs.readFileSync(path.join(f.dataDir, "validation", "confirmation-spike-responses.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(diagnostics.length, 120); assert.ok(diagnostics.every(d => d.stage === "spike" && d.requestDigest.length === 64));
+  const accounting = JSON.parse(lines.findLast(l => l.startsWith("ACCOUNTING:")).slice(12));
+  assert.equal(accounting.complete, true); assert.equal(accounting.allDecisionsValid, false);
+  assert.equal((await run()).ok, true); assert.equal(calls, 120);
+  assert.equal((await f.db.introspection.getTables()).some(t => t.name === "pipeline_confirmations"), false);
+  await f.db.destroy();
+});
+test("spike cap stop keeps partial report and does not schedule more conditions", async () => {
+  const f = await spikeFixture(); let calls = 0; const lines = [];
+  const client = { request: async () => { calls++; if (calls === 3) { const error = new Error("spike cap reached"); error.name = "BudgetExceededError"; throw error; } return confirmationReply('{"decision":"rejected","reason":"cited span lacks evidence"}'); }, dollarBudget: { budgetLine: () => "BUDGET: {}" } };
+  const out = await runApprovedStage({ ...f, client, log: line => lines.push(line) });
+  assert.equal(calls, 3); assert.equal(out.ok, false); assert.equal(out.success, 2); assert.equal(out.stopped, 58); assert.equal(out.accounted, 2);
+  const report = JSON.parse(fs.readFileSync(path.join(f.dataDir, "validation", "confirmation-spike.json"), "utf8"));
+  assert.equal(report.decisions.length, 2); assert.equal(report.completedExperiment, false); assert.equal(report.stopped.kind, "BudgetExceededError");
+  assert.ok(lines.some(l => l.startsWith("BUDGET:"))); assert.ok(lines.at(-1).startsWith("CONFIRMATION:"));
+  await f.db.destroy();
+});
+test("all malformed spike conditions complete the experiment but cannot report success", async () => {
+  const f = await spikeFixture(); let calls = 0;
+  const client = { request: async () => { calls++; return confirmationReply("invalid"); } };
+  const out = await runApprovedStage({ ...f, client, log: () => {} });
+  assert.equal(calls, 180); assert.equal(out.accounted, 60); assert.equal(out.failed, 60); assert.equal(out.success, 0); assert.equal(out.completedExperiment, true); assert.equal(out.ok, false);
   await f.db.destroy();
 });

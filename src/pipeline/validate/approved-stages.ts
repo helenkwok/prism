@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { Kysely } from "kysely";
-import { withStageCache } from "../cache/stage-cache.ts";
+import { readCached, stageCacheKey, withStageCache, writeCached } from "../cache/stage-cache.ts";
 import { buildClaimsForProject } from "../claims/build-claims.ts";
 import type { Codebook } from "../coding/codebook-prompt.ts";
 import { citationSchema, isSchemaValid, type GateFile } from "../coding/contract.ts";
@@ -28,7 +28,7 @@ export type ApprovedStageOptions = {
   gateFile?: GateFile; log?: (line: string) => void; repoRoot?: string;
   concurrency?: 1 | 2;
 };
-export type StageAccounting = { stage: string; total: number; accounted: number; success: number; failed: number; stopped: number; reason: string | null; ok: boolean };
+export type StageAccounting = { stage: string; total: number; accounted: number; success: number; failed: number; stopped: number; excludedA3: number; reason: string | null; ok: boolean; completedExperiment?: boolean; successfulDecisions?: number; failureCounts?: Record<string, number> };
 
 /** Only these cited spans are admitted to either condition; sample is stable across resumes. */
 export function spikeSample(positives: Positive[], count = 30): Positive[] {
@@ -105,7 +105,7 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
   assertA9Signed({ protocolPath: path.join(o.repoRoot ?? process.cwd(), "protocol", "PROTOCOL.md"), signoffPath: path.join(o.dataDir, "decisions", "signoff.jsonl") });
   if (o.stage === "gold" && !await a7Signed({ protocolPath: path.join(o.repoRoot ?? process.cwd(), "protocol", "PROTOCOL.md"), signoffPath: path.join(o.dataDir, "decisions", "signoff.jsonl") })) throw new Error("A7 not signed");
   const log = o.log ?? console.log;
-  const out: StageAccounting = { stage: o.stage, total: o.entries.length, accounted: 0, success: 0, failed: 0, stopped: 0, reason: null, ok: false };
+  const out: StageAccounting = { stage: o.stage, total: o.entries.length, accounted: 0, success: 0, failed: 0, stopped: 0, excludedA3: 0, reason: null, ok: false };
   await ensurePipelineSchema(o.db);
   try {
     if (o.stage === "spike") {
@@ -117,14 +117,49 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
       out.total = 60;
       const reportPath = path.join(o.dataDir, "validation", "confirmation-spike.json");
       fs.mkdirSync(path.dirname(reportPath), { recursive: true, mode: 0o700 });
-      const report: any = { model: o.role.model, excludedA3: o.entries.length - eligible.length, selected: selected.map(p => ({ projectN: p.projectN, checkId: p.checkId, digest: inputDigest(o.codebook, p) })), decisions: [] };
+      const report: any = { model: o.role.model, excludedA3: o.entries.length - eligible.length, selected: selected.map(p => ({ projectN: p.projectN, checkId: p.checkId, digest: inputDigest(o.codebook, p) })), decisions: [], completedExperiment: false, successfulDecisions: 0, failureCounts: {}, stopped: null };
+      const persist = () => {
+        report.completedExperiment = out.accounted === 60;
+        report.successfulDecisions = out.success;
+        report.accounted = out.accounted;
+        report.failed = out.failed;
+        report.allDecisionsValid = out.success === 60 && out.failed === 0;
+        report.reason = report.stopped?.reason ?? (report.completedExperiment && out.success === 0 ? "no-valid-decisions" : null);
+        report.failureCounts = out.failureCounts ?? {};
+        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), { mode: 0o600 });
+      };
+      out.failureCounts = {};
+      persist();
       for (const p of selected) for (const setting of [true, false] as const) {
         const promptDigest = crypto.createHash("sha256").update(JSON.stringify(confirmMessages(o.codebook, p))).digest("hex");
-        const cache = await withStageCache(o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), String(p.projectN), "confirmation-spike", { digest: inputDigest(o.codebook, p), promptDigest, provider: o.role.provider, model: o.role.model, setting }, () => confirmWithModel(o.client, o.codebook, p, o.role.model, 3, setting));
-        report.decisions.push({ projectN: p.projectN, checkId: p.checkId, state: p.state, spans: p.spans, flaggedSpanIds: p.flaggedSpanIds ?? [], setting, ...cache.value });
-        fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), { mode: 0o600 });
-        out.success++; out.accounted++;
-        log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", projectN: p.projectN, checkId: p.checkId, setting, decision: cache.value.decision, fromCache: cache.fromCache })}`);
+        const cacheDir = o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache");
+        const input = { digest: inputDigest(o.codebook, p), promptDigest, provider: o.role.provider, model: o.role.model, setting };
+        const failureKey = stageCacheKey(String(p.projectN), "confirmation-spike-failure", input);
+        let result: { decision: string | null; reason: string; failed: boolean };
+        let fromCache = false;
+        try {
+          const previousFailure = readCached<{ decision: null; reason: string; failed: true }>(cacheDir, failureKey);
+          if (previousFailure.hit) { result = previousFailure.value; fromCache = true; }
+          else {
+            const cache = await withStageCache(cacheDir, String(p.projectN), "confirmation-spike", input, () => confirmWithModel(o.client, o.codebook, p, o.role.model, 3, setting, { onResponse: response => fs.appendFileSync(path.join(o.dataDir, "validation", "confirmation-spike-responses.jsonl"), JSON.stringify({ stage: "spike", ...response, at: new Date().toISOString() }) + "\n", { mode: 0o600 }) }));
+            result = { ...cache.value, failed: false }; fromCache = cache.fromCache;
+          }
+        } catch (error) {
+          const name = (error as Error).name;
+          if (name !== "InvalidConfirmationError" && name !== "FlaggedRuleError") {
+            report.stopped = { projectN: p.projectN, checkId: p.checkId, setting, reason: (error as Error).message, kind: name };
+            persist();
+            throw error;
+          }
+          result = { decision: null, reason: name === "FlaggedRuleError" ? "flagged-span-rule" : (error as { reason?: string }).reason ?? "off-contract", failed: true };
+          writeCached(cacheDir, failureKey, result);
+        }
+        report.decisions.push({ projectN: p.projectN, checkId: p.checkId, state: p.state, spans: p.spans, flaggedSpanIds: (p.flaggedSpanIds ?? []).filter(id => p.spans.some(s => s.id === id)), setting, ...result });
+        if (result.failed) { out.failed++; const key = `${setting ? "on" : "off"}:${result.reason}`; out.failureCounts![key] = (out.failureCounts![key] ?? 0) + 1; }
+        else out.success++;
+        out.accounted++;
+        persist();
+        log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", projectN: p.projectN, checkId: p.checkId, setting, decision: result.decision, failed: result.failed, failureCode: result.failed ? result.reason : null, fromCache })}`);
       }
     } else {
       let next = 0;
@@ -141,6 +176,7 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
             if (o.stage === "gold") {
               if (String(e.hn_id) === ARTCRAFT_HN_ID) {
                 await writeExcludedA3({ db: o.db, projectN: e.n, codebookVersion: o.codebook.codebookVersion, role: o.role, digest: spansDigest([]) });
+                out.excludedA3++;
               } else {
                 const outcome = await labelProject({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), projectN: e.n, hnId: String(e.hn_id), codebook: o.codebook, codebookVersion: o.codebook.codebookVersion, contract: o.contract, role: o.role, client });
                 if (outcome.outcome !== "labelled") throw new Error(`project ${e.n}: ${outcome.outcome}`);
@@ -160,12 +196,17 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
     }
   } catch (error) {
     out.reason = (error as Error).message;
-    if (["BudgetExceededError", "QuotaStop", "TooLargeError"].includes((error as Error).name)) out.stopped = out.total - out.accounted;
+    if (o.stage === "spike" || ["BudgetExceededError", "QuotaStop", "TooLargeError"].includes((error as Error).name)) out.stopped = out.total - out.accounted;
     else { out.failed = 1; out.accounted++; out.stopped = Math.max(0, out.total - out.accounted); }
   }
-  out.ok = out.success === out.total && out.failed === 0 && out.stopped === 0;
+  if (o.stage === "spike") {
+    out.completedExperiment = out.accounted === 60 && out.stopped === 0;
+    out.successfulDecisions = out.success;
+    out.ok = out.completedExperiment && out.success > 0;
+    if (out.completedExperiment && out.success === 0) out.reason = "no-valid-decisions";
+  } else out.ok = out.success === out.total && out.failed === 0 && out.stopped === 0;
   if (o.client.dollarBudget) log(o.client.dollarBudget.budgetLine());
-  log(`ACCOUNTING: ${JSON.stringify({ ...out, complete: out.success === out.total })}`);
-  if (o.stage === "spike") log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", completed: out.success, total: out.total, stopBeforeFull: true })}`);
+  log(`ACCOUNTING: ${JSON.stringify({ ...out, complete: o.stage === "spike" ? out.completedExperiment : out.success === out.total, ...(o.stage === "spike" ? { allDecisionsValid: out.failed === 0 && out.success === 60 } : {}) })}`);
+  if (o.stage === "spike") log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", completed: out.success, valid: out.success, failed: out.failed, total: out.total, completedExperiment: out.completedExperiment, failureCounts: out.failureCounts, stopBeforeFull: true })}`);
   return out;
 }
