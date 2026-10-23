@@ -16,7 +16,7 @@ export const PAGE_SIZE = 50;
 export interface IdentifiableRow {
   projectId: string;
   title: string;
-  /** null: the judge would see it de-identified only. Admin rows only. */
+  /** Admin and judge rows; null (admin only): the judge sees it de-identified only. */
   basis?: Basis | null;
   /** Admin rows only. */
   sponsorHold?: boolean;
@@ -80,8 +80,9 @@ export function projectListFor(
       const s = ident.get(a.projectId);
       const title = s?.title ?? a.displayTitle ?? a.title ?? a.projectId;
       const row: IdentifiableRow = { projectId: a.projectId, title, passCount: s?.passCount ?? null, updated: day(s?.generatedAt) };
+      // The judge's "Why identifiable" column; admin also sees null ("de-identified only").
+      if (role !== "company") row.basis = a.basis;
       if (role === "admin") {
-        row.basis = a.basis;
         row.sponsorHold = a.sponsorHold;
         row.reviewN = a.inSample ? reviewNumber(a.projectId) : null;
       }

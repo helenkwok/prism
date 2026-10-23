@@ -53,6 +53,7 @@ test("admin gets every access row with access basis, hold and review link", () =
 test("judge: identifiable only with a basis and no hold; every other sampled project de-identified, held ones included", () => {
   const list = projectListFor("judge", [], rows, summaries, 1);
   assert.deepEqual(list.identifiable.rows.map((r) => r.projectId), ["P01", "P05"]);
+  assert.deepEqual(list.identifiable.rows.map((r) => r.basis), ["own", "opt-in"], "why identifiable");
   assert.deepEqual(list.deidentified.rows.map((r) => r.pseudonym), ["PSP02", "PSP03"]);
   // No title, project id, basis or hold on a de-identified row; no access detail on identifiable rows.
   for (const r of list.deidentified.rows) assert.deepEqual(Object.keys(r).sort(), ["collected", "passCount", "pseudonym"]);
@@ -74,6 +75,7 @@ test("judge never sees a hold: a held project is listed de-identified like any o
 test("company gets exactly its grants, one row as a one-row table", () => {
   const one = projectListFor("company", ["P05"], rows, summaries, 1);
   assert.deepEqual(one.identifiable.rows.map((r) => r.projectId), ["P05"]);
+  assert.equal(one.identifiable.rows[0].basis, undefined);
   assert.equal(one.identifiable.total, 1);
   assert.equal(one.deidentified, null);
   assert.ok(!JSON.stringify(one).includes("Title P01"));

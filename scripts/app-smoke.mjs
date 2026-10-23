@@ -266,6 +266,7 @@ async function listChecks(base, accounts, sessions) {
   check("LIST judge sees the Identifiable records section", judge.body.includes("Identifiable records"));
   check("LIST judge sees the De-identified records section", judge.body.includes("De-identified records"));
   check("LIST judge sees the own and opt-in titles", judge.body.includes(name.P01) && judge.body.includes(name.P05));
+  check("LIST judge sees why each record is identifiable", judge.body.includes("Owner&#x27;s project") && judge.body.includes("Opted in"));
   const deidIds = corpus.projects.map((p) => p.projectId).filter((id) => !["P01", "P05"].includes(id));
   const leaked = deidIds.filter((id) => judge.body.includes(name[id]) || judge.body.includes(fullTitle[id]));
   check("LIST judge never sees a de-identified project's title", leaked.length === 0, `leaked ${leaked.join(",")}`);
