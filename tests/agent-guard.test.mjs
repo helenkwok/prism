@@ -81,6 +81,23 @@ describe("name guard", () => {
     assert.ok(!res.stderr.toLowerCase().includes(SAMPLE_WORD));
   });
 
+  test("--refs scans only the given revisions: a local-only ref is skipped, a branch is not", () => {
+    const r = seeded();
+    const base = r.git("rev-parse", "HEAD").stdout.trim();
+    r.write("a.md", "a\n");
+    r.stage("a.md");
+    assert.equal(r.git("commit", "-q", "--no-verify", "-m", `add a\n\n${SAMPLE_TRAILER}`).status, 0);
+    const bad = r.git("rev-parse", "HEAD").stdout.trim();
+    assert.equal(r.git("update-ref", "refs/local-only/x", bad).status, 0);
+    assert.equal(r.git("reset", "-q", "--hard", base).status, 0);
+    assert.equal(guard(r, "--history").status, 1);
+    assert.equal(guard(r, "--refs", "--branches", "--tags").status, 0);
+    assert.equal(r.git("branch", "topic", bad).status, 0);
+    const res = guard(r, "--refs", `${base}..topic`);
+    assert.equal(res.status, 1);
+    assert.ok(!res.stderr.toLowerCase().includes(SAMPLE_WORD));
+  });
+
   test("a commit whose author email is a sample fails --history", () => {
     const r = seeded();
     r.write("b.md", "b\n");

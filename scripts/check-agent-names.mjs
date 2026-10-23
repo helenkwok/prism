@@ -7,6 +7,10 @@
 //   node scripts/check-agent-names.mjs --history        commit messages, author and committer
 //                                                       names and emails, annotated tag messages
 //   node scripts/check-agent-names.mjs --message <file> one commit message file (commit-msg hook)
+//   node scripts/check-agent-names.mjs --refs <rev...>  commits reachable from the given git log
+//                                                       revisions (e.g. --branches --tags, or
+//                                                       origin/main..topic), plus tags; skips
+//                                                       local-only refs that are never pushed
 //
 // Exit 0 when clean, 1 on any match, 2 on a usage or git error. Output names the
 // location and the pattern INDEX only; the matched text is never printed.
@@ -103,8 +107,8 @@ function scanField(value, location, patterns, findings) {
 }
 
 /** Surface 2: commit messages plus author and committer identities on all refs. */
-export function scanCommits(patterns = loadPatterns()) {
-  const res = git(["log", "--all", `--format=%H${"%x00"}%an${"%x00"}%ae${"%x00"}%cn${"%x00"}%ce${"%x00"}%B${"%x01"}`]);
+export function scanCommits(patterns = loadPatterns(), revs = ["--all"]) {
+  const res = git(["log", ...revs,`--format=%H${"%x00"}%an${"%x00"}%ae${"%x00"}%cn${"%x00"}%ce${"%x00"}%B${"%x01"}`]);
   if (res.status !== 0) {
     if (/does not have any commits|unknown revision/i.test(res.stderr)) return [];
     throw new Error(`git log failed: ${res.stderr.trim()}`);
@@ -170,10 +174,12 @@ function main(argv) {
       findings = scanTrackedFiles();
     } else if (mode === "--history") {
       findings = [...scanCommits(), ...scanTags()];
+    } else if (mode === "--refs" && argv.length > 1) {
+      findings = [...scanCommits(loadPatterns(), argv.slice(1)), ...scanTags()];
     } else if (mode === "--message" && argv[1]) {
       findings = scanMessageFile(argv[1]);
     } else {
-      console.error("usage: check-agent-names.mjs [--files | --history | --message <file>]");
+      console.error("usage: check-agent-names.mjs [--files | --history | --refs <rev...> | --message <file>]");
       return 2;
     }
   } catch (err) {
