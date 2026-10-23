@@ -405,3 +405,20 @@ Reason: observed recode spend was approximately $0.0115 per project, projecting 
 Changed rule: the 30-positive Ultra spike compares thinking on versus off, not low. The model advertises only boolean thinking settings. Keep the $0.50 combined spike cap, identical cited evidence in both conditions, and independent reading of every decision against its cited spans. Report the comparison before full confirmation; the latter retains its $5.00 cap and uses the winning setting.
 
 Reason: compare supported settings without silently translating an unsupported setting.
+
+## Addendum 2026-10-23 (A11)
+
+Adopted on Helen's 2026-10-23 decision D-83, through the A6 sign-off role. Results seen when this was written: the Phase 4 screening-audit, collection-recall, label-edit and confirmation figures. No release had been made. No real-data release may use this exception until this addendum is signed digest-bound.
+
+### A11.1 Process figures outside the k = 10 rule
+
+Changed rule: section 6.2 primary suppression covers statistics about launches. Four process figures describe the instrument, not any launch, and are published in full:
+
+- `screening-audit`: the screening error of the audited exclusions (errors of audited, with its interval), and its exploratory re-measure.
+- `collection-recall`: supported and raw collection recall, with the counts of gathered items that were supported, unsupported and boilerplate.
+- `person-edits`: the count of published check states edited by a person.
+- `confirmation-total`: the total number and share of proposed positives changed at confirmation.
+
+Each is listed in the release manifest's process figures with this addendum as its basis, and passes the identifier scan like every other byte of the release. The total changed at confirmation enters the disclosure audit as a published constant, so its split into rejected and downgraded stays protected under section 6. Pass precision per check and changes at confirmation per check stay under section 6.
+
+Reason: these figures describe how the coding was done, not any launch, and under k = 10 the pre-registered section 4 validation results could not be reported.
