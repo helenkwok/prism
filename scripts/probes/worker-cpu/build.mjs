@@ -4,7 +4,8 @@
 //   node scripts/probes/worker-cpu/build.mjs
 // 1. materializes the synthetic corpus into a temp DB and exports P01's identifiable view;
 // 2. bundles worker.tsx with the project's Rsbuild (rsbuild.probe.config.ts);
-// 3. writes scripts/probes/worker-cpu/.cloudflare/output/v0/{config.json, workers/default/...}.
+// 3. writes scripts/probes/worker-cpu/.cloudflare/output/v0/{config.json, workers/default/...};
+// 4. bundles node-server.tsx (the container probe) into .build/node/probe-server.mjs.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -46,3 +47,6 @@ config.manifest = { type: "partial", mainModule: "index.js", modules: {} };
 fs.writeFileSync(path.join(workerDir, "worker.config.json"), JSON.stringify(config, null, 2));
 fs.writeFileSync(path.join(out, "config.json"), JSON.stringify({ buildContext: { isPreview: false } }, null, 2));
 console.log(`PROBE_BUILD ok bundle_bytes=${fs.statSync(path.join(workerDir, "bundle", "index.js")).size}`);
+
+execFileSync(path.join(root, "node_modules", ".bin", "rsbuild"), ["build", "-c", "scripts/probes/worker-cpu/rsbuild.node.config.ts"], { cwd: root, stdio: ["ignore", "ignore", "inherit"] });
+console.log(`PROBE_BUILD node bundle_bytes=${fs.statSync(path.join(build, "node", "probe-server.mjs")).size}`);
