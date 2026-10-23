@@ -72,6 +72,7 @@ export type FullConfirmationOptions = {
   db: Kysely<any>; dataDir: string; client: Client; codebook: Codebook; model: string;
   reasoning: boolean; entries: { n: number; hn_id: string }[]; goldOrder: string[];
   log?: (line: string) => void;
+  concurrency?: 1 | 2;
 };
 
 function validCachedDecision(row: any, p: Positive): boolean {
@@ -83,6 +84,8 @@ function validCachedDecision(row: any, p: Positive): boolean {
 }
 
 export async function runApprovedConfirmation(o: FullConfirmationOptions): Promise<FullConfirmationAccounting> {
+  const concurrency = o.concurrency ?? 2;
+  if (concurrency !== 1 && concurrency !== 2) throw new Error("full confirmation concurrency must be 1–2");
   if (canonicalModel(o.model) !== "nemotron-3-ultra" || typeof o.reasoning !== "boolean") throw new Error("approved full confirmer requires pinned model and boolean setting");
   if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > 5) throw new Error("full confirmation requires the approved budget, capped at five dollars");
   const spikePath = path.join(o.dataDir, "validation", "confirmation-spike.json");
@@ -126,7 +129,15 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
     }
     const decisions = await o.db.selectFrom("pipeline_confirmations").select(["project_n", "check_id", "input_digest", "decision", "reason", "confirmed_state", "span_ids_json"]).where("confirmer_id", "=", confirmerId).execute();
     const statuses = confirmationStatus(positives, decisions, o.codebook).sort((a, b) => order.get(byN.get(a.positive.projectN)!)! - order.get(byN.get(b.positive.projectN)!)! || a.positive.checkId.localeCompare(b.positive.checkId));
-    for (const s of statuses) {
+    let next = 0;
+    let stop = false;
+    const guardedClient = { ...o.client, request: (...args: any[]) => {
+      if (stop) { const error = new Error("confirmation scheduling stopped"); error.name = "ConfirmationStoppedError"; throw error; }
+      return o.client.request(...args);
+    } };
+    const execute = async () => {
+    while (!stop && next < statuses.length) {
+      const s = statuses[next++];
       const p = s.positive;
       const previous = decisions.find(r => r.project_n === p.projectN && r.check_id === p.checkId && r.input_digest === s.digest);
       if (previous && validCachedDecision(previous, p)) {
@@ -135,21 +146,28 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
       }
       out.attempted++;
       try {
-        const result = await confirmWithModel(o.client, o.codebook, p, o.model, 3, o.reasoning);
+        const result = await confirmWithModel(guardedClient, o.codebook, p, o.model, 3, o.reasoning);
         await recordConfirmation(o.db, { projectN: p.projectN, checkId: p.checkId, decision: result.decision, confirmedState: confirmedStateFor(result.decision, p.state), reason: result.reason, confirmerId, confirmerKind: "agent", modelId: o.model, decidedAt: new Date().toISOString(), inputDigest: s.digest, spanIds: p.spans.map(span => span.id) });
         out.valid++; out.accounted++; out[result.decision]++;
         log(`CONFIRMATION: ${JSON.stringify({ stage: out.stage, projectN: p.projectN, checkId: p.checkId, decision: result.decision, valid: out.valid, total: out.total })}`);
       } catch (error) {
         const name = (error as Error).name;
-        out.reason = name;
-        if (!["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError"].includes(name)) { out.failed++; out.accounted++; }
-        break;
+        stop = true;
+        out.reason ??= name;
+        if (!["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError", "ConfirmationStoppedError"].includes(name)) { out.failed++; out.accounted++; }
       }
     }
+    };
+    // All started jobs settle before final accounting or the caller closes its database.
+    const settled = await Promise.allSettled(Array.from({ length: concurrency }, async () => {
+      try { await execute(); } catch (error) { stop = true; throw error; }
+    }));
+    const failed = settled.find(result => result.status === "rejected");
+    if (failed?.status === "rejected") throw failed.reason;
   } catch (error) { out.reason = (error as Error).message; }
   out.remaining = out.total - out.valid;
   out.stopped = Math.max(0, out.total - out.accounted);
-  out.ok = !out.reason && !out.failed && !out.awaitingGold && out.valid === out.total;
+  out.ok = out.total > 0 && !out.reason && !out.failed && !out.awaitingGold && out.valid === out.total;
   out.complete = out.ok;
   log(o.client.dollarBudget.budgetLine());
   log(`CONFIRMATION: ${JSON.stringify(out)}`);

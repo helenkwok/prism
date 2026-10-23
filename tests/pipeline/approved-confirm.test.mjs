@@ -47,7 +47,7 @@ async function fixture({ flagged = false } = {}) {
   fs.writeFileSync(path.join(dataDir, "validation/confirmation-spike.json"), text);
   fs.writeFileSync(path.join(dataDir, "validation/confirmation-spike-review.json"), JSON.stringify(review));
   const lines = [];
-  return { dataDir, db, codebook, entries, goldOrder: entries.map(e => e.hn_id), model, reasoning: false, log: line => lines.push(line), lines, spike, review, text };
+  return { dataDir, db, codebook, entries, goldOrder: entries.map(e => e.hn_id), model, reasoning: false, concurrency: 1, log: line => lines.push(line), lines, spike, review, text };
 }
 const client = request => ({ request, dollarBudget: new DollarBudget(5) });
 
@@ -159,4 +159,66 @@ test("new citation flags invalidate the reviewed spike before requests", async (
   const out = await runApprovedConfirmation({ ...f, client: client(async () => { calls++; }) });
   assert.equal(out.reason, "reviewed-spike-inputs-stale"); assert.equal(calls, 0); assert.equal(out.ok, false);
   await f.db.destroy();
+});
+
+test("the default two slots overlap, await completion, and resume current rows without HTTP", async () => {
+  const f = await fixture(); const ready = Promise.withResolvers(); const release = Promise.withResolvers();
+  let calls = 0; let active = 0; let maximum = 0; let returned = false;
+  const c = client(async () => {
+    const call = ++calls; active++; maximum = Math.max(maximum, active);
+    if (call === 2) ready.resolve();
+    if (call <= 2) await release.promise;
+    else await new Promise(resolve => setImmediate(resolve));
+    active--;
+    return reply({ decision: "rejected", reason: "p1-s001 is insufficient synthetic evidence." });
+  });
+  const running = runApprovedConfirmation({ ...f, concurrency: undefined, client: c }).then(out => { returned = true; return out; });
+  await ready.promise; assert.equal(active, 2); assert.equal(returned, false); release.resolve();
+  const out = await running;
+  assert.equal(maximum, 2); assert.equal(active, 0); assert.equal(out.valid, 30); assert.equal(out.attempted, 30); assert.equal(out.ok, true);
+  const resumed = await runApprovedConfirmation({ ...f, concurrency: 2, client: client(async () => { calls++; throw new Error("unexpected HTTP"); }) });
+  assert.equal(resumed.cached, 30); assert.equal(resumed.attempted, 0); assert.equal(calls, 30);
+  await f.db.destroy();
+});
+
+test("a cap stops the queue before job three while an in-flight valid result is retained", async () => {
+  const f = await fixture(); const ready = Promise.withResolvers(); const fail = Promise.withResolvers(); const finish = Promise.withResolvers();
+  let calls = 0; let returned = false;
+  const c = client(async () => {
+    const call = ++calls; if (call === 2) ready.resolve();
+    if (call === 1) { await fail.promise; const error = new Error("fixture cap"); error.name = "BudgetExceededError"; throw error; }
+    await finish.promise;
+    return reply({ decision: "confirmed", reason: "p1-s001 supplies synthetic evidence." });
+  });
+  const running = runApprovedConfirmation({ ...f, concurrency: 2, client: c }).then(out => { returned = true; return out; });
+  await ready.promise; fail.resolve(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(returned, false); assert.equal(calls, 2);
+  finish.resolve(); const out = await running;
+  assert.equal(calls, 2); assert.equal(out.valid, 1); assert.equal(out.accounted, 1); assert.equal(out.stopped, 29); assert.equal(out.failed, 0); assert.equal(out.ok, false);
+  const rows = await f.db.selectFrom("pipeline_confirmations").selectAll().execute();
+  assert.equal(rows.length, 1); assert.equal(rows[0].project_n, 2); assert.equal(rows[0].decision, "confirmed");
+  assert.equal(rows[0].confirmer_id, "agent:ollama:nemotron-3-ultra:thinking-off");
+  const accounting = JSON.parse(f.lines.at(-1).slice("ACCOUNTING: ".length));
+  assert.equal(accounting.accounted + accounting.stopped, accounting.total); assert.equal(accounting.valid, 1);
+  await f.db.destroy();
+});
+
+test("a stop also prevents another model retry by the in-flight job", async () => {
+  const f = await fixture(); const ready = Promise.withResolvers(); const fail = Promise.withResolvers(); const invalid = Promise.withResolvers(); let calls = 0;
+  const c = client(async () => {
+    const call = ++calls; if (call === 2) ready.resolve();
+    if (call === 1) { await fail.promise; const error = new Error("fixture quota"); error.name = "QuotaStop"; throw error; }
+    await invalid.promise; return reply({ invalid: true });
+  });
+  const running = runApprovedConfirmation({ ...f, concurrency: 2, client: c });
+  await ready.promise; fail.resolve(); await new Promise(resolve => setImmediate(resolve)); invalid.resolve();
+  const out = await running;
+  assert.equal(calls, 2); assert.equal(out.failed, 0); assert.equal(out.valid, 0); assert.equal(out.stopped, 30); assert.equal(out.reason, "QuotaStop");
+  await f.db.destroy();
+});
+
+test("pool size is restricted to one or two before requests", async () => {
+  const f = await fixture(); let calls = 0;
+  for (const concurrency of [0, 3, 1.5]) await assert.rejects(runApprovedConfirmation({ ...f, concurrency, client: client(async () => { calls++; }) }), /concurrency must be 1–2/);
+  assert.equal(calls, 0); await f.db.destroy();
 });
