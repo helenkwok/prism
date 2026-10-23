@@ -37,6 +37,14 @@ export function spikeSample(positives: Positive[], count = 30): Positive[] {
   }).slice(0, count);
 }
 
+/** Constrain an existing citation rule without weakening any check or the strict resolver. */
+export function citationSchema(schema: unknown, spanIds: string[]) {
+  const out: any = structuredClone(schema);
+  out.$defs = { ...(out.$defs ?? {}), citedSpanId: { type: "string", enum: spanIds } };
+  for (const entry of Object.values(out.properties.checks.properties) as any[]) entry.properties.spanIds.items = { $ref: "#/$defs/citedSpanId" };
+  return out;
+}
+
 async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["entries"][number]) {
   const manifestPath = path.join(o.dataDir, "pipeline", "manifests", `${e.n}.json`);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -45,9 +53,14 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
   const cacheDir = o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache");
   const perChunk = [];
   let attempts = 0;
+  const diagnosticsPath = path.join(o.dataDir, "validation", "coding-invalid-replies.jsonl");
+  const badCitationRequests = new Set<string>(fs.existsSync(diagnosticsPath) ? fs.readFileSync(diagnosticsPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)).filter(row => row.validationStage === "span_resolve").map(row => row.requestDigest) : []);
   for (const chunk of chunkSpans(spans)) {
     const result = await codeProjectWithRetry({ client: o.client, cfg: {}, contract: o.contract, spanIds: chunk.map(s => s.id), callOnce: async (_c, _cfg, schema, ids) => {
-      const body = buildChatBody({ model: o.role.model, messages: buildCodingMessages(ids, o.codebook, schema, chunk), mode: "json_schema", schema: { name: "gate_checks", schema, strict: true }, thinking: o.role.reasoning === true, ...(typeof o.role.reasoning === "string" ? { reasoningEffort: o.role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
+      const makeBody = (requestSchema: unknown) => buildChatBody({ model: o.role.model, messages: buildCodingMessages(ids, o.codebook, requestSchema, chunk), mode: "json_schema", schema: { name: "gate_checks", schema: requestSchema, strict: true }, thinking: o.role.reasoning === true, ...(typeof o.role.reasoning === "string" ? { reasoningEffort: o.role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
+      let body = makeBody(schema);
+      const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
+      if (badCitationRequests.has(baseDigest)) body = makeBody(citationSchema(schema, chunk.map(s => s.id)));
       const digest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
       const { value } = await withStageCache(cacheDir, String(e.hn_id), `approved-${o.stage}-chunk`, { digest, provider: o.role.provider }, async () => {
         const res = await o.client.request("/chat/completions", { method: "POST", body });
@@ -57,6 +70,7 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
         if (typeof content !== "string") throw new Error("coding response missing content");
         const validation = isSchemaValid(content, chunk.map(s => s.id), o.contract.zodSchema);
         if (!validation.valid) {
+          if (validation.stage === "span_resolve") badCitationRequests.add(baseDigest);
           const dir = path.join(o.dataDir, "validation"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
           fs.appendFileSync(path.join(dir, "coding-invalid-replies.jsonl"), JSON.stringify({ stage: o.stage, projectN: e.n, requestDigest: digest, validationStage: validation.stage, finishReason: res.json?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
         }

@@ -6,7 +6,7 @@ import { resolveDataDir, getDb } from "../../app/server/db.ts";
 import { loadCodebook } from "../coding/codebook-prompt.ts";
 import { buildContract, loadGateFile, resolveGatesPath } from "../coding/contract.ts";
 import { createClient, PINNED_BASE_URL, PINNED_MODEL } from "../coding/nebius-client.ts";
-import { estimateCostUsd, type UsageObservation } from "../coding/spend-guards.ts";
+import { CACHED_PRICES, estimateCostUsd, measuredCostUsd, type UsageObservation } from "../coding/spend-guards.ts";
 import { readKey } from "../run.ts";
 import { A9_ITEMS, a9Section, assertA9Signed } from "../signoff/a9.ts";
 import { A10_ITEMS, a10Section, assertA10Signed } from "../signoff/a10.ts";
@@ -36,7 +36,10 @@ export function summarizeCacheUsage(observations: UsageObservation[]) {
     laterCacheHitRequests: rows.slice(1).filter(r => (r.cachedInputTokens ?? 0) > 0).length,
     listPriceUsd: rows.reduce((n, r) => n + (r.measured ? estimateCostUsd(r.model, r.inputTokens!, r.outputTokens!) : r.chargedUsd), 0),
     chargedUsd: rows.reduce((n, r) => n + r.chargedUsd, 0),
-    billingBasis: rows[0].provider === "ollama" ? "published cache rates only on returned cache counts; full rate otherwise" : "uncached rate; cached-input price not verified",
+    publishedPriceUsd: rows.reduce((n, r) => n + (r.measured ? measuredCostUsd(r.model, r.inputTokens!, r.outputTokens!, r.cachedInputTokens) : r.chargedUsd), 0),
+    cachedInputPricePerMillion: CACHED_PRICES[rows[0].model.replace(/:cloud$/, "")] !== undefined ? CACHED_PRICES[rows[0].model.replace(/:cloud$/, "")] * 1e6 : null,
+    pricingSource: rows[0].provider === "ollama" ? "https://ollama.com/pricing" : "https://tokenfactory.nebius.com/api/public/models_info",
+    billingBasis: "Published cache rates apply only to returned cache counts. Ledger retains earlier conservative charges; publishedPriceUsd reprices measured usage, not an invoice.",
   }));
 }
 

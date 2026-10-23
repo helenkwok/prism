@@ -55,7 +55,9 @@ export function estimateCostUsd(
   return promptTokens * p.prompt + completionTokens * p.completion;
 }
 
-const CACHED_PRICES: Record<string, number> = {
+export const CACHED_PRICES: Record<string, number> = {
+  // Provider public catalogue, checked 2026-10-23: /api/public/models_info.
+  "deepseek-ai/DeepSeek-V4-Flash-0731": .01 / 1e6,
   "glm-5.3-flash": .03 / 1e6,
   "nemotron-3-super": .015 / 1e6,
   "nemotron-3-ultra": .10 / 1e6,

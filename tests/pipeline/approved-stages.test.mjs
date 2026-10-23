@@ -56,6 +56,24 @@ test("budget refusal stops queue and cannot report success", async () => {
   assert.ok(lines.some(l => l.startsWith("ACCOUNTING:")));
   await f.db.destroy();
 });
+
+test("fabricated citations trigger a constrained repair and resume without repeat calls", async () => {
+  const f = fixture(); let calls = 0;
+  const client = { request: async (_p, { body }) => {
+    calls++;
+    if (calls === 2) {
+      assert.deepEqual(body.response_format.json_schema.schema.$defs.citedSpanId.enum, ["p1-s001"]);
+      assert.deepEqual(body.response_format.json_schema.schema.properties.checks.properties[contract.checkIds[0]].properties.spanIds.items, { $ref: "#/$defs/citedSpanId" });
+    }
+    return { ok: true, status: 200, json: { choices: [{ message: { content: JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: calls === 1 ? "claimed" : "unknown", spanIds: calls === 1 ? ["fabricated"] : [] })) }) }, finish_reason: "stop" }] } };
+  } };
+  const run = () => runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
+  assert.equal((await run()).ok, true);
+  assert.equal(calls, 3);
+  assert.equal((await run()).ok, true);
+  assert.equal(calls, 3);
+  await f.db.destroy();
+});
 test("spike sample is stable and paired confirmation settings send only cited spans", async () => {
   const p = { projectN: 1, checkId: contract.checkIds[0], state: "pass", spans: [{ id: "p1-s1", text: "CITED FIXTURE" }] };
   const positives = Array.from({ length: 40 }, (_, i) => ({ ...p, projectN: i + 1 }));

@@ -12,3 +12,9 @@ test("cache measurement distinguishes absent metadata from a measured zero or hi
   assert.equal(summary.repeatedPrefixRequests, 1);
   assert.equal(summarizeCacheUsage([{ ...row, cachedInputTokens: 1 }, { ...row, model: "nemotron-3-super", cachedInputTokens: 1 }]).length, 2);
 });
+test("verified primary-host cache pricing is distinguished from retained ledger charges", () => {
+  const [summary] = summarizeCacheUsage([{ ...row, provider: "token-factory", model: "deepseek-ai/DeepSeek-V4-Flash-0731", cachedInputTokens: 800, chargedUsd: .000168 }]);
+  assert.equal(summary.cachedInputPricePerMillion, .01);
+  assert.equal(summary.chargedUsd, .000168);
+  assert.ok(Math.abs(summary.publishedPriceUsd - .000064) < 1e-12);
+});
