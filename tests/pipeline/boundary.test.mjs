@@ -86,6 +86,20 @@ describe("resolveSafe: IPv6 encodings of private IPv4 (D-80)", () => {
     await refused("https://[100::1]/");
   });
 
+  test("SIIT ::ffff:0:a.b.c.d (::ffff:0:0/96) is judged by the embedded IPv4", async () => {
+    await refused("https://[::ffff:0:127.0.0.1]/");
+    await refused("https://[::ffff:0:169.254.169.254]/");
+    assert.equal(isBlockedAddress("::ffff:0:a00:1"), true); // 10.0.0.1
+    assert.equal(isBlockedAddress("::ffff:0:93.184.216.34"), false);
+  });
+
+  test("local-use NAT64 64:ff9b:1::/48 is refused whole (its IPv4 position depends on the operator's prefix length)", async () => {
+    await refused("https://[64:ff9b:1::7f00:1]/");
+    await refused("https://[64:ff9b:1::a9fe:a9fe]/");
+    assert.equal(isBlockedAddress("64:ff9b:1:abcd::5db8:d822"), true);
+    assert.equal(isBlockedAddress("64:ff9b:2::5db8:d822"), false); // outside the /48
+  });
+
   test(":: and ::1 stay blocked; mapped, NAT64 and public addresses keep their verdicts", () => {
     for (const a of ["::", "::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "64:ff9b::a9fe:a9fe", "64:ff9b::10.0.0.1", "fd00:ec2::254", "fe80::1", "ff02::1", "2001:db8::1"]) {
       assert.equal(isBlockedAddress(a), true, a);
