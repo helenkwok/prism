@@ -167,3 +167,103 @@ describe("materialize-views --deidentify", () => {
 function productTitle(t) {
   return t.replace(/^Show HN:\s*/, "").split(/ – | - |:/)[0].trim();
 }
+
+// ---- Task 2: the identifier scan is a hard gate (T-07-21), plus collision and key refusals ----
+
+function corpusVariant(name, edit) {
+  const c = structuredClone(corpus);
+  edit(c);
+  const p = path.join(scratch, `${name}.json`);
+  fs.writeFileSync(p, JSON.stringify(c));
+  return p;
+}
+
+function assertRefusedAndEmpty(res, reason) {
+  assert.equal(res.status, 1, res.stdout + res.stderr);
+  assert.match(res.stdout, new RegExp(`^DEID REFUSED ${reason}$`, "m"));
+  assert.equal(countRows(res.db, "app_report_view"), 0, "no view row may be written");
+  assert.equal(countRows(res.db, "app_project_access"), 0, "no access row may be written");
+}
+
+describe("identifier scan (APP-03)", () => {
+  const entries = () => views.map((v) => ({ view: structuredClone(deid[v.projectRef].view), dictionary: dictionaryOf(v) }));
+  const firstQuote = (view) => view.checks.find((c) => c.quotes.length > 0).quotes[0];
+  const scan = async (e) => (await import("../../src/report/deidentify.ts")).scanDeidentified(e);
+
+  test("clean de-identified views give zero hits", async () => {
+    assert.deepEqual(await scan(entries()), []);
+  });
+
+  test("a planted leftover of the project's own name is found, reported by pseudonym and term index only", async () => {
+    const e = entries();
+    firstQuote(e.find((x) => x.dictionary.projectRef === "P07").view).text += " Zentrolux";
+    const hits = await scan(e);
+    const ps = pseudonymOf(TEST_KEY, "P07");
+    assert.ok(hits.some((h) => h.pseudonym === ps && h.termOf === ps && Number.isInteger(h.termIndex)), JSON.stringify(hits));
+    assert.equal(/zentrolux/i.test(JSON.stringify(hits)), false, "hits never carry the term text");
+  });
+
+  test("another project's domain planted into P01's quote is caught by the cross-project part", async () => {
+    const e = entries();
+    firstQuote(e.find((x) => x.dictionary.projectRef === "P01").view).text += " see p02.example";
+    const hits = await scan(e);
+    assert.ok(hits.some((h) => h.pseudonym === pseudonymOf(TEST_KEY, "P01") && h.termOf === pseudonymOf(TEST_KEY, "P02")), JSON.stringify(hits));
+  });
+
+  test("a leftover URL is a hit", async () => {
+    const e = entries();
+    firstQuote(e[0].view).text += " https://elsewhere.example/x";
+    assert.ok((await scan(e)).length >= 1);
+  });
+
+  test("materialize: a surviving identifier refuses the whole run (DEID REFUSED identifier-scan) and writes nothing", () => {
+    // P06's product renamed to a word three other projects use: DF masking keeps it, so it
+    // survives in P01's quotes and only the cross-project scan can catch it.
+    const fixture = corpusVariant("scan-leak", (c) => {
+      c.projects.find((p) => p.projectId === "P06").title = "Show HN: Release – plan routes for delivery vans";
+    });
+    const res = materialize(["--deidentify", "--key-file", keyFile], { fixture });
+    assertRefusedAndEmpty(res, "identifier-scan");
+    assert.match(res.stdout, /^DEID hit project=[0-9A-Z]{5} term_of=[0-9A-Z]{5} term=-?\d+$/m);
+    assert.equal(/release/i.test(res.stdout.split("\n").filter((l) => l.startsWith("DEID")).join("\n")), false);
+  });
+
+  test("materialize: two projects with the same pseudonym refuse (DEID REFUSED pseudonym-collision) and write nothing", () => {
+    // A real collision of the 25-bit pseudonym under the test key, found by search (birthday bound ~6k ids).
+    const seen = new Map();
+    let pair;
+    for (let i = 0; !pair; i++) {
+      const ps = pseudonymOf(TEST_KEY, `C${i}`);
+      if (seen.has(ps)) pair = [seen.get(ps), `C${i}`];
+      else seen.set(ps, `C${i}`);
+    }
+    const fixture = corpusVariant("collision", (c) => {
+      c.projects[0].projectId = pair[0];
+      c.projects[1].projectId = pair[1];
+    });
+    assertRefusedAndEmpty(materialize(["--deidentify", "--key-file", keyFile], { fixture }), "pseudonym-collision");
+  });
+
+  test("materialize: no key file and no PRISM_PSEUDONYM_KEY refuses (DEID REFUSED no-key) and writes nothing", () => {
+    assertRefusedAndEmpty(materialize(["--deidentify"]), "no-key");
+    assertRefusedAndEmpty(materialize(["--deidentify", "--key-file", path.join(scratch, "missing.key")]), "no-key");
+  });
+
+  test("materialize: a key shorter than 16 characters refuses (DEID REFUSED weak-key)", () => {
+    const weak = path.join(scratch, "weak.key");
+    fs.writeFileSync(weak, "short");
+    assertRefusedAndEmpty(materialize(["--deidentify", "--key-file", weak]), "weak-key");
+  });
+
+  test("materialize: PRISM_PSEUDONYM_KEY is accepted", () => {
+    const res = materialize(["--deidentify"], { env: { PRISM_PSEUDONYM_KEY: TEST_KEY } });
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, new RegExp(`^DEID project=${pseudonymOf(TEST_KEY, "P07")} `, "m"));
+  });
+
+  test("materialize: a clean run ends with DEID scan hits=0 views=10", () => {
+    const res = materialize(["--deidentify", "--key-file", keyFile]);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^DEID scan hits=0 views=10$/m);
+  });
+});
