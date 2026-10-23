@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { AccessError, requireProjectAccess } from "./access.ts";
+import { AccessError, decideAccess, requireProjectAccess, requireRole } from "./access.ts";
 import type { DeidentifiedView } from "../../report/deidentify.ts";
 import type { ReportView } from "../../report/view.ts";
 
@@ -73,4 +73,71 @@ export const getSnapshot = createServerFn({ method: "GET" })
       }
     }
     return { ...snapshot, spans: [...spans.values()] };
+  });
+
+/** One confirmation row as a viewer sees it: a title only for a project the viewer may open identifiably. */
+export interface MethodConfirmationRow {
+  project: string;
+  identifiable: boolean;
+  checkLabel: string;
+  proposed: "pass";
+  decision: string;
+  role: string;
+  modelId: string | null;
+  decidedAt: string;
+}
+
+export const METHOD_PAGE_SIZE = 50;
+
+/**
+ * APP-03 / SC4 method audit. Admin and judges only (07-03 Q3: hidden from
+ * company accounts). The stored row holds every confirmation record with its
+ * project id, title and pseudonym; this function joins each to the access row
+ * and lets only one identity through per row (T-07-39): the title when
+ * decideAccess allows this viewer the identifiable view, else the pseudonym.
+ * Rows are sorted by what is shown, so their order says nothing about project ids.
+ */
+export const getMethodView = createServerFn({ method: "GET" })
+  .validator((d: { page?: number } | undefined) => ({ page: z.number().int().min(1).max(100_000).catch(1).parse(d?.page ?? 1) }))
+  .handler(async ({ data }) => {
+    const session = await requireRole("admin", "judge");
+    const { getDb } = await import("./db.ts");
+    const { readMethodView } = await import("../../report/store.ts");
+    const db = getDb();
+    const method = await readMethodView(db);
+    if (!method) {
+      // Not loaded yet: the codebook still shows, read from the repository files the server ships with.
+      const path = await import("node:path");
+      const { loadCodebook } = await import("../../pipeline/coding/codebook-prompt.ts");
+      const { loadGapText } = await import("../../report/view.ts");
+      const { codebookEntries, decisionLabelsOf } = await import("../../report/method-view.ts");
+      const codebook = loadCodebook();
+      const gates = path.join(process.cwd(), "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
+      return { loaded: false as const, codebook: codebookEntries(codebook, loadGapText({ codebook }), decisionLabelsOf(gates)) };
+    }
+    const { listProjectAccess } = await import("./access-store.ts");
+    const access = new Map((await listProjectAccess(db)).map((a) => [a.projectId, a]));
+    const order = new Map(method.codebook.map((c, i) => [c.checkId, i]));
+    const rows: (MethodConfirmationRow & { k: number })[] = method.confirmations.map((r) => {
+      const a = access.get(r.projectId);
+      const identifiable = !!a && decideAccess(session.user.role, [], a, "identifiable");
+      const project = identifiable ? r.title : a?.pseudonym ? `Project ${a.pseudonym}` : "Project withheld";
+      return {
+        project,
+        identifiable,
+        checkLabel: r.checkLabel,
+        proposed: r.proposed,
+        decision: r.decision,
+        role: r.role,
+        modelId: r.modelId,
+        decidedAt: r.decidedAt,
+        k: order.get(r.checkId) ?? 0,
+      };
+    });
+    rows.sort((x, y) => x.project.localeCompare(y.project) || x.k - y.k || x.decidedAt.localeCompare(y.decidedAt));
+    const pages = Math.max(1, Math.ceil(rows.length / METHOD_PAGE_SIZE));
+    const page = Math.min(data.page, pages);
+    const slice = rows.slice((page - 1) * METHOD_PAGE_SIZE, page * METHOD_PAGE_SIZE).map(({ k: _k, ...r }) => r);
+    const { confirmations: _all, ...rest } = method;
+    return { loaded: true as const, ...rest, confirmations: { rows: slice, page, pages, total: rows.length } };
   });

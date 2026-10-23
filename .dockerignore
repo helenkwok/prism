@@ -20,3 +20,6 @@
 !scripts/serve.mjs
 !vendor
 !vendor/**
+!codebook.md
+!protocol
+!protocol/gap-text.json

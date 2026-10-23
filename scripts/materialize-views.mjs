@@ -34,7 +34,7 @@ import { ensureAccessSchema, upsertProjectAccess } from "../src/app/server/acces
 import { loadCodebook } from "../src/pipeline/coding/codebook-prompt.ts";
 import { runGate } from "../src/pipeline/gate/run-gate.ts";
 import { buildDocumentFrequency, deidentifyView, dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
-import { buildMethodView } from "../src/report/method-view.ts";
+import { buildMethodView, decisionLabelsOf } from "../src/report/method-view.ts";
 import { ensureReportViewSchema, upsertMethodView, upsertReportView, upsertSnapshot } from "../src/report/store.ts";
 import { buildReportView, gateCheckOrder, loadGapText, sourceFromFixture } from "../src/report/view.ts";
 
@@ -120,6 +120,7 @@ const methodView = fs.existsSync(methodPath)
       method: JSON.parse(fs.readFileSync(methodPath, "utf8")),
       codebook,
       gapText,
+      decisionLabels: decisionLabelsOf(gatesPath),
       projects: built.map((b) => ({ view: b.view, pseudonym: b.pseudonym ?? null })),
     })
   : null;

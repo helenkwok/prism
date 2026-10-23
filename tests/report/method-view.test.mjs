@@ -13,7 +13,7 @@ import { after, describe, test } from "node:test";
 import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
-import { buildMethodView } from "../../src/report/method-view.ts";
+import { buildMethodView, codebookEntries, decisionLabelsOf } from "../../src/report/method-view.ts";
 import { ensureReportViewSchema, readMethodView, upsertMethodView } from "../../src/report/store.ts";
 import { buildReportView, loadGapText, sourceFromFixture } from "../../src/report/view.ts";
 import { codebook, corpus, corpusPath, gatesPath, jsRunGate, order, root } from "./js-gate.mjs";
@@ -33,7 +33,8 @@ async function projects() {
   return out;
 }
 
-const build = async (over = {}) => buildMethodView({ method, codebook, gapText, projects: await projects(), ...over });
+const decisionLabels = decisionLabelsOf(gatesPath);
+const build = async (over = {}) => buildMethodView({ method, codebook, gapText, decisionLabels, projects: await projects(), ...over });
 
 describe("buildMethodView (APP-03 method audit)", () => {
   test("agreement: one row per check in codebook order; released rows carry AC1, its CI and precision c of m", async () => {
@@ -88,6 +89,9 @@ describe("buildMethodView (APP-03 method audit)", () => {
     const cb = codebook.checks["intended-use-defined"];
     assert.equal(e.label, cb.label);
     assert.equal(e.decision, cb.decision);
+    assert.equal(e.decisionLabel, "Permit reliance for the named use");
+    // The same entries stand alone for /method before any method row is stored.
+    assert.deepEqual(codebookEntries(codebook, gapText, decisionLabels), v.codebook);
     assert.equal(e.operationalDefinition, cb.operationalDefinition);
     assert.equal(e.passRule, cb.passRule);
     assert.equal(e.claimedRule, cb.claimedRule);

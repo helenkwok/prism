@@ -193,4 +193,131 @@ test.describe("company A", () => {
       expect(r.body).toContain("Not available to your account");
     }
   });
+
+  test("gets the 403 page on /method (07-03 Q3: hidden from companies)", async ({ page }) => {
+    const res = await page.goto("/method");
+    expect(res?.status()).toBe(403);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not available to your account");
+    await expect(page.locator("[data-method]")).toHaveCount(0);
+  });
+});
+
+// ---- Method audit (Task 3) ----
+
+const IDENTIFIABLE_FOR_JUDGE = ["P01", "P05"]; // own and opt-in, no hold (corpus access blocks)
+
+/** Projects whose identifiers (dictionary terms or project id) appear in the HTML; uses the same scan. */
+function identifiersIn(body: string, projectIds: string[]) {
+  const { dictionaries } = harness();
+  const page = { view: { projectRef: "PAGE", html: body } as unknown as DeidentifiedView, dictionary: { projectRef: "PAGE", terms: [] } };
+  const others = projectIds.map((id) => ({
+    view: { projectRef: id, html: "" } as unknown as DeidentifiedView,
+    dictionary: dictionaries.get(id)!,
+  }));
+  const hits = scanDeidentified([page, ...others]).filter((h) => h.pseudonym === "PAGE").map((h) => (h.termIndex === -1 ? "url" : h.termOf));
+  for (const id of projectIds) if (new RegExp(`\\b${id}\\b`).test(body)) hits.push(id);
+  return [...new Set(hits)];
+}
+
+/** Every page of /method's confirmation records, as HTML and as visible rows. */
+async function methodPages(page: Page) {
+  const out: { body: string; rows: { project: string; identifiable: string }[] }[] = [];
+  let url: string | null = "/method";
+  while (url) {
+    const res = await page.goto(url);
+    expect(res?.status()).toBe(200);
+    const rows = await page.locator("tr[data-confirmation]").evaluateAll((trs) =>
+      trs.map((tr) => ({ project: tr.querySelector("td")!.textContent ?? "", identifiable: tr.getAttribute("data-identifiable") ?? "" })),
+    );
+    out.push({ body: await res!.text(), rows });
+    const next = page.getByRole("navigation", { name: "Confirmation record pages" }).getByRole("link", { name: "Next" });
+    url = (await next.count()) ? await next.getAttribute("href") : null;
+  }
+  return out;
+}
+
+test.describe("method audit, judge", () => {
+  test.use({ storageState: ({}, use) => stateFor("judge").then(use) });
+
+  test("agreement table, selection counts and 24 codebook entries", async ({ page }) => {
+    const res = await page.goto("/method");
+    expect(res?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Method audit");
+    for (const name of ["Agreement with the independent labeller", "How projects were selected", "Codebook", "Confirmation records", "How this report was made"]) {
+      await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+    }
+    const rows = page.locator("tr[data-agreement]");
+    await expect(rows).toHaveCount(24);
+    const released = page.locator('tr[data-agreement="output-reproducible"] td');
+    await expect(released.nth(1)).toHaveText("0.72 (0.63–0.78)");
+    await expect(released.nth(2)).toHaveText("11 of 12");
+    await expect(released.nth(3)).toHaveText("zai-org/GLM-5.3, inference.example");
+    await expect(page.locator('tr[data-agreement="acceptance-criteria-met"] [data-explicit-state]')).toHaveText(
+      "withheld: agreement below the pre-registered threshold",
+    );
+    for (const t of await page.locator("[data-explicit-state]").allTextContents()) expect(t).not.toMatch(/\d/);
+    await expect(page.locator("[data-explicit-state]")).toHaveCount(7);
+    await expect(page.locator("tr[data-prisma]")).toHaveCount(6);
+    await expect(page.locator("details[data-codebook-entry]")).toHaveCount(24);
+    const entry = page.locator('details[data-codebook-entry="intended-use-defined"]');
+    await entry.locator("summary").click();
+    await expect(entry.locator("[data-chip]").first()).toBeVisible();
+    await expect(entry).toContainText("What would close this gap");
+  });
+
+  test("confirmation records: projects the judge cannot open show only their pseudonym, on every page and in the HTML", async ({ page }) => {
+    const pages = await methodPages(page);
+    expect(pages.length).toBe(2); // 89 records, 50 per page
+    const rows = pages.flatMap((p) => p.rows);
+    const { titles } = harness();
+    const shown = new Set(rows.map((r) => r.project));
+    // P01 and P05 by title; P02 and the held P03 by pseudonym only.
+    for (const id of IDENTIFIABLE_FOR_JUDGE) expect(shown.has(titles.get(id)!), id).toBe(true);
+    expect(shown.has(`Project ${pseud("P02")}`)).toBe(true);
+    expect(shown.has(`Project ${pseud("P03")}`)).toBe(true);
+    for (const r of rows) expect(r.identifiable).toBe(IDENTIFIABLE_FOR_JUDGE.some((id) => titles.get(id) === r.project) ? "true" : "false");
+    const hidden = [...titles.keys()].filter((id) => !IDENTIFIABLE_FOR_JUDGE.includes(id));
+    for (const p of pages) {
+      // No title, host, repo or id of a project the judge may not identify, anywhere in the document (dehydrated data included).
+      expect(identifiersIn(p.body, hidden)).toEqual([]);
+      // And no pseudonym of a project shown by title, so nothing joins the two.
+      for (const id of IDENTIFIABLE_FOR_JUDGE) expect(p.body).not.toContain(pseud(id));
+    }
+  });
+});
+
+test.describe("method audit, admin", () => {
+  test.use({ storageState: ({}, use) => stateFor("admin").then(use) });
+
+  test("confirmation records show every project by title", async ({ page }) => {
+    const pages = await methodPages(page);
+    const rows = pages.flatMap((p) => p.rows);
+    expect(rows.length).toBe(89);
+    // Control for the judge test: the same check does find P02's identifiers on the admin's pages.
+    expect(pages.flatMap((p) => identifiersIn(p.body, ["P02"]))).toContain("P02");
+    for (const r of rows) {
+      expect(r.identifiable).toBe("true");
+      expect(r.project).not.toMatch(/^Project /);
+    }
+    expect(new Set(rows.map((r) => r.project))).toContain(harness().titles.get("P02")!);
+  });
+
+  test("with no method view stored: the not-loaded line, and the codebook still renders", async ({ page }) => {
+    const db = new Database(path.join(process.env.E2E_DIR ?? "", "data", "prism.sqlite"));
+    const saved = db.prepare("select * from app_method_view").all();
+    expect(saved.length).toBe(1);
+    db.prepare("delete from app_method_view").run();
+    try {
+      const res = await page.goto("/method");
+      expect(res?.status()).toBe(200);
+      await expect(page.locator("[data-not-loaded]")).toHaveText("Agreement figures appear here once validation is complete.");
+      await expect(page.locator("tr[data-agreement]")).toHaveCount(0);
+      await expect(page.locator("tr[data-confirmation]")).toHaveCount(0);
+      await expect(page.locator("details[data-codebook-entry]")).toHaveCount(24);
+    } finally {
+      const ins = db.prepare("insert into app_method_view (id, json, generated_at, fixture) values (@id, @json, @generated_at, @fixture)");
+      for (const r of saved) ins.run(r);
+      db.close();
+    }
+  });
 });

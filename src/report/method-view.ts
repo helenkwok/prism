@@ -6,6 +6,8 @@
 // the project id and its pseudonym; the server decides per viewer which one a
 // row may show (report-fns.ts getMethodView), so this module never filters.
 
+import fs from "node:fs";
+
 import type { Codebook } from "../pipeline/coding/codebook-prompt.ts";
 import { CROSSWALK_ORDER, type CrosswalkChip, type GapTextFn, type ReportView, type RoleLine } from "./view.ts";
 
@@ -44,6 +46,7 @@ export interface CodebookEntry {
   checkId: string;
   label: string;
   decision: string;
+  decisionLabel: string;
   operationalDefinition: string;
   passRule: string;
   claimedRule: string;
@@ -93,15 +96,41 @@ const WORDS: Record<Exclude<AgreementState, "released">, string> = {
   "person-coded": "person-coded",
 };
 
+/** decision-gates.json decision id -> label. */
+export function decisionLabelsOf(gatesPath: string): Record<string, string> {
+  const g: { decisions: Record<string, { label: string }> } = JSON.parse(fs.readFileSync(gatesPath, "utf8"));
+  return Object.fromEntries(Object.entries(g.decisions).map(([id, d]) => [id, d.label]));
+}
+
+/** The 24 codebook entries in codebook order; also what /method shows before any method row is stored. */
+export function codebookEntries(codebook: Codebook, gapText: GapTextFn, decisionLabels: Record<string, string>): CodebookEntry[] {
+  return Object.entries(codebook.checks).map(([id, c]) => ({
+    checkId: id,
+    label: c.label,
+    decision: c.decision,
+    decisionLabel: decisionLabels[c.decision] ?? c.decision,
+    operationalDefinition: c.operationalDefinition,
+    passRule: c.passRule,
+    claimedRule: c.claimedRule,
+    failRule: c.failRule,
+    crosswalk: CROSSWALK_ORDER.flatMap((std) =>
+      (c.crosswalk[std] ?? []).map((e) => ({ standard: std, locator: e.locator, relationType: e.relation_type, informational: e.informational === true })),
+    ),
+    gapText: gapText(id).text,
+  }));
+}
+
 export function buildMethodView({
   method,
   codebook,
   gapText,
+  decisionLabels,
   projects,
 }: {
   method: MethodInput;
   codebook: Codebook;
   gapText: GapTextFn;
+  decisionLabels: Record<string, string>;
   projects: { view: ReportView; pseudonym: string | null }[];
 }): MethodView {
   const ids = Object.keys(codebook.checks);
@@ -120,22 +149,7 @@ export function buildMethodView({
     return { checkId: id, label, state, ac1: null, ac1CI: null, precision: null, text: `${WORDS[state]}: ${a.reason ?? "no reason recorded"}` };
   });
 
-  const entries: CodebookEntry[] = ids.map((id) => {
-    const c = codebook.checks[id];
-    return {
-      checkId: id,
-      label: c.label,
-      decision: c.decision,
-      operationalDefinition: c.operationalDefinition,
-      passRule: c.passRule,
-      claimedRule: c.claimedRule,
-      failRule: c.failRule,
-      crosswalk: CROSSWALK_ORDER.flatMap((std) =>
-        (c.crosswalk[std] ?? []).map((e) => ({ standard: std, locator: e.locator, relationType: e.relation_type, informational: e.informational === true })),
-      ),
-      gapText: gapText(id).text,
-    };
-  });
+  const entries = codebookEntries(codebook, gapText, decisionLabels);
 
   const confirmations: ConfirmationRecord[] = projects.flatMap(({ view, pseudonym }) =>
     view.checks.flatMap((c) =>

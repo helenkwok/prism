@@ -38,6 +38,9 @@ RUN python3 -m venv /opt/gate \
  && /opt/gate/bin/pip install --no-cache-dir -r requirements-gate.txt
 
 COPY vendor/ai-output-to-value ./vendor/ai-output-to-value
+# Read at request time from the working directory: /review and /method load the codebook and gap text.
+COPY codebook.md ./codebook.md
+COPY protocol/gap-text.json ./protocol/gap-text.json
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist

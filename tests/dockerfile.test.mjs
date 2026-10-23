@@ -114,3 +114,10 @@ test("scripts/docker-smoke.sh runs under a strict shell mode and cleans up", () 
   assert.match(smoke, /set -euo pipefail/);
   assert.match(smoke, /trap\s+\S*cleanup\S*\s+EXIT/);
 });
+
+test("the runtime image ships the codebook and gap text that /review and /method read at request time", () => {
+  const runtimeStage = dockerfile.slice(dockerfile.indexOf(fromLines[1]));
+  assert.match(runtimeStage, /COPY\s+codebook\.md\s+\.\/codebook\.md/);
+  assert.match(runtimeStage, /COPY\s+protocol\/gap-text\.json\s+\.\/protocol\/gap-text\.json/);
+  for (const allow of ["!codebook.md", "!protocol", "!protocol/gap-text.json"]) assert.ok(dockerignoreLines.includes(allow), allow);
+});
