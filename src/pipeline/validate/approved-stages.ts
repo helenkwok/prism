@@ -55,6 +55,11 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
         if (!res.ok) throw new Error(`coding response status ${res.status}`);
         const content = res.json?.choices?.[0]?.message?.content;
         if (typeof content !== "string") throw new Error("coding response missing content");
+        const validation = isSchemaValid(content, chunk.map(s => s.id), o.contract.zodSchema);
+        if (!validation.valid) {
+          const dir = path.join(o.dataDir, "validation"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+          fs.appendFileSync(path.join(dir, "coding-invalid-replies.jsonl"), JSON.stringify({ stage: o.stage, projectN: e.n, requestDigest: digest, validationStage: validation.stage, finishReason: res.json?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+        }
         return content;
       }, content => isSchemaValid(content, chunk.map(s => s.id), o.contract.zodSchema).valid);
       return value;
