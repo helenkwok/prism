@@ -6,6 +6,9 @@ import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
 import { ensureReportViewSchema } from "../../report/store.ts";
 import { ensureLiveRunSchema, markInterruptedJobs, runnerFromEnv } from "./live-run.ts";
+import { blankOldSessionIps } from "./session-ip.ts";
+
+const HOUR_MS = 60 * 60 * 1000;
 
 function refuse(check: string, err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
@@ -49,6 +52,17 @@ export default async function boot(): Promise<void> {
   } catch (err) {
     refuse("live-run tables", err);
   }
+  // T-07-65 (Helen, 2026-10-23): session IPs older than a day are blanked at boot and
+  // hourly. The log carries a count, never an address.
+  const sessionIpJob = async () => console.log(`[prism] session ip job: blanked ${await blankOldSessionIps(getDb())}`);
+  try {
+    await sessionIpJob();
+  } catch (err) {
+    refuse("session ip job", err);
+  }
+  setInterval(() => {
+    sessionIpJob().catch((err) => console.error(`[prism] session ip job failed: ${err instanceof Error ? err.message : String(err)}`));
+  }, HOUR_MS).unref();
   // T-07-36: a fixture runner left on in production is visible in the log.
   if (runnerFromEnv().name === "fixture") {
     console.log("[prism] live run: fixture runner active (no network, no model calls, reports flagged fixture)");

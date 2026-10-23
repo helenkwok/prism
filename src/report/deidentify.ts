@@ -10,6 +10,9 @@
 // term index only, never the term text, so a refusal log leaks nothing.
 
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { getDomain, getDomainWithoutSuffix } from "tldts";
 
@@ -298,16 +301,49 @@ function strings(x: unknown, out: string[] = []): string[] {
 }
 
 /**
- * The hard gate (§6.6): every string of every de-identified view is searched,
- * whole-word and case-insensitive, for its own project's dictionary, every other
- * sampled project's dictionary, and any URL. One hit refuses the export.
+ * The public shared sources (Helen, 2026-10-23): the codebook, the gap text and
+ * the report builder's fixed copy, NFC-normalised. Read on each call, relative to
+ * this module, never at import. The gap text is optional; the others must exist.
  */
-export function scanDeidentified(entries: { view: DeidentifiedView; dictionary: Dictionary }[]): ScanHit[] {
+export function publicSharedText(): string {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const read = (rel: string) => fs.readFileSync(path.join(root, rel), "utf8");
+  const gap = path.join(root, "protocol/gap-text.json");
+  return [read("codebook.md"), fs.existsSync(gap) ? read("protocol/gap-text.json") : "", read("src/report/view.ts")].join("\n").normalize("NFC");
+}
+
+/**
+ * Strings exempt from the scan: identical in every view (two or more) AND found
+ * verbatim in the public shared text. A string shared by every view but found in
+ * no public source (a quote, say) is still scanned, so it fails safe.
+ */
+export function sharedStrings(views: unknown[], publicText: string): Set<string> {
+  if (views.length < 2) return new Set();
+  const [first, ...rest] = views.map((v) => new Set(strings(v)));
+  return new Set([...first].filter((s) => rest.every((r) => r.has(s)) && publicText.includes(s)));
+}
+
+/**
+ * The hard gate (§6.6): every string of every de-identified view, except the
+ * shared public text above, is searched, whole-word and case-insensitive, for its
+ * own project's dictionary, every other sampled project's dictionary, and any URL.
+ * One hit refuses the export.
+ */
+export function scanDeidentified(
+  entries: { view: DeidentifiedView; dictionary: Dictionary }[],
+  publicText: string = publicSharedText(),
+): ScanHit[] {
   const dicts = entries.map((e) => ({ termOf: e.view.projectRef, res: e.dictionary.terms.map((t) => termRe(t.text, "iu")) }));
   const url = new RegExp(URL_RE.source, "i");
+  const exempt = sharedStrings(
+    entries.map((e) => e.view),
+    publicText,
+  );
   const hits: ScanHit[] = [];
   for (const { view } of entries) {
-    const text = strings(view).join("\n");
+    const text = strings(view)
+      .filter((s) => !exempt.has(s))
+      .join("\n");
     if (url.test(text)) hits.push({ pseudonym: view.projectRef, termOf: view.projectRef, termIndex: -1 });
     for (const d of dicts) d.res.forEach((re, i) => re.test(text) && hits.push({ pseudonym: view.projectRef, termOf: d.termOf, termIndex: i }));
   }

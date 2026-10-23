@@ -275,3 +275,71 @@ describe("identifier scan (APP-03)", () => {
     assert.match(res.stdout, /^DEID scan hits=0 views=10$/m);
   });
 });
+
+// ---- 07-12 (Helen, 2026-10-23): text identical in every view AND in a public shared source is exempt ----
+
+describe("shared-text exemption (T-07-66)", () => {
+  // "Catalogued" is codebook text (check id assumptions-catalogued, codebook.md) that every
+  // view carries and no quote uses: a product named with it must not block the export.
+  const WORD = "Catalogued";
+  const P07_TERM = "Zentrolux";
+  const mod = () => import("../../src/report/deidentify.ts");
+  const entries = (titleFor = {}) =>
+    views.map((v) => ({ view: structuredClone(deid[v.projectRef].view), dictionary: dictionaryOf(titleFor[v.projectRef] ? { ...v, title: titleFor[v.projectRef] } : v) }));
+  /** Put `text` in the view as a quote (some synthetic views carry none). */
+  const plant = (view, text) => view.checks[0].quotes.unshift({ spanId: "planted", text, injectionFlagged: false });
+
+  test("a product named with a codebook word shared by every view gives no hit; without the public text it would", async () => {
+    const { scanDeidentified, publicSharedText } = await mod();
+    assert.match(fs.readFileSync(path.join(root, "codebook.md"), "utf8"), new RegExp(`\\b${WORD}\\b`, "i"));
+    assert.equal(quotesOf(views[0]).concat(...views.map(quotesOf)).some((q) => new RegExp(WORD, "i").test(q)), false, "no quote uses the word");
+    const e = entries({ P06: WORD });
+    assert.deepEqual(scanDeidentified(e, publicSharedText()), []);
+    assert.ok(scanDeidentified(e, "").length > 0, "control: with no public text the shared codebook strings are scanned and hit");
+  });
+
+  test("materialize: a product named with that word ends DEID scan hits=0 views=10", () => {
+    const fixture = corpusVariant("shared-word", (c) => {
+      c.projects.find((p) => p.projectId === "P06").title = `Show HN: ${WORD} – plan routes for delivery vans`;
+    });
+    const res = materialize(["--deidentify", "--key-file", keyFile], { fixture });
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /^DEID scan hits=0 views=10$/m);
+  });
+
+  test("two views sharing an identical quote with a dictionary term still refuse (the quote is in no public source)", async () => {
+    const { scanDeidentified, publicSharedText } = await mod();
+    const two = entries().filter((x) => ["P01", "P07"].includes(x.dictionary.projectRef));
+    for (const x of two) plant(x.view, `${P07_TERM} shipped the same release note`);
+    const hits = scanDeidentified(two, publicSharedText());
+    const ps = pseudonymOf(TEST_KEY, "P07");
+    assert.equal(hits.filter((h) => h.termOf === ps).length, 2, JSON.stringify(hits));
+  });
+
+  test("a string in every view but one is still scanned; in every view and the public text it is exempt", async () => {
+    const { scanDeidentified } = await mod();
+    const quote = `${P07_TERM} shipped the same release note`;
+    const all = entries();
+    for (const x of all) plant(x.view, quote);
+    assert.deepEqual(scanDeidentified(all, quote), []);
+    const allButOne = entries();
+    for (const x of allButOne.slice(1)) plant(x.view, quote);
+    assert.ok(scanDeidentified(allButOne, quote).length > 0);
+  });
+
+  test("with a single view nothing is exempt", async () => {
+    const { scanDeidentified, sharedStrings, publicSharedText } = await mod();
+    const one = entries({ P06: WORD }).filter((x) => x.dictionary.projectRef === "P06");
+    assert.equal(sharedStrings(one.map((x) => x.view), publicSharedText()).size, 0);
+    assert.ok(scanDeidentified(one, publicSharedText()).length > 0);
+  });
+
+  test("the URL check follows the same exemption", async () => {
+    const { scanDeidentified } = await mod();
+    const quote = "see https://docs.example/shared for the method";
+    const e = entries();
+    for (const x of e) plant(x.view, quote);
+    assert.deepEqual(scanDeidentified(e, quote), []);
+    assert.ok(scanDeidentified(e, "no such text").some((h) => h.termIndex === -1));
+  });
+});
