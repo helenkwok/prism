@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { tanstackStart } from '@tanstack/react-start/plugin/rsbuild'
-import { releaseDir } from './scripts/public-data.mjs'
+import { releaseDir } from './scripts/release-dir.mjs'
 
 // The site sees public data only through @public-data (PUB-06): the highest v<N> under PUBLIC_DATA_DIR,
 // or, with no release, a stub whose kind "none" renders the empty state.

@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { releaseDir } from './public-data.mjs'
+import { releaseDir } from './release-dir.mjs'
 
 const out = resolve(import.meta.dirname, '../dist/client')
 const pages = readdirSync(out, { recursive: true }).filter(f => f === 'index.html' || f.endsWith('/index.html'))
