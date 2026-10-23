@@ -1,0 +1,32 @@
+{
+  "status": "draft",
+  "purpose": "Text shown under 'What would close this gap' on a private PRISM report, for each gate check whose published state is not pass. Drafted from each check's codebook v1.0 pass rule (plan 07-03, Helen's option-b). Plain evidence language; no standard's text is quoted.",
+  "digestNote": "The report uses these entries only when approval is a decision record { actorId, actorKind, decidedAt, digest } (protocol addendum A6) whose digest is the sha256 of JSON.stringify(entries) with the keys sorted (src/report/view.ts gapTextDigest). Until then the codebook pass rule is shown. Approval is collected at plan 07-13's checkpoint and is never written by an executor.",
+  "approval": null,
+  "entries": {
+    "output-reproducible": "A sentence on the project's own page or repository that links something outsiders can use to run or inspect the product, such as source code with build steps, a public demo, or published model weights or data.",
+    "assumptions-catalogued": "A sentence on the project's own page or repository naming a specific assumption, input context or inference the product relies on, ideally linked to a design note, model card or README section.",
+    "intended-use-defined": "A sentence on the project's own page or repository naming what the product is meant for and where its use stops, such as supported and excluded use cases or the intended users.",
+    "acceptance-criteria-defined": "A sentence on the project's own page or repository naming a testable criterion for the stated use, such as a named metric with a threshold, a test suite or a named benchmark, ideally linked to the spec or test file.",
+    "acceptance-criteria-met": "A published report, benchmark table or test result, linked from the project's own page or repository, together with a sentence saying a named criterion was met.",
+    "failure-modes-tested": "A sentence on the project's own page or repository naming a specific situation that was tested, such as adversarial, malformed or edge-case inputs, and the behaviour observed, ideally linked to a test report or log.",
+    "limitations-stated": "A sentence on the project's own page or repository naming a specific limitation or out-of-scope condition, such as unsupported languages, data types or scale limits.",
+    "deliverable-gate-passed": "This check follows the 'Permit reliance for the named use' decision: it is met when every check of that decision is publicly evidenced on the project's own pages or repositories.",
+    "operational-owner-assigned": "A sentence on the project's own page or repository naming the role, team or contact responsible for running the product, such as an on-call team or support contact, ideally linked to a support or status page.",
+    "assurance-defined": "A sentence on the project's own page or repository describing a recurring check on the product's behaviour, such as monitoring with alerts, scheduled human review or a regular audit, tied to a named risk.",
+    "fallback-defined": "A sentence on the project's own page or repository describing what happens when the product cannot give a usable result, such as routing to a person, a degraded mode or an escalation contact.",
+    "recovery-tested": "A sentence on the project's own page or repository describing an actual recovery, rollback or recovery drill, ideally linked to an incident report or changelog entry.",
+    "support-maintenance-defined": "A sentence on the project's own page or repository saying where users get help with the product, how often it is maintained or released, or who approves changes.",
+    "operating-cost-known": "A sentence on the project's own page or repository stating an operating cost or a price together with the volume it covers, such as a cost per request, per seat, or a plan with its quota.",
+    "outcome-measure-defined": "A sentence on the project's own page or repository naming the outcome it tracks, with its unit and how it is captured, ideally linked to a report or method note.",
+    "baseline-defined": "A sentence on the project's own page or repository giving the baseline the outcome is compared with, such as a figure from before launch, a control group or a prior period.",
+    "outcome-measured": "A sentence on the project's own page or repository giving a measured value of the outcome after the product was introduced, ideally linked to a report or dataset.",
+    "measurement-definition-consistent": "A sentence on the project's own page or repository saying the before and after figures used the same definition, method or population.",
+    "important-confounds-named": "A sentence on the project's own page or repository naming something else that could explain the measured change, such as a seasonal effect or a concurrent campaign, or stating the uncertainty of the comparison.",
+    "outcome-evidence-available": "A sentence on the project's own page or repository that points to the measured outcome and its baseline as the evidence behind a decision to scale, renew, expand or stop.",
+    "full-cost-accounted": "A sentence on the project's own page or repository giving a cost figure that names more than one part of the relevant cost, such as build cost together with running cost.",
+    "risk-tradeoffs-assessed": "A sentence on the project's own page or repository naming a material risk or trade-off weighed in the decision, such as a scaling risk, an opportunity cost or a dependency.",
+    "alternatives-compared": "A sentence on the project's own page or repository naming an alternative that was considered, such as staying at the current scale or another supplier, and why it was not chosen.",
+    "value-rule-explicit": "A sentence on the project's own page or repository stating the rule or threshold for scaling, renewing, expanding or stopping, such as a pre-set retention level."
+  }
+}

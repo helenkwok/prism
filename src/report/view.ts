@@ -118,6 +118,17 @@ export interface ReportView {
 
 export type GapTextFn = (checkId: string) => { text: string; source: GapSource };
 
+/**
+ * The report title (Helen, 07-03 Q4: launch title): the product name from the
+ * launch post title, i.e. the text after "Show HN:" up to the first " – ",
+ * " - " or ":". No company-supplied display title is used.
+ */
+export function productName(launchTitle: string): string {
+  const rest = launchTitle.replace(/^\s*Show HN:\s*/i, "");
+  const cut = rest.search(/ – | - |:/);
+  return (cut === -1 ? rest : rest.slice(0, cut)).trim();
+}
+
 /** sha256 over the entries with sorted keys: the digest an approval record binds to. */
 export function gapTextDigest(entries: Record<string, string>): string {
   const sorted = Object.fromEntries(Object.keys(entries).sort().map((k) => [k, entries[k]]));
@@ -237,7 +248,7 @@ export async function buildReportView(
     version: 1,
     view: "identifiable",
     projectRef: source.projectId,
-    title: source.title,
+    title: productName(source.title),
     fixture: source.fixture,
     generatedAt: source.generatedAt,
     codebookVersion: source.codebookVersion,
