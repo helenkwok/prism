@@ -140,6 +140,15 @@ describe("pinnedFetch (D-80 connect-time address check)", () => {
     assert.equal(requestsSince(start), 0);
   });
 
+  test("connect-time refusal of the IPv6 encodings (IPv4-compatible, 6to4, Teredo, 100::/64)", async () => {
+    const start = seen.length;
+    for (const address of ["::7f00:1", "2002:7f00:1::", "2001:0:4136:e378:8000:63bf:3fff:fdd2", "100::1"]) {
+      const fetchImpl = createPinnedFetch({ lookup: stubLookup([address]), request: transport });
+      await assert.rejects(fetchImpl("https://own.example/"), (e) => e instanceof PreflightError && e.code === "private-address", address);
+    }
+    assert.equal(requestsSince(start), 0);
+  });
+
   test("an empty lookup answer is refused", async () => {
     const fetchImpl = createPinnedFetch({ lookup: stubLookup([]), request: transport });
     await assert.rejects(fetchImpl("https://own.example/"), (e) => e.code === "private-address");
