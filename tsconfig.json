@@ -14,5 +14,7 @@
     "isolatedModules": true,
     "types": ["node", "@rsbuild/core/types"]
   },
-  "include": ["src", "scripts", "rsbuild.config.ts"]
+  "include": ["src", "scripts", "rsbuild.config.ts"],
+  // The 07-11a probe imports its generated, gitignored .build/p01-view.json.
+  "exclude": ["scripts/probes"]
 }

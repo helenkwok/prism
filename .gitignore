@@ -16,3 +16,7 @@ snapshots/
 *.tsbuildinfo
 test-results/
 playwright-report/
+
+# plan 07-11a probe build output
+scripts/probes/worker-cpu/.build/
+scripts/probes/worker-cpu/.cloudflare/
