@@ -6,9 +6,9 @@
 // parent domain. The shared-path-host and shared-suffix-host branches, and
 // every SSRF/robots function, are unchanged.
 //
-// Known limit carried over from the spike, still out of scope here: the DNS
-// answer checked by resolveSafe is not pinned to the socket fetch() opens (a
-// rebinding gap); Phase 7's SSRF guard closes it.
+// The DNS answer checked by resolveSafe is not pinned to the socket fetch()
+// opens (a rebinding gap). pinned-fetch.ts closes it: pass pinnedFetch as
+// fetchImpl and every connect re-checks the addresses it actually uses.
 
 import dns from "node:dns/promises";
 import net from "node:net";
@@ -110,7 +110,7 @@ export async function resolveSafe(hostname: string, resolver: Resolver = default
   return addrs;
 }
 
-function parseHttpsUrl(url: string, base?: string): URL {
+export function parseHttpsUrl(url: string, base?: string): URL {
   let u: URL;
   try {
     u = new URL(url, base);
@@ -214,7 +214,8 @@ type FetchImpl = typeof fetch;
  *   { hops: [{ url, status }], finalUrl, status, boundaryOk, body }
  * where boundaryOk is true only when EVERY URL in the chain (the requested URL,
  * each intermediate hop, the final URL) is inside `boundary` (when supplied).
- * Throws PreflightError on a bad scheme, a blocked address, or more than
+ * A redirect that leaves the boundary is not followed: the result is the
+ * last in-boundary hop with boundaryOk false and an empty body. Throws PreflightError on a bad scheme, a blocked address, or more than
  * maxHops redirects. `fetchImpl` and `resolver` are injectable.
  */
 export async function followRedirects(
@@ -253,7 +254,8 @@ export async function followRedirects(
       }
       if (i >= maxHops) throw new PreflightError("too-many-hops", `more than ${maxHops} redirects`);
       const next = parseHttpsUrl(location, u.toString()).toString();
-      if (boundary && !withinBoundary(next, boundary)) boundaryOk = false;
+      // An off-boundary hop is never requested: consent covers the boundary only.
+      if (boundary && !withinBoundary(next, boundary)) return { hops, finalUrl: u.toString(), status, boundaryOk: false, body: "" };
       current = next;
       continue;
     }
