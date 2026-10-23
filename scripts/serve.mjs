@@ -84,6 +84,20 @@ export function clientIp(socketAddress, headers, proxy) {
   return last && net.isIP(unmap(last)) ? unmap(last) : peer;
 }
 
+/**
+ * The scheme the client used: https only when the socket peer is the trusted proxy
+ * and the last value of its x-forwarded-proto is exactly "https"; http otherwise.
+ * Behind a TLS-terminating proxy the app must see https, or redirects point at http
+ * and the CSRF origin check refuses the browser's https Origin.
+ */
+export function requestScheme(socketAddress, headers, proxy) {
+  const peer = unmap(socketAddress) ?? null;
+  if (!peer || !proxy || !proxy.ips.has(peer)) return "http";
+  const raw = headers["x-forwarded-proto"];
+  const last = (Array.isArray(raw) ? raw.join(",") : (raw ?? "")).split(",").map((s) => s.trim()).at(-1);
+  return last === "https" ? "https" : "http";
+}
+
 /** Node request headers as Fetch header pairs, with CLIENT_IP_HEADER replaced by the resolved client IP. */
 export function requestHeaders(nodeHeaders, ip) {
   const pairs = Object.entries(nodeHeaders).flatMap(([k, v]) =>
@@ -135,7 +149,8 @@ async function main() {
       const host = req.headers.host ?? "localhost";
       const controller = new AbortController();
       res.once("close", () => controller.abort());
-      const request = new Request(new URL(req.url ?? "/", `http://${host}`), {
+      const scheme = requestScheme(req.socket.remoteAddress, req.headers, proxy);
+      const request = new Request(new URL(req.url ?? "/", `${scheme}://${host}`), {
         method: req.method,
         headers: requestHeaders(req.headers, clientIp(req.socket.remoteAddress, req.headers, proxy)),
         body: req.method === "GET" || req.method === "HEAD" ? undefined : Readable.toWeb(req),

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { CLIENT_IP_HEADER, clientIp, proxyConfig, requestHeaders, staticFile } from "../scripts/serve.mjs";
+import { CLIENT_IP_HEADER, clientIp, proxyConfig, requestHeaders, requestScheme, staticFile } from "../scripts/serve.mjs";
 
 test("staticFile resolves inside the client directory and refuses everything else", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prism-serve-"));
@@ -70,4 +70,20 @@ test("behind a trusted proxy the client IP comes from the proxy's header, and on
   // A missing or malformed value falls back to the socket peer.
   assert.equal(clientIp("10.0.0.2", {}, proxy), "10.0.0.2");
   assert.equal(clientIp("10.0.0.2", { "x-real-ip": "not-an-ip" }, proxy), "10.0.0.2");
+});
+
+// 07-12c: behind Caddy the app must see its own requests as https.
+test("x-forwarded-proto is honoured only from the trusted proxy and only as exactly https", () => {
+  const proxy = proxyConfig({ PRISM_TRUSTED_PROXY_HEADER: "x-forwarded-for", PRISM_TRUSTED_PROXY_IPS: "172.30.0.2" });
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "https" }, proxy), "https");
+  assert.equal(requestScheme("::ffff:172.30.0.2", { "x-forwarded-proto": "https" }, proxy), "https");
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "http, https" }, proxy), "https");
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "https, http" }, proxy), "http");
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "HTTPS" }, proxy), "http");
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "https2" }, proxy), "http");
+  assert.equal(requestScheme("172.30.0.2", {}, proxy), "http");
+  // Any other peer, or no proxy configured: always http.
+  assert.equal(requestScheme("203.0.113.5", { "x-forwarded-proto": "https" }, proxy), "http");
+  assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "https" }, null), "http");
+  assert.equal(requestScheme(undefined, { "x-forwarded-proto": "https" }, proxy), "http");
 });

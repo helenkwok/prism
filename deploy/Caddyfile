@@ -1,0 +1,20 @@
+# PRISM on prism-app (plan 07-12c). TLS ends here; the app container publishes no port.
+# Only 443/tcp is open: no HTTP challenge, no HTTP-to-HTTPS redirect listener, no HTTP/3
+# (UDP 443 stays closed). No email and no access log (client addresses are not logged).
+{
+	auto_https disable_redirects
+	servers {
+		protocols h1 h2
+	}
+}
+
+prism.helenkwok.dev {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+	# Default forwarded headers: X-Forwarded-For (the client address; incoming values are
+	# replaced because no trusted_proxies are set), X-Forwarded-Proto https, X-Forwarded-Host.
+	reverse_proxy prism-app:3000
+}
