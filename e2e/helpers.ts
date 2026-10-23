@@ -36,8 +36,9 @@ export async function submitSignIn(page: Page, email: string, password: string, 
 
 /**
  * Signs a seeded role in through the real form and waits for the landing page.
- * better-auth rate-limits sign-in per client; on its notice this waits out the
- * window once instead of loosening the limit.
+ * better-auth rate-limits sign-in per client IP (3 per 10 s), and every spec
+ * signs in from the same client, 127.0.0.1; on a 429 this waits out the window
+ * once instead of loosening the limit.
  */
 export async function signIn(page: Page, role: Role, next = "/") {
   const { email, password } = readCreds()[role];

@@ -308,6 +308,8 @@ async function signInAttempt(base, extraHeaders = {}) {
 
 /** Direct clients: a spoofed x-forwarded-for picks no bucket, and the limit is still 3 per 10 s. */
 async function rateChecks(base) {
+  // The smoke's own sign-ins came from the same client (127.0.0.1): start from an empty window.
+  await sleep(10_500);
   const results = [];
   for (const ip of ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"]) results.push(await signInAttempt(base, { "x-forwarded-for": ip }));
   const statuses = results.map((r) => r.status).join(",");

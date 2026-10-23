@@ -3,6 +3,7 @@
 // fetch). Node built-ins only. PORT and HOST as before; PORT=0 picks a free port.
 import fs from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import path from "node:path";
 import { Readable, pipeline } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -43,7 +44,58 @@ export function staticFile(urlPath, base = clientDir) {
   }
 }
 
+/**
+ * better-auth keys its rate limiter on this header (src/app/server/auth.ts,
+ * advanced.ipAddress.ipAddressHeaders). serve.mjs always sets it itself, so a
+ * client cannot pick its own bucket by sending one.
+ */
+export const CLIENT_IP_HEADER = "x-forwarded-for";
+
+const unmap = (ip) => (ip?.toLowerCase().startsWith("::ffff:") && net.isIPv4(ip.slice(7)) ? ip.slice(7) : ip);
+
+/**
+ * Optional trusted reverse proxy: PRISM_TRUSTED_PROXY_HEADER names the header the
+ * proxy sets to the client's address, PRISM_TRUSTED_PROXY_IPS lists the proxy's own
+ * addresses (comma-separated IPs). Unset: the socket peer is the client. Half a
+ * configuration is refused rather than guessed.
+ */
+export function proxyConfig(env = process.env) {
+  const header = env.PRISM_TRUSTED_PROXY_HEADER?.trim().toLowerCase();
+  const ips = (env.PRISM_TRUSTED_PROXY_IPS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!header && ips.length === 0) return null;
+  if (!header) throw new Error("PRISM_TRUSTED_PROXY_IPS is set without PRISM_TRUSTED_PROXY_HEADER");
+  if (ips.length === 0) throw new Error("PRISM_TRUSTED_PROXY_HEADER is set without PRISM_TRUSTED_PROXY_IPS");
+  // ponytail: exact addresses only; add CIDR ranges if a host's proxy pool needs them.
+  const bad = ips.filter((ip) => !net.isIP(ip));
+  if (bad.length) throw new Error(`PRISM_TRUSTED_PROXY_IPS entry is not an IP address: ${bad.join(", ")}`);
+  return { header, ips: new Set(ips.map(unmap)) };
+}
+
+/**
+ * The client address for rate limiting: the socket peer, or, when the peer is the
+ * trusted proxy, the last address in the proxy's header (the hop the proxy itself
+ * saw). A missing or malformed value falls back to the socket peer.
+ */
+export function clientIp(socketAddress, headers, proxy) {
+  const peer = unmap(socketAddress) ?? null;
+  if (!peer || !proxy || !proxy.ips.has(peer)) return peer;
+  const raw = headers[proxy.header];
+  const last = (Array.isArray(raw) ? raw.join(",") : (raw ?? "")).split(",").map((s) => s.trim()).filter(Boolean).at(-1);
+  return last && net.isIP(unmap(last)) ? unmap(last) : peer;
+}
+
+/** Node request headers as Fetch header pairs, with CLIENT_IP_HEADER replaced by the resolved client IP. */
+export function requestHeaders(nodeHeaders, ip) {
+  const pairs = Object.entries(nodeHeaders).flatMap(([k, v]) =>
+    v === undefined || k === CLIENT_IP_HEADER ? [] : Array.isArray(v) ? v.map((x) => [k, x]) : [[k, v]],
+  );
+  if (ip) pairs.push([CLIENT_IP_HEADER, ip]);
+  return pairs;
+}
+
 async function main() {
+  const proxy = proxyConfig();
+
   // Importing the entry runs the start-up checks (src/app/server.ts); a failed
   // check exits the process before it listens.
   const { default: entry } = await import(pathToFileURL(path.join(root, "dist", "server", "index.js")).href);
@@ -71,9 +123,7 @@ async function main() {
       res.once("close", () => controller.abort());
       const request = new Request(new URL(req.url ?? "/", `http://${host}`), {
         method: req.method,
-        headers: Object.entries(req.headers).flatMap(([k, v]) =>
-          v === undefined ? [] : Array.isArray(v) ? v.map((x) => [k, x]) : [[k, v]],
-        ),
+        headers: requestHeaders(req.headers, clientIp(req.socket.remoteAddress, req.headers, proxy)),
         body: req.method === "GET" || req.method === "HEAD" ? undefined : Readable.toWeb(req),
         duplex: "half",
         signal: controller.signal,

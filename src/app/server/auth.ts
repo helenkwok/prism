@@ -61,6 +61,9 @@ export function authOptions() {
     secret: requireSecret(),
     baseURL,
     trustedOrigins: parseOrigins(process.env.TRUSTED_ORIGINS, baseURL),
+    // Rate-limit buckets are per client IP. scripts/serve.mjs sets this header from
+    // the socket peer (or a configured trusted proxy) and overwrites any client value.
+    advanced: { ipAddress: { ipAddressHeaders: ["x-forwarded-for"] } },
   } satisfies BetterAuthOptions;
 }
 

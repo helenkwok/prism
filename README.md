@@ -42,6 +42,15 @@ boot, and CI runs it too.
 PRISM_DATA_DIR=/absolute/path/outside/the/repo node scripts/check-data-dir.mjs
 ```
 
+## Sign-in rate limit behind a proxy
+
+Sign-in attempts are rate-limited per client address. `scripts/serve.mjs` takes
+that address from the TCP connection and ignores any `X-Forwarded-For` a client
+sends. Behind a reverse proxy, set both `PRISM_TRUSTED_PROXY_HEADER` (the header
+the proxy writes the client address into, e.g. `x-real-ip`) and
+`PRISM_TRUSTED_PROXY_IPS` (the proxy's own addresses, comma-separated). The
+header is read only on connections from those addresses.
+
 ## Development
 
 Requires Node 24 or newer.
