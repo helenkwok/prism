@@ -11,9 +11,10 @@
 // its job row exists; the run's DollarBudget has the ledger as parent; the end
 // of a run releases the reservation and adds the actual spend; a restart
 // charges every unfinished reservation as spent. spent_usd only ever grows.
-// Each ledger change is one conditional UPDATE, not a Kysely transaction:
-// Kysely's SQLite driver shares one connection with no lock, so a transaction
-// here would interleave with other requests' queries.
+// Each ledger change is one conditional UPDATE, atomic on its own across
+// requests and processes, so the reservation needs no transaction. (Kysely does
+// serialise this process's queries and transactions on the one SQLite
+// connection: tests/app/db-concurrency.test.mjs.)
 import { sql, type Kysely } from "kysely";
 import pLimit from "p-limit";
 import { z } from "zod";
