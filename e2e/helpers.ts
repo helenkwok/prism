@@ -2,7 +2,7 @@
 // e2e/serve.mjs; never print them.
 import fs from "node:fs";
 import path from "node:path";
-import { expect } from "@playwright/test";
+import { expect, request } from "@playwright/test";
 import type { APIRequestContext, Page } from "@playwright/test";
 
 export type Role = "admin" | "judge" | "companyA" | "companyB";
@@ -47,6 +47,30 @@ export async function signIn(page: Page, role: Role, next = "/") {
     await page.waitForTimeout(11_000);
   }
   await expect(page).toHaveURL((u) => u.pathname === next);
+}
+
+const states = new Map<Role, Promise<Awaited<ReturnType<APIRequestContext["storageState"]>>>>();
+
+/**
+ * One API sign-in per role per worker, reused as storage state
+ * (`test.use({ storageState: ({}, use) => stateFor(role).then(use) })`), so a
+ * spec does not spend the shared sign-in rate limit on every test.
+ */
+export function stateFor(role: Role) {
+  if (!states.has(role)) {
+    states.set(
+      role,
+      (async () => {
+        const baseURL = `http://127.0.0.1:${process.env.E2E_PORT}`;
+        const ctx = await request.newContext({ baseURL });
+        await signInByApi(ctx, role, baseURL);
+        const state = await ctx.storageState();
+        await ctx.dispose();
+        return state;
+      })(),
+    );
+  }
+  return states.get(role)!;
 }
 
 /** Signs a role in through the auth API on the given request context (its cookie jar keeps the session). */

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
+import { Route as PProjectIdRouteImport } from './routes/p.$projectId'
 import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
@@ -36,6 +37,11 @@ const ApiReportDotpdfRoute = ApiReportDotpdfRouteImport.update({
   path: '/api/report.pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PProjectIdRoute = PProjectIdRouteImport.update({
+  id: '/p/$projectId',
+  path: '/p/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewProjectNRoute = ReviewProjectNRouteImport.update({
   id: '/review/$projectN',
   path: '/review/$projectN',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignInRoute: typeof SignInRoute
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
+  PProjectIdRoute: typeof PProjectIdRoute
   ReviewProjectNRoute: typeof ReviewProjectNRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReportDotpdfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$projectId': {
+      id: '/p/$projectId'
+      path: '/p/$projectId'
+      fullPath: '/p/$projectId'
+      preLoaderRoute: typeof PProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/review/$projectN': {
       id: '/review/$projectN'
       path: '/review/$projectN'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SignInRoute: SignInRoute,
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
+  PProjectIdRoute: PProjectIdRoute,
   ReviewProjectNRoute: ReviewProjectNRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
