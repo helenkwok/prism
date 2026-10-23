@@ -61,6 +61,8 @@ test("the image builds with Rsbuild and runs scripts/serve.mjs over dist/", () =
   const buildStage = dockerfile.slice(dockerfile.indexOf(fromLines[0]), dockerfile.indexOf(fromLines[1]));
   const runtimeStage = dockerfile.slice(dockerfile.indexOf(fromLines[1]));
   assert.match(buildStage, /COPY\s+rsbuild\.config\.ts\b/);
+  // Tailwind runs through PostCSS; without its config the image would ship unstyled pages.
+  assert.match(buildStage, /COPY\s+.*\bpostcss\.config\.mjs\b/);
   assert.match(buildStage, /RUN\s+npm prune --omit=dev/);
   assert.match(runtimeStage, /COPY\s+--from=build\s+\/app\/dist\s+\.\/dist/);
   assert.match(runtimeStage, /COPY\s+--from=build\s+\/app\/node_modules\s+\.\/node_modules/);
@@ -68,7 +70,7 @@ test("the image builds with Rsbuild and runs scripts/serve.mjs over dist/", () =
   assert.match(runtimeStage, /COPY\s+scripts\/serve\.mjs\s+\.\/scripts\/serve\.mjs/);
   assert.match(dockerfile, /^CMD \["node", "scripts\/serve\.mjs"\]\s*$/m);
   assert.doesNotMatch(dockerfile, /\.output|vite\.config/);
-  assert.ok(dockerignoreLines.includes("!rsbuild.config.ts") && dockerignoreLines.includes("!scripts/serve.mjs"));
+  assert.ok(dockerignoreLines.includes("!rsbuild.config.ts") && dockerignoreLines.includes("!postcss.config.mjs") && dockerignoreLines.includes("!scripts/serve.mjs"));
   assert.ok(!dockerignore.includes("vite.config"));
 });
 

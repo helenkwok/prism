@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+// Rsbuild path (TanStack Start's Tailwind guide): a side-effect import lets Start
+// discover the generated stylesheet as a route asset and link it in the head.
+import "../styles.css";
 
 export const Route = createRootRoute({
   head: () => ({

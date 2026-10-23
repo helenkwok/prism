@@ -1,0 +1,123 @@
+/* App stylesheet. Tailwind scans src/ only; icons are CSS generated at build time
+   from the locally installed lucide set (@iconify-json/lucide), never fetched at
+   run time (APP-05). */
+@import "tailwindcss" source("../");
+@import "tw-animate-css";
+@plugin "@iconify/tailwind4";
+
+/* Phase 6 colour table (06-UI-SPEC "Color") plus --destructive (07-UI-SPEC).
+   Light is the default; dark applies only through prefers-color-scheme. */
+:root {
+  --radius: 0.625rem;
+  --background: #fcfcfb;
+  --foreground: #14161a;
+  --card: #ffffff;
+  --card-foreground: #14161a;
+  --popover: #ffffff;
+  --popover-foreground: #14161a;
+  /* The primary button is ink on paper so the accent stays on its reserved list. */
+  --primary: #14161a;
+  --primary-foreground: #fcfcfb;
+  --secondary: #f3f2ee;
+  --secondary-foreground: #14161a;
+  --muted: #f3f2ee;
+  --muted-foreground: #52514e;
+  --accent: #f3f2ee;
+  --accent-foreground: #14161a;
+  --accent-ink: #8f5a08;
+  /* Only form errors and the sign-in failure. */
+  --destructive: #b42318;
+  --border: #d9d6cd;
+  --input: #d9d6cd;
+  --ring: #8f5a08;
+  --chart-blue: #3987e5;
+  --chart-red: #e66767;
+  --chart-neutral: #8a8982;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.205 0.006 285);
+    --foreground: oklch(0.96 0 0);
+    --card: oklch(0.24 0.006 285);
+    --card-foreground: oklch(0.96 0 0);
+    --popover: oklch(0.24 0.006 285);
+    --popover-foreground: oklch(0.96 0 0);
+    --primary: oklch(0.96 0 0);
+    --primary-foreground: oklch(0.205 0.006 285);
+    --secondary: oklch(0.29 0.008 285);
+    --secondary-foreground: oklch(0.96 0 0);
+    --muted: oklch(0.29 0.008 285);
+    --muted-foreground: oklch(0.72 0.01 285);
+    --accent: oklch(0.29 0.008 285);
+    --accent-foreground: oklch(0.96 0 0);
+    --accent-ink: #d39a3c;
+    --destructive: #f08c80;
+    --border: oklch(0.38 0.01 285);
+    --input: oklch(0.38 0.01 285);
+    --ring: #d39a3c;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-ink: var(--accent-ink);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-blue: var(--chart-blue);
+  --color-chart-red: var(--chart-red);
+  --color-chart-neutral: var(--chart-neutral);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --font-sans: system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+    line-height: 1.5;
+  }
+  h1,
+  h2 {
+    letter-spacing: -0.01em;
+  }
+  a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+  :focus-visible {
+    outline: 3px solid var(--accent-ink);
+    outline-offset: 4px;
+  }
+}
+
+@utility tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

@@ -19,7 +19,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY rsbuild.config.ts tsconfig.json ./
+COPY rsbuild.config.ts postcss.config.mjs tsconfig.json ./
 COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
 COPY src ./src
 RUN npm run build

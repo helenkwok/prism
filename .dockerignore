@@ -11,6 +11,7 @@
 !package-lock.json
 !requirements-gate.txt
 !rsbuild.config.ts
+!postcss.config.mjs
 !tsconfig.json
 !src
 !src/**
