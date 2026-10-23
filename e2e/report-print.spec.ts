@@ -132,6 +132,20 @@ test.describe("report print layout (/p/P01, admin)", () => {
     await expect(role).toBeHidden();
   });
 
+  test("interactive-only controls (Show checks, record toggles) are not printed", async ({ page }) => {
+    const controls = [page.getByRole("link", { name: "Show checks" }), page.locator("summary")];
+    await page.emulateMedia({ media: "screen" });
+    for (const c of controls) {
+      expect(await c.count()).toBeGreaterThan(0);
+      await expect(c.first()).toBeVisible();
+    }
+    await page.emulateMedia({ media: "print", colorScheme: "light" });
+    for (const c of controls) {
+      const shown = await c.evaluateAll((els) => els.filter((e) => e.getClientRects().length > 0).length);
+      expect(shown).toBe(0);
+    }
+  });
+
   test("the scope disclaimer ends within the first A4 page", async ({ page }) => {
     const bottom = await page
       .locator("[data-scope-disclaimer]")

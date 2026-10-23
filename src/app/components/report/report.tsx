@@ -116,7 +116,7 @@ export function VerdictRow({ d }: { d: DecisionView }) {
       <p className="mt-1 text-[0.8125rem] tabular-nums" data-evaluative="">
         {tallyLine(d)}
       </p>
-      <p className="mt-1 text-[0.8125rem]">
+      <p data-print-hide="" className="mt-1 text-[0.8125rem]">
         <a href={`#${decisionAnchor(d.decisionId)}`}>Show checks</a>
       </p>
     </li>
@@ -231,7 +231,8 @@ const cell = "border-t border-border px-2 py-1 align-top";
 function ConfirmationRecords({ rows }: { rows: CheckView["confirmations"] }) {
   if (rows.length === 0) return null;
   return (
-    <details>
+    // A closed <details> prints only its toggle, so the whole block is screen-only.
+    <details data-print-hide="">
       <summary className="text-[0.8125rem]">Confirmation records ({rows.length})</summary>
       <div className="mt-2 overflow-x-auto" role="region" aria-label="Confirmation records" tabIndex={0}>
         <table className="w-full border-collapse text-[0.8125rem] tabular-nums">
