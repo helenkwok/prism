@@ -477,7 +477,7 @@ export type ConfirmationResponseDiagnostic = {
 };
 
 export async function confirmWithModel(client: any, codebook: Codebook, p: Positive, model = CONFIRMER_MODEL, attempts = 3, reasoning: boolean | "low" = true, options: { onResponse?: (response: ConfirmationResponseDiagnostic) => void } = {}) {
-  if (model === PINNED_MODEL || model === SECOND_CODER_MODEL) throw new Error(`A2: ${model} coded these projects and cannot confirm them`);
+  if ([PINNED_MODEL, SECOND_CODER_MODEL, "nemotron-3-super"].includes(model.replace(/:cloud$/, ""))) throw new Error(`A2: ${model} coded these projects and cannot confirm them`);
   let last: unknown;
   let failureReason: "json-parse" | "off-contract" = "off-contract";
   let flaggedHits = 0;

@@ -151,7 +151,7 @@ describe("confirmation records", () => {
   });
 
   test("a model that coded the projects is refused as confirmer (A2)", async () => {
-    for (const model of [PINNED_MODEL, SECOND_CODER_MODEL]) {
+    for (const model of [PINNED_MODEL, SECOND_CODER_MODEL, "nemotron-3-super", "nemotron-3-super:cloud"]) {
       await assert.rejects(confirmWithModel({ request: async () => assert.fail("must not call") }, codebook, positive, model), /A2/);
     }
   });
