@@ -68,7 +68,7 @@ test("second coding JSON-parse feedback changes the failed request and valid fir
     const client = { request: async (_p, { body }) => { bodies.push(body); return { ok: true, status: 200, json: { choices: [{ message: { content: malformed && bodies.length === 1 ? "```not-json" : JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] } }; } };
     const run = () => runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
     assert.equal((await run()).ok, true); assert.equal(bodies.length, malformed ? 2 : 1);
-    if (malformed) { assert.notDeepEqual(bodies[0], bodies[1]); assert.ok(bodies[1].messages[0].content.includes("previous response was not parseable JSON")); }
+    if (malformed) { assert.notDeepEqual(bodies[0], bodies[1]); assert.ok(bodies[1].messages[0].content.includes("Native-channel correction (native-thinking-v1)")); }
     assert.equal((await run()).ok, true); assert.equal(bodies.length, malformed ? 2 : 1);
     await f.db.destroy();
   }
@@ -82,29 +82,55 @@ test("reasoning wrappers remain invalid, final-only corrections escalate and a v
   } };
   const run = (db = f.db) => runApprovedStage({ ...f, db, stage: "second-coder", client, log: () => {} });
   assert.equal((await run()).ok, true); assert.equal(bodies.length, 3);
-  assert.ok(bodies[1].messages[0].content.includes("never reasoning, <think> or </think> tags"));
-  assert.ok(bodies[1].messages[0].content.startsWith("/no_think\n"));
-  assert.equal(bodies[1].chat_template_kwargs.enable_thinking, false);
+  assert.ok(bodies[1].messages[0].content.includes("separate native thinking channel"));
+  assert.ok(!bodies[1].messages[0].content.startsWith("/no_think\n"));
+  assert.equal(bodies[1].chat_template_kwargs.enable_thinking, true);
   assert.equal(bodies[1].reasoning_effort, undefined);
   assert.ok(!bodies[0].messages[0].content.startsWith("/no_think\n"));
-  assert.ok(bodies[1].messages[0].content.includes("use unknown with an empty spanIds array instead of refusing"));
-  assert.ok(bodies[2].messages[0].content.includes('Begin immediately with {"checks":'));
-  assert.ok(bodies[2].messages[0].content.startsWith("/no_think\n"));
+  assert.ok(bodies[1].messages[0].content.includes("Use unknown and an empty spanIds array"));
+  assert.ok(bodies[2].messages[0].content.includes('Begin content immediately with {"checks":'));
+  assert.ok(!bodies[2].messages[0].content.startsWith("/no_think\n"));
   assert.notDeepEqual(bodies[0], bodies[1]); assert.notDeepEqual(bodies[1], bodies[2]);
   const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
   assert.equal((await run(freshDb)).ok, true); assert.equal(bodies.length, 3);
   assert.equal((await freshDb.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 24);
   await f.db.destroy(); await freshDb.destroy();
 });
-test("non-JSON prose with embedded JSON never passes validation and remains capped at three distinct requests", async () => {
+test("partial closing tags never pass validation and remain capped at three distinct requests", async () => {
   const f = fixture(); f.entries = f.entries.slice(0, 1); const bodies = [];
   const valid = JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) });
-  const client = { request: async (_p, { body }) => { bodies.push(body); return confirmationReply(`<think>Fixture reasoning.</think> ${valid}`); } };
+  const client = { request: async (_p, { body }) => { bodies.push(body); return confirmationReply(`</think>${valid}`); } };
   const out = await runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
   assert.equal(out.ok, false); assert.equal(out.failed, 1); assert.equal(bodies.length, 3);
   assert.equal(new Set(bodies.map(body => JSON.stringify(body))).size, 3);
+  const settings = fs.readFileSync(path.join(f.dataDir, "decisions", "second-coder-request-settings.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+  assert.deepEqual(settings.map(s => s.thinking), [false, true, true]);
   assert.equal((await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 0);
   await f.db.destroy();
+});
+test("a partial closing tag stays invalid until native thinking returns a strict final answer, with actual settings retained", async () => {
+  const f = fixture(); f.entries = f.entries.slice(0, 1); f.role.reasoning = false; const bodies = [];
+  const valid = JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) });
+  const client = { request: async (_p, { body }) => {
+    bodies.push(body);
+    if (!body.chat_template_kwargs.enable_thinking) return confirmationReply(`</think>${valid}`);
+    assert.ok(!body.messages[0].content.startsWith("/no_think\n"));
+    assert.equal(body.reasoning_effort, undefined);
+    return { ok: true, status: 200, json: { choices: [{ message: { content: valid, reasoning_content: "Separate fixture reasoning" } }] } };
+  } };
+  const run = (db = f.db) => runApprovedStage({ ...f, db, stage: "second-coder", client, log: () => {} });
+  assert.equal((await run()).ok, true); assert.equal(bodies.length, 2);
+  assert.equal(bodies[0].chat_template_kwargs.enable_thinking, false); assert.equal(bodies[1].chat_template_kwargs.enable_thinking, true);
+  const settingsPath = path.join(f.dataDir, "decisions", "second-coder-request-settings.jsonl");
+  const settings = fs.readFileSync(settingsPath, "utf8").trim().split("\n").map(JSON.parse);
+  assert.deepEqual(settings.map(s => [s.chunk, s.attempt, s.thinking, s.fromCache]), [[1, 1, false, false], [1, 2, true, false]]);
+  const decision = JSON.parse(fs.readFileSync(path.join(f.dataDir, "decisions", "second-coder.jsonl"), "utf8").trim());
+  assert.equal(decision.configuredReasoning, false); assert.deepEqual(decision.requestSettings.map(s => s.thinking), [false, true]);
+  const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+  assert.equal((await run(freshDb)).ok, true); assert.equal(bodies.length, 2);
+  const resumed = fs.readFileSync(settingsPath, "utf8").trim().split("\n").map(JSON.parse).at(-1);
+  assert.equal(resumed.thinking, true); assert.equal(resumed.fromCache, true);
+  await f.db.destroy(); await freshDb.destroy();
 });
 test("budget refusal stops queue and cannot report success", async () => {
   const f = fixture(); let calls = 0; const lines = [];
