@@ -47,6 +47,32 @@ test("second coding deduplicates exact text, retries invalid replies, resumes su
   assert.equal(JSON.parse(lines.filter(l => l.startsWith("ACCOUNTING:")).at(-1).slice(12)).success, 2);
   await f.db.destroy();
 });
+test("second coding starts JSON-only, repairs invalid shape with changed instructions and resumes without rebuying", async () => {
+  const f = fixture(); f.entries = f.entries.slice(0, 1); const bodies = [];
+  const client = { request: async (_p, { body }) => {
+    bodies.push(body);
+    return { ok: true, status: 200, json: { choices: [{ message: { content: bodies.length === 1 ? '{"checks":{}}' : JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] } };
+  } };
+  const run = () => runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
+  assert.equal((await run()).ok, true); assert.equal(bodies.length, 2);
+  assert.ok(bodies[0].messages[0].content.endsWith("Format correction: Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check."));
+  assert.notDeepEqual(bodies[1], bodies[0]);
+  assert.ok(bodies[1].messages[0].content.includes("all 24 ids"));
+  assert.ok(contract.checkIds.every(id => bodies[1].messages[0].content.includes(id)));
+  assert.equal((await run()).ok, true); assert.equal(bodies.length, 2);
+  await f.db.destroy();
+});
+test("second coding JSON-parse feedback changes the failed request and valid first replies need one call", async () => {
+  for (const malformed of [false, true]) {
+    const f = fixture(); f.entries = f.entries.slice(0, 1); const bodies = [];
+    const client = { request: async (_p, { body }) => { bodies.push(body); return { ok: true, status: 200, json: { choices: [{ message: { content: malformed && bodies.length === 1 ? "```not-json" : JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] } }; } };
+    const run = () => runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
+    assert.equal((await run()).ok, true); assert.equal(bodies.length, malformed ? 2 : 1);
+    if (malformed) { assert.notDeepEqual(bodies[0], bodies[1]); assert.ok(bodies[1].messages[0].content.includes("previous response was not parseable JSON")); }
+    assert.equal((await run()).ok, true); assert.equal(bodies.length, malformed ? 2 : 1);
+    await f.db.destroy();
+  }
+});
 test("budget refusal stops queue and cannot report success", async () => {
   const f = fixture(); let calls = 0; const lines = [];
   const client = { request: async () => { calls++; const e = new Error("approved cap reached"); e.name = "BudgetExceededError"; throw e; }, dollarBudget: { budgetLine: () => "BUDGET: {}" } };
@@ -64,6 +90,7 @@ test("fabricated citations trigger a constrained repair and resume without repea
     if (calls === 2) {
       assert.deepEqual(body.response_format.json_schema.schema.$defs.citedSpanId.enum, ["p1-s001"]);
       assert.deepEqual(body.response_format.json_schema.schema.properties.checks.properties[contract.checkIds[0]].properties.spanIds.items, { $ref: "#/$defs/citedSpanId" });
+      assert.ok(body.messages[0].content.includes('only these exact span ids: ["p1-s001"]'));
     }
     return { ok: true, status: 200, json: { choices: [{ message: { content: JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: calls === 1 ? "claimed" : "unknown", spanIds: calls === 1 ? ["fabricated"] : [] })) }) }, finish_reason: "stop" }] } };
   } };
