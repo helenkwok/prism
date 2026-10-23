@@ -3,10 +3,19 @@
 import { betterAuth } from "better-auth";
 import type { BetterAuthOptions } from "better-auth";
 import { admin } from "better-auth/plugins/admin";
+import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
+import { createAccessControl } from "better-auth/plugins/access";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getDb } from "./db.ts";
 
 export const MIN_SECRET_LENGTH = 32;
+
+const ac = createAccessControl(defaultStatements);
+const adminRole = ac.newRole(adminAc.statements);
+// A user created without a role defaults to company: no statements here and no
+// grant in app_user_projects, so it sees nothing.
+const judgeRole = ac.newRole({ user: [], session: [] });
+const companyRole = ac.newRole({ user: [], session: [] });
 
 function requireSecret(): string {
   const secret = process.env.BETTER_AUTH_SECRET;
@@ -41,9 +50,14 @@ export function authOptions() {
       // No public sign-up: the seed script is the only account-creation path.
       disableSignUp: true,
     },
-    // Default admin roles; the judge and company roles are Phase 7 work.
-    // tanstackStartCookies must stay the LAST plugin.
-    plugins: [admin(), tanstackStartCookies()],
+    // Roles admin, judge and company (D-81). admin keeps the default admin
+    // statements (list-users, set-role, create-user); judge and company carry
+    // none, so the admin endpoints refuse them. Per-project access is decided
+    // in access.ts, not here. tanstackStartCookies must stay the LAST plugin.
+    plugins: [
+      admin({ ac, roles: { admin: adminRole, judge: judgeRole, company: companyRole }, adminRoles: ["admin"], defaultRole: "company" }),
+      tanstackStartCookies(),
+    ],
     secret: requireSecret(),
     baseURL,
     trustedOrigins: parseOrigins(process.env.TRUSTED_ORIGINS, baseURL),

@@ -1,7 +1,8 @@
 // Nitro server plugin: runs once when the built server starts, never during
 // `vite build`. A mis-configured deployment exits here instead of serving requests.
 import { getAuth } from "./auth.ts";
-import { ensureSchema, resolveDataDir } from "./db.ts";
+import { ensureAccessSchema } from "./access-store.ts";
+import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
 
 function refuse(check: string, err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
@@ -25,5 +26,10 @@ export default async function boot(): Promise<void> {
     await ensureSchema();
   } catch (err) {
     refuse("database migration", err);
+  }
+  try {
+    await ensureAccessSchema(getDb());
+  } catch (err) {
+    refuse("access tables", err);
   }
 }
