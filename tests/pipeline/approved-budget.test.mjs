@@ -28,6 +28,17 @@ test("signoff and recoding share the total approved primary-host cap", () => {
   run.budget.recordSpent(.02); run.release();
   run = openApprovedBudget(dir, "recode");
   assert.equal(run.parent.spent, .02);
-  assert.throws(() => run.budget.reserve(3.49), /budget exceeded/);
-  run.budget.reserve(3.48); run.release();
+  assert.throws(() => run.budget.reserve(3.79), /budget exceeded/);
+  run.budget.reserve(3.78); run.release();
+});
+
+test("the approved cap increase preserves spend and unresolved reservations", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-budget-test-"));
+  const validation = path.join(dir, "validation"); fs.mkdirSync(validation);
+  fs.writeFileSync(path.join(validation, "approved-budget-2026-10-23.json"), JSON.stringify({ approval: "2026-10-23", stages: { recode: { cap: 3.5, spent: 1.4, reserved: .02, estimated: 8 } } }));
+  const run = openApprovedBudget(dir, "recode");
+  assert.equal(run.budget.cap, 3.8);
+  assert.equal(run.budget.spent, 1.42);
+  assert.equal(run.parent.spent, 1.42);
+  run.release();
 });

@@ -389,3 +389,19 @@ Reason: both hosts incur usage charges; model and host selection cannot bypass s
 Changed rule: positives, confirmations, and gold labels produced on defective whole-page spans are archived read-only at `~/.prism-data/backups/2026-10-21-whole-page-spans/` (sqlite, COUNTS.json, SHA256SUMS). That archive is exploratory and not for publication: it must never feed `publishedStates`, agreement, gate statistics, or any published figure. Fresh gold and confirmation run only on re-segmented spans after this addendum.
 
 Reason: the defect set is proof of the failure mode, not a cohort statistic.
+
+## Addendum 2026-10-23 (A10)
+
+Helen approved these corrections while primary recoding was underway. A9 remains the signed record of the original recovery rules; no fresh gold, second coding or confirmation had begun when these corrections were made. Through the independent sign-off role, with the original A9 digest retained.
+
+### A10.1 Primary recode budget correction
+
+Changed rule: raise the Token Factory primary recode hard cap from $3.50 to $3.80. Retain all spend and unresolved reservations already recorded; never reset the ledger on resume. Sign-off costs are conservatively included within the same $3.80 host ceiling. All other role caps and the combined $10.75 Ollama ceiling remain unchanged.
+
+Reason: observed recode spend was approximately $0.0115 per project, projecting about $3.44 for 300; Helen explicitly approved the extra margin.
+
+### A10.2 Paired confirmer settings correction
+
+Changed rule: the 30-positive Ultra spike compares thinking on versus off, not low. The model advertises only boolean thinking settings. Keep the $0.50 combined spike cap, identical cited evidence in both conditions, and independent reading of every decision against its cited spans. Report the comparison before full confirmation; the latter retains its $5.00 cap and uses the winning setting.
+
+Reason: compare supported settings without silently translating an unsupported setting.

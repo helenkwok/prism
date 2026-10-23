@@ -63,9 +63,10 @@ test("spike sample is stable and paired confirmation settings send only cited sp
   assert.equal(spikeSample(positives).length, 30);
   const bodies = []; const client = { request: async (_p, { body }) => { bodies.push(body); return { ok: true, status: 200, json: { choices: [{ message: { content: '{"decision":"rejected","reason":"p1-s1 lacks evidence"}' } }] } }; } };
   await confirmWithModel(client, codebook, p, "nemotron-3-ultra", 3, true);
-  await confirmWithModel(client, codebook, p, "nemotron-3-ultra", 3, "low");
+  await confirmWithModel(client, codebook, p, "nemotron-3-ultra", 3, false);
   assert.equal(bodies[0].chat_template_kwargs.enable_thinking, true);
-  assert.equal(bodies[1].reasoning_effort, "low");
+  assert.equal(bodies[1].chat_template_kwargs.enable_thinking, false);
+  assert.equal(bodies[1].reasoning_effort, undefined);
   assert.deepEqual(bodies[0].messages, bodies[1].messages);
   assert.ok(bodies[0].messages[1].content.includes("CITED FIXTURE"));
 });

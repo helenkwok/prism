@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+import { A10_ITEMS, a10Section, assertA10Signed } from "../../src/pipeline/signoff/a10.ts";
+test("budget and thinking corrections require every current digest-bound approval", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-a10-test-"));
+  const protocolPath = path.join(dir, "protocol.md"), signoffPath = path.join(dir, "signoff.jsonl");
+  const text = "## Addendum 2026-10-23 (A10)\nFixture correction\n";
+  fs.writeFileSync(protocolPath, text);
+  const digest = crypto.createHash("sha256").update(a10Section(text)).digest("hex");
+  const records = A10_ITEMS.map(item => ({ item, decision: "approved", docDigest: digest }));
+  assert.throws(() => assertA10Signed({ protocolPath, signoffPath }), /not approved/);
+  fs.writeFileSync(signoffPath, records.map(r => JSON.stringify(r)).join("\n"));
+  assert.doesNotThrow(() => assertA10Signed({ protocolPath, signoffPath }));
+  fs.appendFileSync(protocolPath, "Changed\n");
+  assert.throws(() => assertA10Signed({ protocolPath, signoffPath }), /not approved/);
+  fs.writeFileSync(protocolPath, text);
+  fs.appendFileSync(signoffPath, "\n" + JSON.stringify({ ...records[0], decision: "rejected" }));
+  assert.throws(() => assertA10Signed({ protocolPath, signoffPath }), /not approved/);
+});

@@ -106,7 +106,7 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
       const reportPath = path.join(o.dataDir, "validation", "confirmation-spike.json");
       fs.mkdirSync(path.dirname(reportPath), { recursive: true, mode: 0o700 });
       const report: any = { model: o.role.model, excludedA3: o.entries.length - eligible.length, selected: selected.map(p => ({ projectN: p.projectN, checkId: p.checkId, digest: inputDigest(o.codebook, p) })), decisions: [] };
-      for (const p of selected) for (const setting of [true, "low"] as const) {
+      for (const p of selected) for (const setting of [true, false] as const) {
         const promptDigest = crypto.createHash("sha256").update(JSON.stringify(confirmMessages(o.codebook, p))).digest("hex");
         const cache = await withStageCache(o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), String(p.projectN), "confirmation-spike", { digest: inputDigest(o.codebook, p), promptDigest, provider: o.role.provider, model: o.role.model, setting }, () => confirmWithModel(o.client, o.codebook, p, o.role.model, 3, setting));
         report.decisions.push({ projectN: p.projectN, checkId: p.checkId, state: p.state, spans: p.spans, flaggedSpanIds: p.flaggedSpanIds ?? [], setting, ...cache.value });

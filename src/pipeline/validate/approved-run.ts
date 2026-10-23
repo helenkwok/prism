@@ -9,6 +9,7 @@ import { createClient, PINNED_BASE_URL, PINNED_MODEL } from "../coding/nebius-cl
 import { estimateCostUsd, type UsageObservation } from "../coding/spend-guards.ts";
 import { readKey } from "../run.ts";
 import { A9_ITEMS, a9Section, assertA9Signed } from "../signoff/a9.ts";
+import { A10_ITEMS, a10Section, assertA10Signed } from "../signoff/a10.ts";
 import { assertA8Signed } from "../signoff/a8.ts";
 import { SIGNOFF_MODEL, signOff } from "../signoff/signoff.ts";
 import { GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
@@ -54,6 +55,7 @@ export async function runApproved(stage: ApprovedStage) {
   if (stage !== "signoff") {
     assertA8Signed({ protocolPath, signoffPath });
     assertA9Signed({ protocolPath, signoffPath });
+    assertA10Signed({ protocolPath, signoffPath });
     const preflight = measurePromptSizes({ dataDir });
     log(`PROMPT_SIZE: ${JSON.stringify(preflight)}`);
     if (preflight.projects !== 300 || preflight.refused || !preflight.n) throw new Error("prompt preflight refused");
@@ -82,27 +84,30 @@ export async function runApproved(stage: ApprovedStage) {
       client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage });
     }
     if (stage === "signoff") {
-      const proposal = a9Section(protocol);
-      if (!proposal) throw new Error("A9 proposal missing");
-      const context = protocol.slice(0, protocol.indexOf(proposal));
       const records = fs.existsSync(signoffPath) ? fs.readFileSync(signoffPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
       const { createHash } = await import("node:crypto");
-      const digest = createHash("sha256").update(proposal).digest("hex");
       fs.mkdirSync(path.dirname(signoffPath), { recursive: true, mode: 0o700 });
       let success = 0;
-      for (const item of A9_ITEMS) {
+      for (const [proposal, items, doc] of [[a9Section(protocol), A9_ITEMS, "A9"], [a10Section(protocol), A10_ITEMS, "A10"]] as const) {
+      if (!proposal) throw new Error(`${doc} proposal missing`);
+      const context = protocol.slice(0, protocol.indexOf(proposal));
+      const digest = createHash("sha256").update(proposal).digest("hex");
+      for (const item of items) {
         const existing = records.filter(r => r.item === item && r.docDigest === digest);
         if (existing.some(r => r.decision === "rejected")) throw new Error("A9 has an existing rejection for this digest");
         if (!existing.some(r => r.decision === "approved")) {
-          const record = { doc: "A9", ...(await signOff(client, proposal, context, item)) };
+          const record = { doc, ...(await signOff(client, proposal, context, item)) };
           fs.appendFileSync(signoffPath, JSON.stringify(record) + "\n", { mode: 0o600 });
           log(`SIGNOFF: ${JSON.stringify({ item, decision: record.decision, digest: record.docDigest })}`);
           if (record.decision !== "approved") throw new Error("A9 signoff rejected; review the private decision record");
         }
         success++;
       }
+      }
       assertA9Signed({ protocolPath, signoffPath });
-      log(`ACCOUNTING: ${JSON.stringify({ stage, total: A9_ITEMS.length, success, ok: success === A9_ITEMS.length, complete: true })}`);
+      assertA10Signed({ protocolPath, signoffPath });
+      const total = A9_ITEMS.length + A10_ITEMS.length;
+      log(`ACCOUNTING: ${JSON.stringify({ stage, total, success, ok: success === total, complete: true })}`);
     } else {
       const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), "utf8"));
       const subsets = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-subsets.json"), "utf8"));

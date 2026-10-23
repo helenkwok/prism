@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DollarBudget, type BudgetState } from "../coding/spend-guards.ts";
 
-export const APPROVED_CAPS = { signoff: 3.50, recode: 3.50, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 5 } as const;
+export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 5 } as const;
 export type ApprovedStage = keyof typeof APPROVED_CAPS;
 type Ledger = { approval: string; stages: Partial<Record<ApprovedStage, BudgetState>> };
 const hostOf = (stage: ApprovedStage) => stage === "signoff" || stage === "recode" ? "token-factory" : "ollama";
@@ -20,12 +20,14 @@ export function openApprovedBudget(dataDir: string, stage: ApprovedStage) {
     if (ledger.approval !== "2026-10-23") throw new Error("budget approval mismatch");
     const charged = (state?: BudgetState) => state ? state.spent + state.reserved : 0;
     for (const [key, state] of Object.entries(ledger.stages)) {
+      // Helen's explicit cap increase retains every prior charge and reservation.
+      if (key === "recode" && state?.cap === 3.50) state.cap = APPROVED_CAPS.recode;
       if (!(key in APPROVED_CAPS) || !state || state.cap !== APPROVED_CAPS[key as ApprovedStage] ||
           ![state.estimated, state.spent, state.reserved].every(n => Number.isFinite(n) && n >= 0)) throw new Error("invalid persisted budget");
     }
     const host = hostOf(stage);
     const hostSpent = Object.entries(ledger.stages).reduce((sum, [key, state]) => sum + (hostOf(key as ApprovedStage) === host ? charged(state) : 0), 0);
-    const parent = new DollarBudget(host === "ollama" ? 10.75 : 3.50, { initialSpent: hostSpent });
+    const parent = new DollarBudget(host === "ollama" ? 10.75 : 3.80, { initialSpent: hostSpent });
     const persist = (state: BudgetState) => {
       ledger.stages[stage] = state;
       const next = `${file}.next`;
