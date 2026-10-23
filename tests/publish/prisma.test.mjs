@@ -49,6 +49,11 @@ describe("mergeSmallReasons (6.7)", () => {
     assert.deepEqual(out, { "stage1:a": 22, "stage1:b": 20, "stage1:c": 50 });
   });
 
+  test("prisma-existing-other: an input 'other' joins the pool and is not overwritten", () => {
+    const input = { "stage1:not-ai": 640, other: 12, "stage1:duplicate": 5 };
+    assert.deepEqual(mergeSmallReasons(input), { "stage1:not-ai": 640, other: 17 });
+  });
+
   test("prisma-all-small: with no reason at the floor, other stands alone", () => {
     const out = mergeSmallReasons({ "stage1:a": 3, "stage1:b": 2, included: 5 });
     assert.deepEqual(out, { included: 5, other: 5 });
