@@ -1,0 +1,1246 @@
+{
+  "version": 1,
+  "view": "identifiable",
+  "projectRef": "OWN01",
+  "title": "Ownpage",
+  "fixture": true,
+  "generatedAt": "2026-10-23T00:00:00Z",
+  "codebookVersion": "v1.0",
+  "gateSha": "js-test",
+  "collection": {
+    "pages": 3,
+    "rendered": 2,
+    "notRendered": 1,
+    "renderAvailable": true,
+    "collectedAt": "2026-10-11T12:00:00Z",
+    "urls": [
+      "https://helen-own.example/",
+      "https://docs.helen-own.example/",
+      "https://helen-own.example/pricing"
+    ]
+  },
+  "decisions": [
+    {
+      "decisionId": "explore",
+      "label": "Keep exploring",
+      "status": "PASS",
+      "requiredChecks": [
+        "output-reproducible",
+        "assumptions-catalogued"
+      ],
+      "tally": {
+        "pass": 2,
+        "claimed": 0,
+        "unknown": 0,
+        "fail": 0,
+        "awaiting": 0
+      }
+    },
+    {
+      "decisionId": "rely",
+      "label": "Permit reliance for the named use",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "requiredChecks": [
+        "intended-use-defined",
+        "acceptance-criteria-defined",
+        "acceptance-criteria-met",
+        "failure-modes-tested",
+        "limitations-stated"
+      ],
+      "tally": {
+        "pass": 2,
+        "claimed": 1,
+        "unknown": 1,
+        "fail": 0,
+        "awaiting": 1
+      }
+    },
+    {
+      "decisionId": "operate",
+      "label": "Sell, operate, support, or staff repeatedly",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "requiredChecks": [
+        "deliverable-gate-passed",
+        "operational-owner-assigned",
+        "assurance-defined",
+        "fallback-defined",
+        "recovery-tested",
+        "support-maintenance-defined",
+        "operating-cost-known"
+      ],
+      "tally": {
+        "pass": 2,
+        "claimed": 0,
+        "unknown": 5,
+        "fail": 0,
+        "awaiting": 0
+      }
+    },
+    {
+      "decisionId": "measure-outcome",
+      "label": "Determine whether the initiative changed the result",
+      "status": "BLOCKED",
+      "requiredChecks": [
+        "outcome-measure-defined",
+        "baseline-defined",
+        "outcome-measured",
+        "measurement-definition-consistent",
+        "important-confounds-named"
+      ],
+      "tally": {
+        "pass": 0,
+        "claimed": 0,
+        "unknown": 4,
+        "fail": 1,
+        "awaiting": 0
+      }
+    },
+    {
+      "decisionId": "scale-renew-stop",
+      "label": "Scale, renew, expand, or stop",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "requiredChecks": [
+        "outcome-evidence-available",
+        "full-cost-accounted",
+        "risk-tradeoffs-assessed",
+        "alternatives-compared",
+        "value-rule-explicit"
+      ],
+      "tally": {
+        "pass": 0,
+        "claimed": 0,
+        "unknown": 5,
+        "fail": 0,
+        "awaiting": 0
+      }
+    }
+  ],
+  "checks": [
+    {
+      "checkId": "output-reproducible",
+      "decision": "explore",
+      "label": "The artefact or action can be reproduced or inspected.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [
+        {
+          "spanId": "s001",
+          "text": "The full source and a step-by-step setup guide are in our public repository, and the demo needs no sign-up.",
+          "url": "https://helen-own.example/",
+          "snapshotHash": "115d2ed4ab3c4147bbac007dc18a4826dd6cbb4d01c2def2a63cfaeeb492e525",
+          "injectionFlagged": false
+        }
+      ],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.7",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Operational documentation",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 11",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "assumptions-catalogued",
+      "decision": "explore",
+      "label": "Important supplied context, assumptions, and inferences are visible.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [
+        {
+          "spanId": "s002",
+          "text": "The docs list the inputs the tool assumes, including that uploaded files are plain English text.",
+          "url": "https://docs.helen-own.example/",
+          "snapshotHash": "59134ac9c98643498f3015df4577c37fd10cb28c8f2d290e1f906c488e2a39ee",
+          "injectionFlagged": false
+        }
+      ],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.3",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Scope",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 13",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "intended-use-defined",
+      "decision": "rely",
+      "label": "The intended use and boundaries are explicit.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.9.4",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Scope",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 3",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 13",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "acceptance-criteria-defined",
+      "decision": "rely",
+      "label": "Acceptance criteria are explicit and testable enough for the use.",
+      "published": "claimed",
+      "basis": "downgraded",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Objectives",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific, testable acceptance criterion for its stated use (for example a named metric with a numeric threshold, a pass/fail test suite, or a named benchmark), with a linked artefact (a spec, test file, or benchmark page) where one exists.",
+      "gapSource": "passRule",
+      "confirmations": [
+        {
+          "decision": "downgraded",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "acceptance-criteria-met",
+      "decision": "rely",
+      "label": "Evidence shows the acceptance criteria were met.",
+      "published": null,
+      "basis": "unconfirmed",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.4",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Evidence of implementation",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 2",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 15",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "partial",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when a page or repository artefact names a specific acceptance criterion (or a linked test/evaluation report) and states, with a verbatim quotable sentence plus a linked artefact (a report, benchmark table, or test-suite result), that the criterion was met.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "failure-modes-tested",
+      "decision": "rely",
+      "label": "Relevant failure modes and fallback behaviour were evaluated.",
+      "published": "unknown",
+      "basis": "rejected",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.4",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: AI risk assessment",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific failure mode it tested (for example adversarial inputs, edge cases, malformed data, or a named failure scenario) and states the observed behaviour, with a linked report or test log where one exists.",
+      "gapSource": "passRule",
+      "confirmations": [
+        {
+          "decision": "rejected",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "limitations-stated",
+      "decision": "rely",
+      "label": "Known limitations and out-of-scope conditions are stated.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.8.2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Statement of Applicability",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 4",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 13",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "addresses",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "deliverable-gate-passed",
+      "decision": "operate",
+      "label": "The Deliverable gate for the intended use has passed.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 9",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Management review",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 17",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Means the rely decision's gate result was PASS — every one of rely's five required checks (intended-use-defined, acceptance-criteria-defined, acceptance-criteria-met, failure-modes-tested, limitations-stated) was coded pass. Set by code (buildClaimsForProject), not proposed by Nemotron for the operate decision.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "operational-owner-assigned",
+      "decision": "operate",
+      "label": "Operational ownership is explicit.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.3.2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Roles",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 14",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "addresses",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "assurance-defined",
+      "decision": "operate",
+      "label": "The assurance mechanism is defined for the important failure modes.",
+      "published": "pass",
+      "basis": "confirmed",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.6",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Evidence of implementation",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 1",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": null,
+      "gapSource": null,
+      "confirmations": [
+        {
+          "decision": "confirmed",
+          "role": "confirmer",
+          "actorKind": "agent",
+          "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+          "decidedAt": "2026-10-20T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "checkId": "fallback-defined",
+      "decision": "operate",
+      "label": "Fallback or escalation is defined.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.6",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Risk treatment",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MANAGE 2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 14",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific fallback or escalation path (for example routing low-confidence outputs to a human reviewer, a documented degraded mode, or an explicit escalation contact), with a linked artefact (a runbook or support flow) where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "recovery-tested",
+      "decision": "operate",
+      "label": "Recovery or rollback has been tested where failure consequence warrants it.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 8",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Internal audit",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MANAGE 4",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 72",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence describing an actual recovery or rollback event or drill (for example a documented incident postmortem, a rollback log entry, or a stated disaster-recovery drill date), with a linked artefact (an incident report or changelog entry) where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "support-maintenance-defined",
+      "decision": "operate",
+      "label": "Support, maintenance, debugging, and change responsibility are defined.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.4.6",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Operational documentation",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 6",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 17",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming at least one of: a channel offered for getting help with the product (for example a support email, an issue tracker or a help forum offered for that purpose), a maintenance or release cadence, or a change-approval process (for example a stated SLA, a release-cadence policy, or a named maintainer group). Any one suffices; cite a linked artefact (a support page or contributing guide) where one exists, but none is required. A contact address offered only for legal, privacy or sales matters, or a bare link with no sentence saying what it is for, is not a support channel.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "operating-cost-known",
+      "decision": "operate",
+      "label": "The relevant operating-cost boundary is known well enough for the decision.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.4.5",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: AI risk assessment",
+          "relationType": "partial",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 3",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 17",
+          "relationType": "partial",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.1",
+          "relationType": "partial",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives a verbatim quotable sentence naming a specific operating-cost figure or boundary (for example a stated per-request compute cost, an infrastructure spend figure, or a pricing page tied to usage volume), with a linked artefact (a pricing or cost-transparency page) where one exists. For a product that others use or subscribe to, the adopter's operating cost is the published price. A price counts when the quoted span, or a span cited with it, states the volume it covers: per unit, per seat, or a plan together with its quota or \"unlimited\". A price with no stated volume is not an operating-cost boundary.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "outcome-measure-defined",
+      "decision": "measure-outcome",
+      "label": "The outcome measure is defined.",
+      "published": "fail",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 9",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Objectives",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 72",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.1",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, exactly which outcome measure it tracks (for example a named metric, its unit, and how it is captured), with a linked artefact (a dashboard, report, or methodology note) where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "baseline-defined",
+      "decision": "measure-outcome",
+      "label": "A comparable baseline or counterfactual is defined.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 6",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Scope",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository gives, in a verbatim quotable sentence, the baseline value or counterfactual used (for example a stated pre-launch metric, a held-out control group, or a prior period's figure), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "outcome-measured",
+      "decision": "measure-outcome",
+      "label": "The outcome was measured after the intervention.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.8",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Evidence of implementation",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 3",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 72",
+          "relationType": "addresses",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.1",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, with a verbatim quotable sentence, a specific after-the-fact value for the outcome measure, with a linked artefact (a report, dashboard snapshot, or dataset) where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "measurement-definition-consistent",
+      "decision": "measure-outcome",
+      "label": "Before/after measurements use the same relevant definition.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.6.2.8",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Operational documentation",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 12",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, that the before and after figures used the same definition, method, or population (for example naming an unchanged analytics query or cohort definition), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "important-confounds-named",
+      "decision": "measure-outcome",
+      "label": "Material confounds, uncertainty, or attribution limits are named.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.5.3",
+          "relationType": "partial",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: AI risk assessment",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 4",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.3",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository names, in a verbatim quotable sentence, at least one plausible confound, caveat, or attribution limit relevant to the comparison (for example a concurrent marketing campaign, a seasonal effect, or a stated confidence interval), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "outcome-evidence-available",
+      "decision": "scale-renew-stop",
+      "label": "Outcome evidence relevant to the decision is available.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 9",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Evidence of implementation",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MEASURE 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 72",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository references or links the specific outcome evidence (the measured result and its baseline) it is relying on for this scale/renew/stop decision, with a verbatim quotable sentence.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "full-cost-accounted",
+      "decision": "scale-renew-stop",
+      "label": "The full relevant cost boundary is accounted for.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.4.2",
+          "relationType": "partial",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Management review",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 3",
+          "relationType": "partial",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 17",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, a cost figure that explicitly names more than one component of the relevant cost boundary (for example build cost plus ongoing operating cost), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "risk-tradeoffs-assessed",
+      "decision": "scale-renew-stop",
+      "label": "Material risks and trade-offs are assessed.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.5.2",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: AI risk assessment",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MAP 5",
+          "relationType": "addresses",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "addresses",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.4",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, at least one material risk or trade-off considered as part of this decision (for example a stated scaling risk, an opportunity cost, or a dependency that gets riskier at volume), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "alternatives-compared",
+      "decision": "scale-renew-stop",
+      "label": "Reasonable alternatives or the status quo are compared.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Annex A.5.2",
+          "relationType": "partial",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Risk treatment",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "MANAGE 2",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 9",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, a specific alternative that was considered and why it was not chosen (for example staying at current scale, a different vendor, or a cheaper rollout path), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    },
+    {
+      "checkId": "value-rule-explicit",
+      "decision": "scale-renew-stop",
+      "label": "The rule for scale, renew, expand, or stop is explicit.",
+      "published": "unknown",
+      "basis": "not-positive",
+      "quotes": [],
+      "crosswalk": [
+        {
+          "standard": "iso42001",
+          "locator": "Clause 9",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "gaicc",
+          "locator": "AIMS artefact: Management review",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "nistAiRmf",
+          "locator": "GOVERN 1",
+          "relationType": "supports",
+          "informational": false
+        },
+        {
+          "standard": "euAiAct",
+          "locator": "Article 17",
+          "relationType": "supports",
+          "informational": true
+        },
+        {
+          "standard": "oecd",
+          "locator": "Principle 1.5",
+          "relationType": "supports",
+          "informational": false
+        }
+      ],
+      "gapText": "Coded pass when the project's own page or repository states, in a verbatim quotable sentence, the specific rule or threshold applied (for example \"we scale if retention stays above 35%\" or a pre-registered stop condition), with a linked artefact where one exists.",
+      "gapSource": "passRule",
+      "confirmations": []
+    }
+  ],
+  "howMade": {
+    "coding": {
+      "role": "coder",
+      "modelId": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "host": "inference.example"
+    },
+    "confirmation": {
+      "role": "confirmer",
+      "modelId": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "host": "inference.example"
+    },
+    "gateSha": "js-test",
+    "humanEdits": "None"
+  }
+}
