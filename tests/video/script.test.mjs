@@ -1,0 +1,69 @@
+// Plan 08-01: the submission video's script. Checks the timing budget, the
+// required content (SC1 items, SUB-04), placeholder declarations, the speaking
+// rate and the review's wording rules.
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { test } from "node:test";
+
+const script = JSON.parse(fs.readFileSync(new URL("../../scripts/video/script.json", import.meta.url), "utf8"));
+const beats = script.beats;
+const CRITERIA = new Set(["Technological Implementation", "Design", "Potential Impact", "Quality of the Idea"]);
+const SC1 = ["headline", "evidence-gathering", "gate-first-report", "injection", "agreement", "pdf"];
+const METHODS = new Set(["cdp", "obs", "card", "pdf"]);
+const words = (s) => s.trim().split(/\s+/).filter(Boolean).length;
+const used = (s) => [...s.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((m) => m[1]);
+
+test("beats sum to at most 175 seconds, under the three-minute rule", () => {
+  const total = beats.reduce((t, b) => t + b.seconds, 0);
+  assert.ok(total <= 175, `total ${total}`);
+  assert.equal(script.maxSeconds, 175);
+});
+
+test("every beat is well formed and serves a judging criterion", () => {
+  const ids = new Set();
+  for (const b of beats) {
+    assert.ok(!ids.has(b.id), `duplicate ${b.id}`);
+    ids.add(b.id);
+    assert.ok(Array.isArray(b.criterion) && b.criterion.length > 0, b.id);
+    for (const c of b.criterion) assert.ok(CRITERIA.has(c), `${b.id}: ${c}`);
+    assert.ok(b.sc1Item === null || SC1.includes(b.sc1Item), b.id);
+    assert.ok([null, "nemotron", "tavily"].includes(b.sub04), b.id);
+    assert.ok(METHODS.has(b.method), `${b.id}: ${b.method}`);
+    assert.ok(b.narration && b.onScreen && b.source, b.id);
+    assert.ok(words(b.onScreen) <= 12, `${b.id} onScreen has ${words(b.onScreen)} words`);
+  }
+});
+
+test("each of the six SC1 items has a beat", () => {
+  for (const item of SC1) assert.ok(beats.some((b) => b.sc1Item === item), item);
+});
+
+test("SUB-04: one beat names Nemotron on Nebius Token Factory, one names Tavily", () => {
+  assert.ok(beats.some((b) => b.sub04 === "nemotron" && /Nemotron/.test(b.onScreen) && /Nebius Token Factory/.test(b.onScreen)));
+  assert.ok(beats.some((b) => b.sub04 === "tavily" && /Tavily/.test(b.onScreen)));
+});
+
+test("placeholders: every one used is declared with a source, and every declared one is used", () => {
+  for (const b of beats) {
+    const inText = new Set([...used(b.narration), ...used(b.onScreen)]);
+    const declared = Object.keys(b.placeholders ?? {});
+    for (const name of inText) {
+      const p = b.placeholders?.[name];
+      assert.ok(p, `${b.id}: {{${name}}} not declared`);
+      assert.ok(typeof p.file === "string" && p.file && typeof p.jsonPath === "string" && p.jsonPath, `${b.id}: ${name} source`);
+    }
+    for (const name of declared) assert.ok(inText.has(name), `${b.id}: ${name} declared but unused`);
+  }
+});
+
+test("narration fits its slot at 2.6 words per second or fewer", () => {
+  for (const b of beats) assert.ok(words(b.narration) <= 2.6 * b.seconds, `${b.id}: ${words(b.narration)} words in ${b.seconds} s`);
+});
+
+test("wording rules: no deficit, certification, score or priority words", () => {
+  const banned = /\b(lacks?|lacking|missing|fail(s|ed|ing)?|compliant|compliance|certified|score[sd]?|first|only)\b/i;
+  for (const b of beats) {
+    assert.ok(!banned.test(b.narration), `${b.id} narration`);
+    assert.ok(!banned.test(b.onScreen), `${b.id} onScreen`);
+  }
+});
