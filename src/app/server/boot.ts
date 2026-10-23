@@ -1,7 +1,7 @@
 // Start-up checks, run once by the server entry (src/app/server.ts) when the built
 // server starts, never during `rsbuild build`. A mis-configured deployment exits
 // here instead of serving requests.
-import { getAuth } from "./auth.ts";
+import { authOptions, getAuth } from "./auth.ts";
 import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
 import { ensureReportViewSchema } from "../../report/store.ts";
@@ -24,7 +24,7 @@ export default async function boot(): Promise<void> {
     refuse("data directory check", err);
   }
   try {
-    getAuth(); // throws without a BETTER_AUTH_SECRET of at least 32 characters
+    authOptions(); // throws without a BETTER_AUTH_SECRET of at least 32 characters
   } catch (err) {
     refuse("auth secret check", err);
   }
@@ -33,6 +33,10 @@ export default async function boot(): Promise<void> {
   } catch (err) {
     refuse("database migration", err);
   }
+  // Only after the migrations: better-auth checks the schema when the instance is
+  // created, and on a fresh database a check that ran first fails every request
+  // until restart (seen on the first VM deploy, 07-12c).
+  getAuth();
   try {
     await ensureAccessSchema(getDb());
   } catch (err) {
