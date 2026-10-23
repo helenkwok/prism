@@ -49,15 +49,17 @@ test("evaluative text uses evidence language; raw gate statuses only in data-gat
   await expect(page.locator('[data-state="fail"]').first()).toContainText("own page shows the check is not met");
 });
 
-test("crosswalk chips name the standard once: the locator's leading word is not repeated", async ({ page }) => {
+test("crosswalk chips name the standard once: the locator's leading word (or its singular) is not repeated", async ({ page }) => {
   await page.goto("/p/P01");
   const chips = await page.locator("[data-chip]").allInnerTexts();
   expect(chips.length).toBeGreaterThan(0);
   for (const c of chips) {
     expect(c, c).not.toMatch(/\b(\w+) \1\b/);
+    expect(c, c).not.toMatch(/\b(\w+)s \1\b/i); // "Principles Principle"
     expect(c, c).toMatch(/\S · \S/);
   }
   expect(chips.some((c) => c.startsWith("GAICC AIMS artefact: "))).toBe(true);
+  expect(chips.some((c) => c.startsWith("OECD AI Principles 1.3 · "))).toBe(true);
   expect(chips.some((c) => c.startsWith("ISO/IEC 42001 "))).toBe(true);
 });
 

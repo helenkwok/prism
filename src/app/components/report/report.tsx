@@ -184,11 +184,16 @@ export function QuoteCard({ q, projectRef, checkId }: { q: CheckView["quotes"][n
   );
 }
 
-/** "GAICC AIMS" + "AIMS artefact: Scope" reads "GAICC AIMS artefact: Scope": a word shared by the name's end and the locator's start is shown once. */
+/**
+ * The locator's leading word is dropped when the short name already ends with it or its plural:
+ * "GAICC AIMS" + "AIMS artefact: Scope" reads "GAICC AIMS artefact: Scope",
+ * "OECD AI Principles" + "Principle 1.3" reads "OECD AI Principles 1.3". Display only.
+ */
 function chipName(standard: string, locator: string) {
   const name = STANDARD[standard] ?? standard;
-  const last = name.split(" ").at(-1)!;
-  return locator.startsWith(`${last} `) ? `${name.slice(0, -last.length)}${locator}` : `${name} ${locator}`;
+  const last = name.split(" ").at(-1);
+  const [lead, ...rest] = locator.split(" ");
+  return rest.length && (lead === last || `${lead}s` === last) ? `${name} ${rest.join(" ")}` : `${name} ${locator}`;
 }
 
 export function CrosswalkChip({ chip }: { chip: CheckView["crosswalk"][number] }) {
