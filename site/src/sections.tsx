@@ -1,9 +1,10 @@
 // Sections of the written review, shared by /review (the PDF source) and the /prisma, /validation and /methods
 // pages. Every number comes from release.json or its manifest; nothing here is a literal finding.
 import type { ReactNode } from 'react'
-import { manifest, rowSentence, stateText, statementText, type Release, type Row } from './data'
-import { StatementText } from './components/figure'
-import { collectionRow, selectionRow } from './components/how-we-know'
+import { checkIdOf, manifest, rowSentence, stateCell, stateText, statementText, type Figure as FigureData, type Release, type Row } from './data'
+import { Figure, figureKeys, figureNumber, StatementText } from './components/figure'
+import { codedStateRows, collectionRow, selectionRow } from './components/how-we-know'
+import { PrismaFigure, PrismaTable } from './charts/prisma-flow'
 
 const said = (id: string) => statementText(id) ?? ''
 const finding = (release: Release, id: string) => release.statements.find(s => s.id === id && s.kind === 'finding')
@@ -26,6 +27,23 @@ const Sub = ({ top, children }: { top?: boolean; children: ReactNode }) => (top 
 function Cell({ r }: { r: Row }) {
   const s = stateText(r)
   return s === null ? <td className="num">{r.pct}% ({r.c} of {r.n})</td> : <td data-state-text>{s}</td>
+}
+
+const decisionsOf = (release: Release) => [...new Set(release.methods.codebook.map(e => e.decisionId))]
+
+// ponytail: a figure longer than MAX_ROWS rows (the 24 paired checks of the claims chart) is printed in parts, one
+// per decision, so no part is taller than an A4 page; a single decision that tall would still split.
+const MAX_ROWS = 16
+/** The figure as one part, or as parts by decision titled "(part i of m: <decision>)", same number throughout. */
+function parts(release: Release, figure: FigureData): FigureData[] {
+  if (figure.rows.length <= MAX_ROWS) return [figure]
+  const decision = new Map(release.methods.codebook.map(e => [e.checkId, e.decisionId]))
+  const groups = new Map<string, Row[]>()
+  for (const r of figure.rows) {
+    const d = decision.get(checkIdOf(r.id)) ?? 'other'
+    groups.set(d, [...(groups.get(d) ?? []), r])
+  }
+  return [...groups].map(([d, rows], i) => ({ ...figure, title: `${figure.title} (part ${i + 1} of ${groups.size}: ${d})`, rows }))
 }
 
 /** The manifest's process figures (D-83): published outside k = 10 under one addendum. */
@@ -134,20 +152,23 @@ export function ValidationSection({ release }: { release: Release }) {
     <Section id="validation" title="Validation">
       <h3>Agreement with an independent labeller</h3>
       <p>Labeller: {h.labeller.modelId} on {h.labeller.host}. Confirmer: {h.confirmer.modelId} on {h.confirmer.host}. Pass precision and the changes at confirmation per check are counts of launches and stay under disclosure control, so a small or suppressed value reads as words.</p>
-      <div className="table-scroll">
-        <table className="data" data-agreement>
-          <caption>Agreement, pass precision and changes at confirmation, per check</caption>
-          <thead><tr><th scope="col">Check</th><th scope="col">AC1 (95% CI)</th><th scope="col">Pass precision</th><th scope="col">Changed at confirmation</th></tr></thead>
-          <tbody>{release.methods.codebook.map(e => (
-            <tr key={e.checkId}>
-              <th scope="row">{e.shortTitle}</th>
-              {ac1(e.checkId)}
-              {h.agreement[e.checkId] ? <Cell r={h.agreement[e.checkId]!.precision} /> : <td data-state-text>not estimable</td>}
-              {perCheck[e.checkId] ? <Cell r={perCheck[e.checkId]!} /> : <td data-state-text>not in this release</td>}
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
+      {/* One table per decision, so each fits a printed page whole. */}
+      {decisionsOf(release).map(d => (
+        <div key={d} className="table-scroll">
+          <table className="data" data-agreement>
+            <caption>Agreement, pass precision and changes at confirmation: decision <code>{d}</code></caption>
+            <thead><tr><th scope="col">Check</th><th scope="col">AC1 (95% CI)</th><th scope="col">Pass precision</th><th scope="col">Changed at confirmation</th></tr></thead>
+            <tbody>{release.methods.codebook.filter(e => e.decisionId === d).map(e => (
+              <tr key={e.checkId}>
+                <th scope="row">{e.shortTitle}</th>
+                {ac1(e.checkId)}
+                {h.agreement[e.checkId] ? <Cell r={h.agreement[e.checkId]!.precision} /> : <td data-state-text>not estimable</td>}
+                {perCheck[e.checkId] ? <Cell r={perCheck[e.checkId]!} /> : <td data-state-text>not in this release</td>}
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ))}
       {processFigures().length > 0 && <>
         <h3>Process figures (addendum {addenda()})</h3>
         <dl className="process-figures" data-process-figures>{processFigures().map(p => (
@@ -191,5 +212,156 @@ export function ExploratorySection() {
     <Section id="exploratory" title="Exploratory analyses">
       {blocks.filter(([, text]) => text).map(([title, text]) => <div key={title} data-exploratory><h3>{title}</h3><p>{text}</p></div>)}
     </Section>
+  )
+}
+
+/**
+ * A results figure with the same panel, chart options and finding text as its dashboard page (plan 06-06), so the
+ * review and the dashboard show one figure under one number.
+ */
+function ResultFigure({ release, k }: { release: Release; k: string }) {
+  const f = release.figures[k]!
+  const n = figureNumber(release, k)
+  let figure: FigureData = f
+  let howWeKnow = (rows: Row[]) => codedStateRows(release, rows)
+  let chart = {}
+  if (k.startsWith('cohorts:')) figure = { ...f, rows: f.rows.map(r => ({ ...r, label: statementText(`cohort:${r.label}`)?.replace(/\.$/, '') ?? r.label })) }
+  if (k === 'claims') chart = { paired: true }
+  if (k === 'sourceTypes') {
+    howWeKnow = rows => [...codedStateRows(release, rows, release.methods.codebook.map(e => e.checkId)), collectionRow(release)]
+    chart = { neutral: f.rows.filter(r => r.id.split('|')[1] === 'other').map(r => r.id) }
+  }
+  const checks = new Set(f.rows.map(r => checkIdOf(r.id)))
+  const findings = release.statements.filter(s => s.kind === 'finding' && (
+    (k.startsWith('checks') && s.id.startsWith('share:') && checks.has(s.id.slice('share:'.length))) ||
+    (k === 'decisions' && s.id.startsWith('decision:'))))
+  const ps = parts(release, figure)
+  return <>{ps.map((part, i) => (
+    <Figure key={i} id={i ? `fig-${n}-${i + 1}` : `fig-${n}`} number={n} figure={part} howWeKnow={howWeKnow(part.rows)} chart={chart}>
+      {i === ps.length - 1 && findings.length > 0 && <ul className="findings-list">{findings.map(s => <li key={s.id} data-finding><StatementText text={s.text} /></li>)}</ul>}
+    </Figure>
+  ))}</>
+}
+
+/** 06-UI-SPEC item 4: the PRISMA flow, the hypotheses, then every findings figure in dashboard order. */
+export function ResultsSection({ release }: { release: Release }) {
+  const keys = figureKeys(release)
+  const group = (g: string) => keys.filter(k => k === g || k.startsWith(`${g}:`)).map(k => <ResultFigure key={k} release={release} k={k} />)
+  const h = release.hypotheses
+  const statements = [h.h1, h.h2, h.h3].map(x => release.statements.find(s => s.id === x.statementId)).filter(s => s !== undefined)
+  const banner = statementText('method:cohort-banner')
+  const overlap = statementText('method:source-types-overlap')
+  const prisma = figureNumber(release, 'prisma')
+  return (
+    <Section id="results" title="Results">
+      {release.prisma && <><h3>Selection</h3><PrismaFigure release={release} id={`fig-${prisma}`} number={prisma} /></>}
+      <h3>Hypotheses</h3>
+      <ul className="findings-list">{statements.map(s => s.kind === 'finding'
+        ? <li key={s.id} data-finding><StatementText text={s.text} /></li>
+        : <li key={s.id}>{s.text}</li>)}</ul>
+      <h3>Evidence by check</h3>
+      <p>Each bar is the share of all {release.n} included launches that publicly evidence the check with an artefact linked.</p>
+      {group('checks')}
+      <h3>Evidence by decision</h3>
+      {group('decisions')}
+      <h3>Evidence by discovery source</h3>
+      {group('sources')}
+      <h3>Evidence by launch cohort</h3>
+      {banner && <p className="rounded-lg bg-muted p-4" data-cohort-banner>{banner}</p>}
+      {group('cohorts')}
+      <h3>Claims and evidence</h3>
+      {group('claims')}
+      <h3>Where launches put their evidence</h3>
+      {overlap && <p>{overlap}</p>}
+      {group('sourceTypes')}
+    </Section>
+  )
+}
+
+/** A figure's data table, always open (Appendix B): the same cells as the dashboard's table view. */
+function FigureTable({ release, figure, number }: { release: Release; figure: FigureData; number: number }) {
+  return <>{parts(release, figure).map(part => (
+    <div key={part.title} className="table-scroll">
+      <table className="data">
+        <caption>Figure {number}. {part.title}</caption>
+        <thead><tr><th scope="col">Row</th><th scope="col">Launches</th><th scope="col">Share</th><th scope="col">95% CI</th></tr></thead>
+        <tbody>{part.rows.map(r => (
+          <tr key={r.id}>
+            <th scope="row">{r.label}</th>
+            {r.state === 'released'
+              ? <><td className="num">{stateCell(r)}</td><td className="num">{r.pct}%</td><td className="num">{r.ci![0]}–{r.ci![1]}%</td></>
+              : <td colSpan={3} data-state-text>{stateCell(r)}</td>}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  ))}</>
+}
+
+/** Appendix A: the codebook by decision, with crosswalk relation types and clause ids only (never standard text). */
+export function AppendixA({ release }: { release: Release }) {
+  const decisions = decisionsOf(release)
+  return (
+    <section id="appendix-a" aria-labelledby="appendix-a-h">
+      <h2 id="appendix-a-h">Appendix A: codebook and crosswalk</h2>
+      <p>The {release.methods.codebook.length} checks by decision. Each crosswalk entry names a standard, a clause id and how the check relates to it; no standard text is reproduced.</p>
+      {decisions.map(d => (
+        <div key={d} className="table-scroll">
+          <table className="data">
+            <caption>Decision <code>{d}</code></caption>
+            <thead><tr><th scope="col">Check</th><th scope="col">Crosswalk (standard, clause id: relation)</th></tr></thead>
+            <tbody>{release.methods.codebook.filter(e => e.decisionId === d).map(e => (
+              <tr key={e.checkId}>
+                <th scope="row">{e.shortTitle} <code className="muted">{e.checkId}</code></th>
+                <td>{(e.relations ?? []).map(r => `${r.standard} ${r.clause}: ${r.relation}`).join('; ')}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+/** Appendix B: every numbered figure's table, open. */
+export function AppendixB({ release }: { release: Release }) {
+  return (
+    <section id="appendix-b" aria-labelledby="appendix-b-h">
+      <h2 id="appendix-b-h">Appendix B: figure tables</h2>
+      {figureKeys(release).map(k => {
+        const n = figureNumber(release, k)
+        return k === 'prisma'
+          ? <PrismaTable key={k} prisma={release.prisma!} caption={`Figure ${n}. How launches were selected`} />
+          : <FigureTable key={k} release={release} figure={release.figures[k]!} number={n} />
+      })}
+    </section>
+  )
+}
+
+/** Appendix C: the release and its disclosure audit as counts only; no suppressed value appears. */
+export function AppendixC({ release }: { release: Release }) {
+  const a = manifest?.audit
+  const items: [string, string][] = [
+    ['Release', `${release.version}, ${release.date}, ${release.n} included launches`],
+    ['Disclosure ledger', release.methods.ledgerVersion],
+  ]
+  if (a) items.push(
+    ['Tuples audited', a.tuples.toLocaleString('en')],
+    ['Suppressed tuples', `${a.suppressed.toLocaleString('en')} (${a.primary.toLocaleString('en')} primary, ${a.complementary.toLocaleString('en')} complementary)`],
+    ['Exact audit', a.pass ? `passed: every suppressed count has at least ${release.methods.disclosure.minValues} possible values` : 'not passed'],
+  )
+  if (manifest) items.push(
+    ['Wording lint', `${manifest.lint.statements} statements, ${manifest.lint.errors} errors`],
+    ['Identifier scan', `${manifest.scan.files} files, ${manifest.scan.hits} hits`],
+  )
+  return (
+    <section id="appendix-c" aria-labelledby="appendix-c-h">
+      <h2 id="appendix-c-h">Appendix C: release and disclosure summary</h2>
+      <dl className="process-figures" data-release-summary>{items.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+      {processFigures().length > 0 && <>
+        <h3>Process figures outside k = {release.methods.disclosure.floor} (addendum {addenda()})</h3>
+        <ul className="findings-list">{processFigures().map(p => <li key={p.id}><code>{p.id}</code>: {p.reason} (addendum {p.addendum}).</li>)}</ul>
+      </>}
+    </section>
   )
 }

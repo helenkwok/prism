@@ -141,6 +141,9 @@ table.data td.num { text-align: right; white-space: nowrap; }
 .findings-list { margin-top: 16px; padding-left: 1.25rem; list-style: disc; }
 .findings-list li + li { margin-top: 8px; }
 ol.findings-list { list-style: decimal; }
+/* Review sections (sections.tsx): paragraph rhythm inside a section, room above each sub-heading. */
+main section > * + * { margin-top: 12px; }
+main section > :is(h2, h3):not(:first-child) { margin-top: 32px; }
 .process-figures > div + div { margin-top: 8px; }
 .process-figures dt { font-weight: 600; }
 .process-figures dt::first-letter { text-transform: uppercase; }
@@ -148,13 +151,25 @@ ol.findings-list { list-style: decimal; }
 
 .site-footer { max-width: 880px; margin: 64px auto 0; padding: 16px 24px 32px; font-size: 0.8125rem; color: var(--muted-foreground); border-top: 1px solid var(--border); }
 
+.prisma-box { fill: none; stroke: var(--border); stroke-width: 1; }
+.prisma-arrow { stroke: var(--chart-ink-2); stroke-width: 1; fill: none; }
+.prisma-head { fill: var(--chart-ink-2); }
+
+/* The PDF link is a control: its outline must reach 3:1 against the page (the --border rule is decorative). */
+a[data-pdf-link] { border-color: var(--muted-foreground); }
+
+/* 06-UI-SPEC "Print Layout" (D-73): the review printed to A4, light tokens only (dark is screen-only above). */
 @media print {
   @page { size: A4; margin: 14mm; }
   :root { color-scheme: light; }
   html { font-size: 87.5%; }
-  main { max-width: none; padding: 0; }
+  body { max-width: none; padding: 0; }
+  main, .site-header, .site-footer { max-width: none; padding-left: 0; padding-right: 0; }
+  main, .site-header { padding-top: 0; }
   .site-header nav, .subnav, .skip-link, details.table-view > summary, [data-print-hide] { display: none !important; }
-  figure, table, svg, .how-we-know { break-inside: avoid; }
-  h2, h3 { break-after: avoid; }
+  figure, table, svg, tr, .how-we-know, .stat-tile, [data-exploratory], .process-figures > div { break-inside: avoid; }
+  h2, h3, caption { break-after: avoid; }
+  #appendix-a { break-before: page; }
+  .chart-wrap, .table-scroll { overflow: visible; }
   a[href^="http"]::after { content: " (" attr(href) ")"; }
 }

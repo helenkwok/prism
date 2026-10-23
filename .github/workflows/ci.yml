@@ -177,6 +177,8 @@ jobs:
       - name: Build the synthetic release
         run: PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run build
       - run: npm --prefix site run check
+      - name: Print the review to the dated PDF
+        run: npm --prefix site run pdf
       - run: npm --prefix site run typecheck
       - name: Wording lint over the finding text
         run: node src/publish/lint.ts site/_shots/findings-text.json
