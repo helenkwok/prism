@@ -17,7 +17,7 @@ import { projectSpans, spansDigest } from "../confirm/confirm.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED } from "../select/draw-sample.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { buildCodingMessages, chunkSpans, CODING_MAX_TOKENS, mergeChunkCodings } from "../run.ts";
-import { buildContract, isSchemaValid } from "../coding/contract.ts";
+import { buildContract, citationSchema, isSchemaValid } from "../coding/contract.ts";
 import { uniqueProjectSpans } from "../coding/span-packing.ts";
 import { assertIndependent, ROLE_CONFIG, roleClient, type RoleSpec } from "./providers.ts";
 
@@ -82,19 +82,25 @@ function makeGoldCallOnce(
   client: { request: (p: string, init: { method: string; body: unknown }) => Promise<{ ok: boolean; status: number; json: unknown; text?: string }> },
   cacheDir: string,
   hnId: string,
+  dataDir: string,
+  projectN: number,
 ): CallOnce {
+  const diagnosticsPath = path.join(dataDir, "validation", "coding-invalid-replies.jsonl");
+  const badCitationRequests = new Set<string>(fs.existsSync(diagnosticsPath) ? fs.readFileSync(diagnosticsPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)).filter(row => row.validationStage === "span_resolve").map(row => row.baseDigest ?? row.requestDigest) : []);
   return async (_client, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
-    const messages = buildCodingMessages(checkIds, codebook, jsonSchema, spans);
-    const body = buildChatBody({
+    const makeBody = (schema: unknown) => buildChatBody({
       model: role.model,
-      messages,
+      messages: buildCodingMessages(checkIds, codebook, schema, spans),
       mode: "json_schema",
-      schema: { name: "gate_checks", schema: jsonSchema, strict: true },
+      schema: { name: "gate_checks", schema, strict: true },
       thinking: false,
       ...(typeof role.reasoning === "string" ? { reasoningEffort: role.reasoning } : {}),
       maxTokens: CODING_MAX_TOKENS,
     });
+    let body = makeBody(jsonSchema);
+    const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
+    if (badCitationRequests.has(baseDigest)) body = makeBody(citationSchema(jsonSchema, spanIds));
     const requestHash = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const { value } = await withStageCache(
       cacheDir,
@@ -107,6 +113,12 @@ function makeGoldCallOnce(
         if (!res.ok) throw new Error(`gold chat returned status ${res.status}`);
         const content = (res.json as any)?.choices?.[0]?.message?.content;
         if (typeof content !== "string") throw new Error("gold response missing content");
+        const validation = isSchemaValid(content, spanIds, buildContract(checkIds).zodSchema);
+        if (!validation.valid) {
+          if (validation.stage === "span_resolve") badCitationRequests.add(baseDigest);
+          fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true, mode: 0o700 });
+          fs.appendFileSync(diagnosticsPath, JSON.stringify({ stage: "gold", projectN, baseDigest, requestDigest: requestHash, validationStage: validation.stage, finishReason: (res.json as any)?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+        }
         return content;
       },
       (content) => isSchemaValid(content, spanIds, buildContract(checkIds).zodSchema).valid,
@@ -166,7 +178,7 @@ export async function labelProject({
 
   const spansById = new Map(spans.map((s) => [s.id, s.text]));
   const chunks = chunkSpans(uniqueProjectSpans(spans));
-  const callOnce = makeGoldCallOnce(codebook, spansById, role, client, cacheDir, hnId);
+  const callOnce = makeGoldCallOnce(codebook, spansById, role, client, cacheDir, hnId, dataDir, projectN);
   const perChunk = [];
   for (const chunk of chunks) {
     const result = await codeProjectWithRetry({

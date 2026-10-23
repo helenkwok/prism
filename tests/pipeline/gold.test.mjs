@@ -145,6 +145,35 @@ describe("ollamaClient adapter", () => {
 });
 
 describe("labelProject", () => {
+  test("invalid citations trigger constrained schema once and resume from valid repair cache", async () => {
+    const dataDir = tempDir("prism-gold-citations-");
+    const cacheDir = path.join(dataDir, "pipeline", "cache");
+    writeProjectTree(dataDir, 7, ["Fixture shows a reproducible command."]);
+    const spans = projectSpans(dataDir, 7);
+    const captured = [];
+    const client = { request: async (_p, { body }) => {
+      captured.push(body);
+      const cited = captured.length === 1 ? "nonexistent-span" : spans[0].id;
+      return { ok: true, status: 200, json: { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ checks: Object.fromEntries(contract.checkIds.map(id => [id, { proposedState: "claimed", spanIds: [cited] }])) }) } }] } };
+    } };
+    const options = { dataDir, cacheDir, projectN: 7, hnId: "1007", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    assert.equal((await labelProject({ ...options, db })).outcome, "labelled");
+    assert.equal(captured.length, 2);
+    const base = captured[0].response_format.json_schema.schema;
+    const repair = captured[1].response_format.json_schema.schema;
+    assert.equal(base.$defs?.citedSpanId, undefined);
+    assert.deepEqual(repair.$defs.citedSpanId.enum, spans.map(s => s.id));
+    assert.deepEqual(repair.properties.checks.required, base.properties.checks.required);
+    for (const entry of Object.values(repair.properties.checks.properties)) assert.deepEqual(entry.properties.spanIds.items, { $ref: "#/$defs/citedSpanId" });
+    const diagnostic = JSON.parse(fs.readFileSync(path.join(dataDir, "validation", "coding-invalid-replies.jsonl"), "utf8").trim());
+    assert.equal(diagnostic.stage, "gold"); assert.equal(diagnostic.validationStage, "span_resolve");
+    assert.equal(diagnostic.baseDigest, diagnostic.requestDigest);
+    const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    assert.equal((await labelProject({ ...options, db: freshDb })).outcome, "labelled");
+    assert.equal(captured.length, 2);
+    await db.destroy(); await freshDb.destroy();
+  });
   test("writes 24 gold rows + labelled outcome; messages equal buildCodingMessages; attributed; idempotent", async () => {
     const dataDir = tempDir("prism-gold-data-");
     const cacheDir = tempDir("prism-gold-cache-");

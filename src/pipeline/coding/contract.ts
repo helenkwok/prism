@@ -126,6 +126,14 @@ export interface SchemaValidResult {
   data?: CodingReply;
 }
 
+/** Constrain an existing citation rule without weakening any check or the strict resolver. */
+export function citationSchema(schema: unknown, spanIds: string[]) {
+  const out: any = structuredClone(schema);
+  out.$defs = { ...(out.$defs ?? {}), citedSpanId: { type: "string", enum: spanIds } };
+  for (const entry of Object.values(out.properties.checks.properties) as any[]) entry.properties.spanIds.items = { $ref: "#/$defs/citedSpanId" };
+  return out;
+}
+
 /**
  * The single definition of schema-valid (FND-05, D-15): JSON parses, the zod
  * contract holds, and every returned span id resolves to a span in the page.

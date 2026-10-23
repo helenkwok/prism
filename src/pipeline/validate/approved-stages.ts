@@ -5,7 +5,8 @@ import type { Kysely } from "kysely";
 import { withStageCache } from "../cache/stage-cache.ts";
 import { buildClaimsForProject } from "../claims/build-claims.ts";
 import type { Codebook } from "../coding/codebook-prompt.ts";
-import { isSchemaValid, type GateFile } from "../coding/contract.ts";
+import { citationSchema, isSchemaValid, type GateFile } from "../coding/contract.ts";
+export { citationSchema } from "../coding/contract.ts";
 import { applyQuoteOrUnknownFilter } from "../coding/filter.ts";
 import { buildChatBody, isQuotaResponse, QuotaStop } from "../coding/nebius-client.ts";
 import { codeProjectWithRetry, type RetryContract } from "../coding/retry.ts";
@@ -35,14 +36,6 @@ export function spikeSample(positives: Positive[], count = 30): Positive[] {
     const key = (p: Positive) => crypto.createHash("sha256").update(`confirmation-spike-v1:${p.projectN}:${p.checkId}`).digest("hex");
     return key(a).localeCompare(key(b));
   }).slice(0, count);
-}
-
-/** Constrain an existing citation rule without weakening any check or the strict resolver. */
-export function citationSchema(schema: unknown, spanIds: string[]) {
-  const out: any = structuredClone(schema);
-  out.$defs = { ...(out.$defs ?? {}), citedSpanId: { type: "string", enum: spanIds } };
-  for (const entry of Object.values(out.properties.checks.properties) as any[]) entry.properties.spanIds.items = { $ref: "#/$defs/citedSpanId" };
-  return out;
 }
 
 async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["entries"][number]) {
