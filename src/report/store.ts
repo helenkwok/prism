@@ -1,9 +1,10 @@
 // The materialized ReportView rows the app reads (research Pattern 3): one
 // row per (project, view), JSON stored as written, read back unchanged.
 
-import type { Kysely } from "kysely";
+import { sql, type Kysely } from "kysely";
 
 import type { DeidentifiedView } from "./deidentify.ts";
+import type { MethodView } from "./method-view.ts";
 import type { ReportView } from "./view.ts";
 
 type AnyView = ReportView | DeidentifiedView;
@@ -29,6 +30,14 @@ export async function ensureReportViewSchema(db: Kysely<any>): Promise<void> {
     .addColumn("text", "text", (c) => c.notNull())
     .addColumn("fixture", "integer", (c) => c.notNull())
     .addPrimaryKeyConstraint("app_snapshot_pk", ["project_ref", "hash"])
+    .execute();
+  await db.schema
+    .createTable("app_method_view")
+    .ifNotExists()
+    .addColumn("id", "integer", (c) => c.primaryKey().check(sql`id = 1`))
+    .addColumn("json", "text", (c) => c.notNull())
+    .addColumn("generated_at", "text", (c) => c.notNull())
+    .addColumn("fixture", "integer", (c) => c.notNull())
     .execute();
 }
 
@@ -105,4 +114,18 @@ export async function listReportSummaries(db: Kysely<any>): Promise<ReportSummar
       fixture: v.fixture,
     };
   });
+}
+
+/** The method audit: one row (id 1), written whole at materialisation (plan 07-10). */
+export async function upsertMethodView(db: Kysely<any>, v: MethodView): Promise<void> {
+  await db
+    .replaceInto("app_method_view")
+    .values({ id: 1, json: JSON.stringify(v), generated_at: v.generatedAt, fixture: v.fixture ? 1 : 0 })
+    .execute();
+}
+
+/** null when no method view is stored yet (the page then shows the not-loaded copy). */
+export async function readMethodView(db: Kysely<any>): Promise<MethodView | null> {
+  const row = await db.selectFrom("app_method_view").select("json").where("id", "=", 1).executeTakeFirst();
+  return row ? JSON.parse(row.json) : null;
 }

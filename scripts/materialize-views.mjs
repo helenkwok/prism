@@ -17,6 +17,9 @@
 // a refusal prints "DEID REFUSED <reason>", writes nothing and exits 1.
 // Output names pseudonyms only, never a project name or host. Plan 07-14 adds
 // the real-store mode.
+//
+// When synthetic-method.json sits next to the corpus, the same transaction also
+// writes the method audit's one row (plan 07-10) and prints "METHOD rows=1 ...".
 
 import fs from "node:fs";
 import os from "node:os";
@@ -31,7 +34,8 @@ import { ensureAccessSchema, upsertProjectAccess } from "../src/app/server/acces
 import { loadCodebook } from "../src/pipeline/coding/codebook-prompt.ts";
 import { runGate } from "../src/pipeline/gate/run-gate.ts";
 import { buildDocumentFrequency, deidentifyView, dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
-import { ensureReportViewSchema, upsertReportView, upsertSnapshot } from "../src/report/store.ts";
+import { buildMethodView } from "../src/report/method-view.ts";
+import { ensureReportViewSchema, upsertMethodView, upsertReportView, upsertSnapshot } from "../src/report/store.ts";
 import { buildReportView, gateCheckOrder, loadGapText, sourceFromFixture } from "../src/report/view.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -109,6 +113,17 @@ if (key) {
   console.log(`DEID scan hits=0 views=${deids.length}`);
 }
 
+// The method audit (plan 07-10): one row from the method fixture next to the corpus, when there is one.
+const methodPath = path.join(path.dirname(values.fixture), "synthetic-method.json");
+const methodView = fs.existsSync(methodPath)
+  ? buildMethodView({
+      method: JSON.parse(fs.readFileSync(methodPath, "utf8")),
+      codebook,
+      gapText,
+      projects: built.map((b) => ({ view: b.view, pseudonym: b.pseudonym ?? null })),
+    })
+  : null;
+
 let db;
 if (values.db) {
   db = new Kysely({ dialect: new SqliteDialect({ database: new Database(values.db) }) });
@@ -134,6 +149,7 @@ await db.transaction().execute(async (trx) => {
       snapshots++;
     }
   }
+  if (methodView) await upsertMethodView(trx, methodView);
   if (!key) return;
   // A new key renames every pseudonym: drop this run's earlier de-identified rows and free the pseudonyms first.
   await trx.deleteFrom("app_report_view").where("view", "=", "deidentified").where("fixture", "=", fixture ? 1 : 0).execute();
@@ -158,4 +174,9 @@ await db.transaction().execute(async (trx) => {
 });
 console.log(`REPORT rows=${rows}`);
 console.log(`SNAPSHOT rows=${snapshots}`);
+console.log(
+  methodView
+    ? `METHOD rows=1 checks=${methodView.agreement.rows.length} confirmations=${methodView.confirmations.length}`
+    : "METHOD rows=0 (no synthetic-method.json next to the corpus)",
+);
 await db.destroy();
