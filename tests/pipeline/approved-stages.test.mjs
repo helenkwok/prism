@@ -73,6 +73,34 @@ test("second coding JSON-parse feedback changes the failed request and valid fir
     await f.db.destroy();
   }
 });
+test("reasoning wrappers remain invalid, final-only corrections escalate and a valid third reply resumes without calls", async () => {
+  const f = fixture(); f.entries = f.entries.slice(0, 1); const bodies = [];
+  const valid = JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) });
+  const client = { request: async (_p, { body }) => {
+    bodies.push(body);
+    return confirmationReply(bodies.length < 3 ? `<think>Fixture reasoning mentions JSON; I cannot conclude here.</think> ${valid}` : valid);
+  } };
+  const run = (db = f.db) => runApprovedStage({ ...f, db, stage: "second-coder", client, log: () => {} });
+  assert.equal((await run()).ok, true); assert.equal(bodies.length, 3);
+  assert.ok(bodies[1].messages[0].content.includes("never reasoning, <think> or </think> tags"));
+  assert.ok(bodies[1].messages[0].content.includes("use unknown with an empty spanIds array instead of refusing"));
+  assert.ok(bodies[2].messages[0].content.includes('Begin immediately with {"checks":'));
+  assert.notDeepEqual(bodies[0], bodies[1]); assert.notDeepEqual(bodies[1], bodies[2]);
+  const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+  assert.equal((await run(freshDb)).ok, true); assert.equal(bodies.length, 3);
+  assert.equal((await freshDb.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 24);
+  await f.db.destroy(); await freshDb.destroy();
+});
+test("non-JSON prose with embedded JSON never passes validation and remains capped at three distinct requests", async () => {
+  const f = fixture(); f.entries = f.entries.slice(0, 1); const bodies = [];
+  const valid = JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) });
+  const client = { request: async (_p, { body }) => { bodies.push(body); return confirmationReply(`<think>Fixture reasoning.</think> ${valid}`); } };
+  const out = await runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
+  assert.equal(out.ok, false); assert.equal(out.failed, 1); assert.equal(bodies.length, 3);
+  assert.equal(new Set(bodies.map(body => JSON.stringify(body))).size, 3);
+  assert.equal((await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 0);
+  await f.db.destroy();
+});
 test("budget refusal stops queue and cannot report success", async () => {
   const f = fixture(); let calls = 0; const lines = [];
   const client = { request: async () => { calls++; const e = new Error("approved cap reached"); e.name = "BudgetExceededError"; throw e; }, dollarBudget: { budgetLine: () => "BUDGET: {}" } };
