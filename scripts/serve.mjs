@@ -56,6 +56,8 @@ async function main() {
         res.writeHead(200, {
           "content-type": TYPES[path.extname(file)] ?? "application/octet-stream",
           "x-content-type-options": "nosniff",
+          // Static files bypass Start's middleware (src/app/start.ts), so noindex is set here too (APP-04).
+          "x-robots-tag": "noindex, nofollow",
           // Hashed names under /assets never change; anything else is revalidated.
           "cache-control": url.pathname.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-store",
         });

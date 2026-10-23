@@ -246,6 +246,10 @@ async function stateChecks(base, sessions) {
     const res = await page(base, cookie, p);
     check(`STATE X-Robots-Tag on ${p} is noindex, nofollow`, res.headers.get("x-robots-tag") === "noindex, nofollow", `${res.status} ${res.headers.get("x-robots-tag")}`);
   }
+  // Static files are served by serve.mjs, outside Start's middleware.
+  const asset = /(?:src|href)="(\/assets\/[^"]+)"/.exec((await page(base, null, "/sign-in")).body)?.[1];
+  const assetRes = asset ? await fetch(`${base}${asset}`) : null;
+  check("STATE X-Robots-Tag on a static asset is noindex, nofollow", assetRes?.status === 200 && assetRes.headers.get("x-robots-tag") === "noindex, nofollow", `${asset} ${assetRes?.status}`);
   const robots = await page(base, null, "/robots.txt");
   check("STATE /robots.txt answers 200 text/plain with Disallow: /", robots.status === 200 && (robots.headers.get("content-type") ?? "").startsWith("text/plain") && robots.body.includes("User-agent: *") && robots.body.includes("Disallow: /"), `${robots.status} ${robots.headers.get("content-type")}`);
 }
