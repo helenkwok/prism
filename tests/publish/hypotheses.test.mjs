@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { binomialTail, h1, h3, holm, testHypotheses } from "../../src/publish/hypotheses.ts";
+import { binomialTail, cramersV, h1, h2Permutation, h3, holm, testHypotheses } from "../../src/publish/hypotheses.ts";
 
 describe("exact binomial tail at p = 0.5", () => {
   test("binomial-exact: P(X >= 8 | n = 10) = 56/1024", () => {
@@ -85,5 +85,60 @@ describe("R09 recall-bound sensitivity in the adverse direction", () => {
     assert.equal(byId.h1.sensitivity.rejected, false);
     assert.equal(byId.h1.supported, false);
     assert.equal(byId.h3.supported, true);
+  });
+});
+
+describe("H2 permutation with Cramer's V (section 8, D-75)", () => {
+  const K = 24;
+  const proj = (group, firstPasses) => ({ group, passes: Array.from({ length: K }, (_, k) => (k === 0 ? firstPasses : k % 3 === 0)) });
+  const many = (group, n, f) => Array.from({ length: n }, (_, i) => proj(group, f(i)));
+
+  test("h2-descriptive-under-30: a group under 30 is not tested; Holm runs over h1 and h3 only", () => {
+    const projects = [...many("show-hn", 294, () => false), ...many("reddit", 6, () => false)];
+    const r = h2Permutation({ projects, seed: "s" });
+    assert.deepEqual(r, { id: "h2", tested: false, reason: "a group has fewer than 30 included launches", groups: { "show-hn": 294, reddit: 6 } });
+    const out = testHypotheses({ h1: { c: 170, n: 300 }, h2: r, h3: { c: 100, n: 300 }, recall: 0.894 });
+    assert.deepEqual(out.tests.map((t) => t.id), ["h1", "h3"]);
+    assert.ok(out.tests.every((t) => typeof t.pAdjusted === "number"));
+    assert.deepEqual(out.descriptive, [r]);
+  });
+
+  test("h2-absent-group: a group with no included projects is reported absent and not compared", () => {
+    const projects = [...many("show-hn", 40, () => false), ...many("reddit", 30, () => false)];
+    const r = h2Permutation({ projects, seed: "s", groups: ["show-hn", "reddit", "github-only"], B: 10 });
+    assert.equal(r.tested, true);
+    assert.deepEqual(r.groups, { "show-hn": 40, reddit: 30, "github-only": 0 });
+  });
+
+  test("h2-single-group: fewer than two groups with projects is descriptive", () => {
+    const r = h2Permutation({ projects: many("show-hn", 40, () => false), seed: "s" });
+    assert.equal(r.tested, false);
+  });
+
+  test("h2-identical-groups: identical states give T = 0, p = 1, V = 0", () => {
+    const projects = [...many("show-hn", 40, () => true), ...many("reddit", 60, () => true)];
+    const r = h2Permutation({ projects, seed: "s" });
+    assert.equal(r.T, 0);
+    assert.equal(r.p, 1);
+    assert.equal(r.V, 0);
+  });
+
+  test("h2-separation: check 1 always in A, never in B gives T = 80, p = 1/2001", () => {
+    const projects = [...many("show-hn", 40, () => true), ...many("reddit", 40, () => false)];
+    const r = h2Permutation({ projects, seed: "s" });
+    assert.ok(Math.abs(r.T - 80) < 1e-9);
+    assert.ok(Math.abs(r.p - 1 / 2001) < 1e-15);
+    assert.ok(Math.abs(r.V - Math.sqrt(80 / (80 * 24))) < 1e-12);
+    assert.ok(Math.abs(cramersV(80, 80, 24) - r.V) < 1e-15);
+  });
+
+  test("h2-seeded: the same seed gives the same p twice", () => {
+    const projects = [...many("show-hn", 40, (i) => i < 22), ...many("reddit", 40, (i) => i < 15)];
+    const a = h2Permutation({ projects, seed: "seed-a", B: 300 });
+    const b = h2Permutation({ projects, seed: "seed-a", B: 300 });
+    const c = h2Permutation({ projects, seed: "seed-b", B: 300 });
+    assert.equal(a.p, b.p);
+    assert.ok(a.p > 1 / 301 && a.p < 1, String(a.p));
+    assert.equal(c.T, a.T, "a different seed changes only the draws");
   });
 });
