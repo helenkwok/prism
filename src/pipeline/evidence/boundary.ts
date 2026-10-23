@@ -53,6 +53,10 @@ for (const [addr, prefix] of [
   ["2001:db8::", 32],
   ["2001::", 32], // Teredo: the client address is obfuscated, and Teredo is never a project's own site
   ["100::", 64], // discard-only
+  // Local-use NAT64 (RFC 8215). The operator picks a prefix length from /48 to
+  // /96, so where the IPv4 sits is unknowable here: block the whole /48 rather
+  // than judge an embedded IPv4 (that rule is only exact for the fixed /96 of 64:ff9b::).
+  ["64:ff9b:1::", 48],
 ] as const) {
   BLOCKED.addSubnet(addr, prefix, "ipv6");
 }
@@ -83,6 +87,7 @@ export function isBlockedAddress(address: string): boolean {
     const firstFiveZero = g.slice(0, 5).every((x) => x === 0);
     // Encodings that carry an IPv4 address: judge the embedded IPv4.
     if (firstFiveZero && g[5] === 0xffff) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // IPv4-mapped ::ffff:0:0/96
+    if (g.slice(0, 4).every((x) => x === 0) && g[4] === 0xffff && g[5] === 0) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // SIIT ::ffff:0:0:0/96
     if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0)) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // NAT64 64:ff9b::/96
     if (firstFiveZero && g[5] === 0 && !(g[6] === 0 && g[7] <= 1)) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // IPv4-compatible ::/96 (:: and ::1 fall through, blocked below)
     if (g[0] === 0x2002) return BLOCKED.check(v4Of(g[1], g[2]), "ipv4"); // 6to4 2002::/16
