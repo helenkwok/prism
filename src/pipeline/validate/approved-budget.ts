@@ -13,7 +13,23 @@ export function openApprovedBudget(dataDir: string, stage: ApprovedStage) {
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const file = path.join(dir, "approved-budget-2026-10-23.json");
   const lockFile = `${file}.lock`;
-  const lock = fs.openSync(lockFile, "wx", 0o600);
+  let lock: number;
+  try { lock = fs.openSync(lockFile, "wx", 0o600); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    const before = fs.statSync(lockFile);
+    const owner = Number(fs.readFileSync(lockFile, "utf8"));
+    if (!Number.isSafeInteger(owner) || owner <= 0) throw new Error("invalid budget lease owner");
+    let alive = true;
+    try { process.kill(owner, 0); } catch (probe) {
+      if ((probe as NodeJS.ErrnoException).code !== "ESRCH") throw probe;
+      alive = false;
+    }
+    if (alive) throw error;
+    if (fs.statSync(lockFile).ino !== before.ino) throw new Error("budget lease changed during recovery");
+    fs.unlinkSync(lockFile);
+    lock = fs.openSync(lockFile, "wx", 0o600);
+  }
   fs.writeFileSync(lock, String(process.pid));
   try {
     const ledger: Ledger = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { approval: "2026-10-23", stages: {} };

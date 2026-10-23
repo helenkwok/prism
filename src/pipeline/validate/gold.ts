@@ -114,7 +114,7 @@ function makeGoldCallOnce(
     const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const baseCache = readCached<string>(cacheDir, stageCacheKey(hnId, "gold-valid-chunk", { provider: role.provider, model: role.model, reasoning: role.reasoning, requestHash: baseDigest }));
     if (baseCache.hit && isSchemaValid(baseCache.value, spanIds, buildContract(checkIds).zodSchema).valid) return baseCache.value;
-    const failure = failures.get(baseDigest);
+    const failure = failures.get(baseDigest) ?? (role.provider === "ollama" && /^glm-5\.3-flash(?::cloud)?$/.test(role.model) ? "json_parse" : undefined);
     // Cloud schemas are advisory; local validation is strict and retry feedback is trusted text.
     if (failure === "json_parse") body = makeBody(jsonSchema, "Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check.");
     if (failure === "zod") body = makeBody(jsonSchema, `Return exactly the required checks object keyed by all ${checkIds.length} ids: ${checkIds.join(", ")}. Each check contains only proposedState (pass, fail, unknown or claimed) and spanIds (an array of strings, empty when unsupported). Do not add, rename or omit keys. Match the supplied schema exactly; no prose or fences.`);

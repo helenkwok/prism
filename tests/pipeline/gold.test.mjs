@@ -15,7 +15,8 @@ import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildContract, loadGateFile, resolveGatesPath } from "../../src/pipeline/coding/contract.ts";
 import { buildChatBody, isQuotaResponse, QuotaStop } from "../../src/pipeline/coding/nebius-client.ts";
 import { projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
-import { buildCodingMessages } from "../../src/pipeline/run.ts";
+import { stageCacheKey, writeCached } from "../../src/pipeline/cache/stage-cache.ts";
+import { buildCodingMessages, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
 import {
   a7Section,
   a7Signed,
@@ -146,6 +147,28 @@ describe("ollamaClient adapter", () => {
 });
 
 describe("labelProject", () => {
+  test("flash starts with the existing JSON correction once, preserves its hash and serves old base caches first", async () => {
+    for (const model of ["glm-5.3-flash", "glm-5.3-flash:cloud"]) {
+      const dataDir = tempDir("prism-gold-flash-format-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
+      writeProjectTree(dataDir, 11, ["Fixture command."]); const spans = projectSpans(dataDir, 11);
+      const role = { ...ROLE_CONFIG.gold, model }; let calls = 0;
+      const baseBody = buildChatBody({ model, messages: buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans), mode: "json_schema", schema: { name: "gate_checks", schema: contract.jsonSchema, strict: true }, thinking: false, reasoningEffort: "low", maxTokens: CODING_MAX_TOKENS });
+      const correctedBody = structuredClone(baseBody);
+      correctedBody.messages[0].content += `\n\nFormat correction (${GOLD_ATTEMPT_REVISION}): Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check.`;
+      const client = { request: async (_p, { body }) => { calls++; assert.deepEqual(body, correctedBody); return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } }; } };
+      const options = { dataDir, cacheDir, projectN: 11, hnId: "1011", codebook, codebookVersion: "v1.0", contract, role, client };
+      const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+      assert.equal((await labelProject({ ...options, db })).outcome, "labelled"); assert.equal(calls, 1);
+      const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+      assert.equal((await labelProject({ ...options, db: freshDb })).outcome, "labelled"); assert.equal(calls, 1);
+      const legacyCache = path.join(dataDir, "legacy-cache");
+      const requestHash = crypto.createHash("sha256").update(JSON.stringify(baseBody)).digest("hex");
+      writeCached(legacyCache, stageCacheKey("1011", "gold-valid-chunk", { provider: role.provider, model, reasoning: role.reasoning, requestHash }), keyedUnknownReply());
+      const legacyDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+      assert.equal((await labelProject({ ...options, cacheDir: legacyCache, db: legacyDb })).outcome, "labelled"); assert.equal(calls, 1);
+      await db.destroy(); await freshDb.destroy(); await legacyDb.destroy();
+    }
+  });
   test("format failures get trusted feedback and resume the repaired cache without rebuying", async () => {
     const dataDir = tempDir("prism-gold-format-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
     writeProjectTree(dataDir, 8, ["Fixture command is reproducible."]);
@@ -153,7 +176,7 @@ describe("labelProject", () => {
       captured.push(body);
       return { ok: true, status: 200, json: { choices: [{ message: { content: captured.length === 1 ? "```invalid" : captured.length === 2 ? '{"checks":{}}' : keyedUnknownReply() } }] } };
     } };
-    const options = { dataDir, cacheDir, projectN: 8, hnId: "1008", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const options = { dataDir, cacheDir, projectN: 8, hnId: "1008", codebook, codebookVersion: "v1.0", contract, role: { ...ROLE_CONFIG.gold, model: "glm-5.3" }, client };
     const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
     assert.equal((await labelProject({ ...options, db })).outcome, "labelled");
     assert.equal(captured.length, 3);
@@ -218,7 +241,7 @@ describe("labelProject", () => {
       const cited = captured.length === 1 ? "nonexistent-span" : spans[0].id;
       return { ok: true, status: 200, json: { choices: [{ finish_reason: "stop", message: { content: JSON.stringify({ checks: Object.fromEntries(contract.checkIds.map(id => [id, { proposedState: "claimed", spanIds: [cited] }])) }) } }] } };
     } };
-    const options = { dataDir, cacheDir, projectN: 7, hnId: "1007", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const options = { dataDir, cacheDir, projectN: 7, hnId: "1007", codebook, codebookVersion: "v1.0", contract, role: { ...ROLE_CONFIG.gold, model: "glm-5.3" }, client };
     const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
     assert.equal((await labelProject({ ...options, db })).outcome, "labelled");
     assert.equal(captured.length, 2);
@@ -277,7 +300,7 @@ describe("labelProject", () => {
       })
       .execute();
 
-    const role = ROLE_CONFIG.gold;
+    const role = { ...ROLE_CONFIG.gold, model: "glm-5.3" };
     const outcome = await labelProject({
       db,
       dataDir,

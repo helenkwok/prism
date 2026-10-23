@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { spawnSync } from "node:child_process";
 import { openApprovedBudget } from "../../src/pipeline/validate/approved-budget.ts";
 
 test("stage and combined caps survive reservations and process resumes", () => {
@@ -41,4 +42,17 @@ test("the approved cap increase preserves spend and unresolved reservations", ()
   assert.equal(run.budget.spent, 1.42);
   assert.equal(run.parent.spent, 1.42);
   run.release();
+});
+
+test("a terminated run lease can resume without losing pending charges", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-budget-test-"));
+  const run = openApprovedBudget(dir, "gold");
+  run.budget.reserve(.03);
+  run.release();
+  const dead = spawnSync(process.execPath, ["-e", ""]);
+  fs.writeFileSync(`${run.file}.lock`, String(dead.pid));
+  const resumed = openApprovedBudget(dir, "gold");
+  assert.equal(resumed.budget.spent, .03);
+  assert.equal(resumed.parent.spent, .03);
+  resumed.release();
 });
