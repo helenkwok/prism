@@ -1,0 +1,3403 @@
+{
+ "schema": 1,
+ "synthetic": true,
+ "generator": "mulberry32 seed 20261030; project n in 1..300, quarter ((n-1) mod 4)+1, source reddit for n in {7,57,107,157,207,257} else show-hn; per check in codebook order: pass count 295 (check 1), 6 (check 5), else 20+floor(r*181); claimed 10+floor(r*min(60,280-pass)) (3 for check 1) of which the first 2+floor(r*4) are downgraded (d); then 3 rejected (x) and min(floor(r*40), remaining) fail (f), rest unknown, each assigned over a Fisher-Yates shuffle of the projects. Gate: check 8 missed, check 12 released-not-estimable, others released.",
+ "release": {
+  "version": "v1",
+  "date": "2026-10-30"
+ },
+ "checkIds": [
+  "output-reproducible",
+  "assumptions-catalogued",
+  "intended-use-defined",
+  "acceptance-criteria-defined",
+  "acceptance-criteria-met",
+  "failure-modes-tested",
+  "limitations-stated",
+  "deliverable-gate-passed",
+  "operational-owner-assigned",
+  "assurance-defined",
+  "fallback-defined",
+  "recovery-tested",
+  "support-maintenance-defined",
+  "operating-cost-known",
+  "outcome-measure-defined",
+  "baseline-defined",
+  "outcome-measured",
+  "measurement-definition-consistent",
+  "important-confounds-named",
+  "outcome-evidence-available",
+  "full-cost-accounted",
+  "risk-tradeoffs-assessed",
+  "alternatives-compared",
+  "value-rule-explicit"
+ ],
+ "projects": [
+  {
+   "n": 1,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000001",
+   "title": "Synthetic 001",
+   "finalUrl": "https://synthetic-001.example/",
+   "states": "puppuuuppufpcpppccupuucu"
+  },
+  {
+   "n": 2,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000002",
+   "title": "Synthetic 002",
+   "finalUrl": "https://synthetic-002.example/",
+   "states": "pccpucppupppuupcufpcupfp"
+  },
+  {
+   "n": 3,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000003",
+   "title": "Synthetic 003",
+   "finalUrl": "https://synthetic-003.example/",
+   "states": "ppupcpupucpuupfcpfccupfp"
+  },
+  {
+   "n": 4,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000004",
+   "title": "Synthetic 004",
+   "finalUrl": "https://synthetic-004.example/",
+   "states": "ppupucpfpuppuuppcufpuxuu"
+  },
+  {
+   "n": 5,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000005",
+   "title": "Synthetic 005",
+   "finalUrl": "https://synthetic-005.example/",
+   "states": "ppufcuduuupufupuuuucuufp"
+  },
+  {
+   "n": 6,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000006",
+   "title": "Synthetic 006",
+   "finalUrl": "https://synthetic-006.example/",
+   "states": "pppuuupuppppffpupuppcppp"
+  },
+  {
+   "n": 7,
+   "quarter": 3,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000007",
+   "title": "Synthetic 007",
+   "finalUrl": "https://synthetic-007.example/",
+   "states": "ppupcucpupppuupcpfpduupp"
+  },
+  {
+   "n": 8,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000008",
+   "title": "Synthetic 008",
+   "finalUrl": "https://synthetic-008.example/",
+   "states": "ppppuupfcpppupppcupuuuuc"
+  },
+  {
+   "n": 9,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000009",
+   "title": "Synthetic 009",
+   "finalUrl": "https://synthetic-009.example/",
+   "states": "pcpcfpfpfuppcupppuuupppc"
+  },
+  {
+   "n": 10,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000010",
+   "title": "Synthetic 010",
+   "finalUrl": "https://synthetic-010.example/",
+   "states": "ppupuppuuupcuuppppuuupcp"
+  },
+  {
+   "n": 11,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000011",
+   "title": "Synthetic 011",
+   "finalUrl": "https://synthetic-011.example/",
+   "states": "ppupupfpppcpucxfpuucuuup"
+  },
+  {
+   "n": 12,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000012",
+   "title": "Synthetic 012",
+   "finalUrl": "https://synthetic-012.example/",
+   "states": "pcupupccuppcuuppcuppcpfp"
+  },
+  {
+   "n": 13,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000013",
+   "title": "Synthetic 013",
+   "finalUrl": "https://synthetic-013.example/",
+   "states": "pppuccpccpcufpfpppcpcppp"
+  },
+  {
+   "n": 14,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000014",
+   "title": "Synthetic 014",
+   "finalUrl": "https://synthetic-014.example/",
+   "states": "ppufuuucuupuupppupppuufp"
+  },
+  {
+   "n": 15,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000015",
+   "title": "Synthetic 015",
+   "finalUrl": "https://synthetic-015.example/",
+   "states": "pppcucupuuppfuupuuufcppp"
+  },
+  {
+   "n": 16,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000016",
+   "title": "Synthetic 016",
+   "finalUrl": "https://synthetic-016.example/",
+   "states": "ppufupuucucpffpppffcuppc"
+  },
+  {
+   "n": 17,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000017",
+   "title": "Synthetic 017",
+   "finalUrl": "https://synthetic-017.example/",
+   "states": "puppuupcfpcpuuxfpfupucpp"
+  },
+  {
+   "n": 18,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000018",
+   "title": "Synthetic 018",
+   "finalUrl": "https://synthetic-018.example/",
+   "states": "pfupupccupcudppfufpppppp"
+  },
+  {
+   "n": 19,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000019",
+   "title": "Synthetic 019",
+   "finalUrl": "https://synthetic-019.example/",
+   "states": "ppcpuppcfpuucuppfucccufp"
+  },
+  {
+   "n": 20,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000020",
+   "title": "Synthetic 020",
+   "finalUrl": "https://synthetic-020.example/",
+   "states": "puufucppupppuuppducpucuu"
+  },
+  {
+   "n": 21,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000021",
+   "title": "Synthetic 021",
+   "finalUrl": "https://synthetic-021.example/",
+   "states": "pupuupppupfpucpfcucpddcp"
+  },
+  {
+   "n": 22,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000022",
+   "title": "Synthetic 022",
+   "finalUrl": "https://synthetic-022.example/",
+   "states": "pcpuuucpcppudfppuuufupcu"
+  },
+  {
+   "n": 23,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000023",
+   "title": "Synthetic 023",
+   "finalUrl": "https://synthetic-023.example/",
+   "states": "ppupcuppuuppuupfccuppupc"
+  },
+  {
+   "n": 24,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000024",
+   "title": "Synthetic 024",
+   "finalUrl": "https://synthetic-024.example/",
+   "states": "ppcufcppfcppuuppxupfuuud"
+  },
+  {
+   "n": 25,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000025",
+   "title": "Synthetic 025",
+   "finalUrl": "https://synthetic-025.example/",
+   "states": "ppupppupppuuupufpuupuuup"
+  },
+  {
+   "n": 26,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000026",
+   "title": "Synthetic 026",
+   "finalUrl": "https://synthetic-026.example/",
+   "states": "ppupuuupuupuuupfuucupppp"
+  },
+  {
+   "n": 27,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000027",
+   "title": "Synthetic 027",
+   "finalUrl": "https://synthetic-027.example/",
+   "states": "ppupuupfuupuucupuupccupp"
+  },
+  {
+   "n": 28,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000028",
+   "title": "Synthetic 028",
+   "finalUrl": "https://synthetic-028.example/",
+   "states": "ppcuuuupuuppuuuupupuducc"
+  },
+  {
+   "n": 29,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000029",
+   "title": "Synthetic 029",
+   "finalUrl": "https://synthetic-029.example/",
+   "states": "ppppuuppuuppuuuuuuupuppp"
+  },
+  {
+   "n": 30,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000030",
+   "title": "Synthetic 030",
+   "finalUrl": "https://synthetic-030.example/",
+   "states": "ppucupupfppuuuuuppupuppp"
+  },
+  {
+   "n": 31,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000031",
+   "title": "Synthetic 031",
+   "finalUrl": "https://synthetic-031.example/",
+   "states": "ppudufpfuppuuppppdppuupu"
+  },
+  {
+   "n": 32,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000032",
+   "title": "Synthetic 032",
+   "finalUrl": "https://synthetic-032.example/",
+   "states": "ppfpcdppcucupuppppppupcp"
+  },
+  {
+   "n": 33,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000033",
+   "title": "Synthetic 033",
+   "finalUrl": "https://synthetic-033.example/",
+   "states": "puppupuucpppuupfpcppuuup"
+  },
+  {
+   "n": 34,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000034",
+   "title": "Synthetic 034",
+   "finalUrl": "https://synthetic-034.example/",
+   "states": "ppcpcpuuuupuuuppccupucpc"
+  },
+  {
+   "n": 35,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000035",
+   "title": "Synthetic 035",
+   "finalUrl": "https://synthetic-035.example/",
+   "states": "ppppuuupuuppuduupupxcpup"
+  },
+  {
+   "n": 36,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000036",
+   "title": "Synthetic 036",
+   "finalUrl": "https://synthetic-036.example/",
+   "states": "ppcpuxcduuuuufpppuucuucu"
+  },
+  {
+   "n": 37,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000037",
+   "title": "Synthetic 037",
+   "finalUrl": "https://synthetic-037.example/",
+   "states": "puupcpufduppuuppuucppuup"
+  },
+  {
+   "n": 38,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000038",
+   "title": "Synthetic 038",
+   "finalUrl": "https://synthetic-038.example/",
+   "states": "pucpupppuuppufpppfpupupp"
+  },
+  {
+   "n": 39,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000039",
+   "title": "Synthetic 039",
+   "finalUrl": "https://synthetic-039.example/",
+   "states": "ppppupuucpupuufpuucducup"
+  },
+  {
+   "n": 40,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000040",
+   "title": "Synthetic 040",
+   "finalUrl": "https://synthetic-040.example/",
+   "states": "pppcuppcfpddpppppupppupp"
+  },
+  {
+   "n": 41,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000041",
+   "title": "Synthetic 041",
+   "finalUrl": "https://synthetic-041.example/",
+   "states": "ppupuuppcuppcuppcpduuppp"
+  },
+  {
+   "n": 42,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000042",
+   "title": "Synthetic 042",
+   "finalUrl": "https://synthetic-042.example/",
+   "states": "puppuuuuuuppupcppfcpucpp"
+  },
+  {
+   "n": 43,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000043",
+   "title": "Synthetic 043",
+   "finalUrl": "https://synthetic-043.example/",
+   "states": "pcpcuupuupcucpppppcuuupc"
+  },
+  {
+   "n": 44,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000044",
+   "title": "Synthetic 044",
+   "finalUrl": "https://synthetic-044.example/",
+   "states": "puupcpuuuuppucucpfcuucpu"
+  },
+  {
+   "n": 45,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000045",
+   "title": "Synthetic 045",
+   "finalUrl": "https://synthetic-045.example/",
+   "states": "pcppfupfupppuppfuucpuuup"
+  },
+  {
+   "n": 46,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000046",
+   "title": "Synthetic 046",
+   "finalUrl": "https://synthetic-046.example/",
+   "states": "pcpufuufuuuuupupuuupcufc"
+  },
+  {
+   "n": 47,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000047",
+   "title": "Synthetic 047",
+   "finalUrl": "https://synthetic-047.example/",
+   "states": "puppfpppcpppcuppuppppcuu"
+  },
+  {
+   "n": 48,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000048",
+   "title": "Synthetic 048",
+   "finalUrl": "https://synthetic-048.example/",
+   "states": "ppuuupupuupppupucuuccucp"
+  },
+  {
+   "n": 49,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000049",
+   "title": "Synthetic 049",
+   "finalUrl": "https://synthetic-049.example/",
+   "states": "ppppuuupuupupxuppfpcuuuu"
+  },
+  {
+   "n": 50,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000050",
+   "title": "Synthetic 050",
+   "finalUrl": "https://synthetic-050.example/",
+   "states": "ppupuucpuppdfupppucuuufp"
+  },
+  {
+   "n": 51,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000051",
+   "title": "Synthetic 051",
+   "finalUrl": "https://synthetic-051.example/",
+   "states": "ppppuuuppcdpcupcpufcuppu"
+  },
+  {
+   "n": 52,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000052",
+   "title": "Synthetic 052",
+   "finalUrl": "https://synthetic-052.example/",
+   "states": "ppppupppuuppucpppfppupcc"
+  },
+  {
+   "n": 53,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000053",
+   "title": "Synthetic 053",
+   "finalUrl": "https://synthetic-053.example/",
+   "states": "pfpcuuupupcuupfpuucuuucp"
+  },
+  {
+   "n": 54,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000054",
+   "title": "Synthetic 054",
+   "finalUrl": "https://synthetic-054.example/",
+   "states": "ppppfxcucupcupppuuppupuu"
+  },
+  {
+   "n": 55,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000055",
+   "title": "Synthetic 055",
+   "finalUrl": "https://synthetic-055.example/",
+   "states": "pdppcuupuupuuppcpuuudupp"
+  },
+  {
+   "n": 56,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000056",
+   "title": "Synthetic 056",
+   "finalUrl": "https://synthetic-056.example/",
+   "states": "ppupuuppcupuucuppppuupcu"
+  },
+  {
+   "n": 57,
+   "quarter": 1,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000057",
+   "title": "Synthetic 057",
+   "finalUrl": "https://synthetic-057.example/",
+   "states": "ppuccucpuupfcfppppppuppp"
+  },
+  {
+   "n": 58,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000058",
+   "title": "Synthetic 058",
+   "finalUrl": "https://synthetic-058.example/",
+   "states": "ppucucupucppuucpuuuccucu"
+  },
+  {
+   "n": 59,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000059",
+   "title": "Synthetic 059",
+   "finalUrl": "https://synthetic-059.example/",
+   "states": "ppppufppufppufpppcppuppp"
+  },
+  {
+   "n": 60,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000060",
+   "title": "Synthetic 060",
+   "finalUrl": "https://synthetic-060.example/",
+   "states": "ppupuuppppcuuupxfppuuucp"
+  },
+  {
+   "n": 61,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000061",
+   "title": "Synthetic 061",
+   "finalUrl": "https://synthetic-061.example/",
+   "states": "ppppupucufppuppupupcuufp"
+  },
+  {
+   "n": 62,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000062",
+   "title": "Synthetic 062",
+   "finalUrl": "https://synthetic-062.example/",
+   "states": "ppupducpcpupuuppppppuupc"
+  },
+  {
+   "n": 63,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000063",
+   "title": "Synthetic 063",
+   "finalUrl": "https://synthetic-063.example/",
+   "states": "ppucucuufucxucpupuucuuup"
+  },
+  {
+   "n": 64,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000064",
+   "title": "Synthetic 064",
+   "finalUrl": "https://synthetic-064.example/",
+   "states": "pcpcuuufuuppucpdcuucupup"
+  },
+  {
+   "n": 65,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000065",
+   "title": "Synthetic 065",
+   "finalUrl": "https://synthetic-065.example/",
+   "states": "pfupuuucupfucpuupuupcupc"
+  },
+  {
+   "n": 66,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000066",
+   "title": "Synthetic 066",
+   "finalUrl": "https://synthetic-066.example/",
+   "states": "pppcuufuufppudpupupppuup"
+  },
+  {
+   "n": 67,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000067",
+   "title": "Synthetic 067",
+   "finalUrl": "https://synthetic-067.example/",
+   "states": "puppupupcupuucpuuuucpupc"
+  },
+  {
+   "n": 68,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000068",
+   "title": "Synthetic 068",
+   "finalUrl": "https://synthetic-068.example/",
+   "states": "pppfuppcpuppcupppfuuupup"
+  },
+  {
+   "n": 69,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000069",
+   "title": "Synthetic 069",
+   "finalUrl": "https://synthetic-069.example/",
+   "states": "ppuuuucpucppucpuuuufcppu"
+  },
+  {
+   "n": 70,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000070",
+   "title": "Synthetic 070",
+   "finalUrl": "https://synthetic-070.example/",
+   "states": "pupdufcuuuppufpucuupuufu"
+  },
+  {
+   "n": 71,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000071",
+   "title": "Synthetic 071",
+   "finalUrl": "https://synthetic-071.example/",
+   "states": "pcupucupupppuuuppfccuucp"
+  },
+  {
+   "n": 72,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000072",
+   "title": "Synthetic 072",
+   "finalUrl": "https://synthetic-072.example/",
+   "states": "pupcuupupucpuupppuppppxu"
+  },
+  {
+   "n": 73,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000073",
+   "title": "Synthetic 073",
+   "finalUrl": "https://synthetic-073.example/",
+   "states": "ppfpupuppuppupppupfpuuup"
+  },
+  {
+   "n": 74,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000074",
+   "title": "Synthetic 074",
+   "finalUrl": "https://synthetic-074.example/",
+   "states": "ppupufupupcpuupppupcpupp"
+  },
+  {
+   "n": 75,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000075",
+   "title": "Synthetic 075",
+   "finalUrl": "https://synthetic-075.example/",
+   "states": "puufuuupfpfpupfppuppuppp"
+  },
+  {
+   "n": 76,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000076",
+   "title": "Synthetic 076",
+   "finalUrl": "https://synthetic-076.example/",
+   "states": "ppupupuupuxuuupuppupuucu"
+  },
+  {
+   "n": 77,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000077",
+   "title": "Synthetic 077",
+   "finalUrl": "https://synthetic-077.example/",
+   "states": "pppuuucupucuccpppfppuufu"
+  },
+  {
+   "n": 78,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000078",
+   "title": "Synthetic 078",
+   "finalUrl": "https://synthetic-078.example/",
+   "states": "pfpppfppcppuuuuupuupupuu"
+  },
+  {
+   "n": 79,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000079",
+   "title": "Synthetic 079",
+   "finalUrl": "https://synthetic-079.example/",
+   "states": "puppcppdpppucupcuuupupcp"
+  },
+  {
+   "n": 80,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000080",
+   "title": "Synthetic 080",
+   "finalUrl": "https://synthetic-080.example/",
+   "states": "pdupufuucppuxfpuuuucuuux"
+  },
+  {
+   "n": 81,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000081",
+   "title": "Synthetic 081",
+   "finalUrl": "https://synthetic-081.example/",
+   "states": "pfpcuucpuufpufppupppuucu"
+  },
+  {
+   "n": 82,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000082",
+   "title": "Synthetic 082",
+   "finalUrl": "https://synthetic-082.example/",
+   "states": "ppupuccpuuppcpcppufuuppp"
+  },
+  {
+   "n": 83,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000083",
+   "title": "Synthetic 083",
+   "finalUrl": "https://synthetic-083.example/",
+   "states": "pppcupuppppuufpfupppfupu"
+  },
+  {
+   "n": 84,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000084",
+   "title": "Synthetic 084",
+   "finalUrl": "https://synthetic-084.example/",
+   "states": "ppppxpppucppuuufpuuuppcc"
+  },
+  {
+   "n": 85,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000085",
+   "title": "Synthetic 085",
+   "finalUrl": "https://synthetic-085.example/",
+   "states": "pcppuuupcupuucupcuccuucp"
+  },
+  {
+   "n": 86,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000086",
+   "title": "Synthetic 086",
+   "finalUrl": "https://synthetic-086.example/",
+   "states": "ppcpupuuuucuuuppcupuuuup"
+  },
+  {
+   "n": 87,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000087",
+   "title": "Synthetic 087",
+   "finalUrl": "https://synthetic-087.example/",
+   "states": "pppfupfpupppcupcpuppuucp"
+  },
+  {
+   "n": 88,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000088",
+   "title": "Synthetic 088",
+   "finalUrl": "https://synthetic-088.example/",
+   "states": "pxucucpuuppufuuppupppcpu"
+  },
+  {
+   "n": 89,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000089",
+   "title": "Synthetic 089",
+   "finalUrl": "https://synthetic-089.example/",
+   "states": "ppppuuppfuppuupupcppupup"
+  },
+  {
+   "n": 90,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000090",
+   "title": "Synthetic 090",
+   "finalUrl": "https://synthetic-090.example/",
+   "states": "ppufcuupuupucupppupcuuup"
+  },
+  {
+   "n": 91,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000091",
+   "title": "Synthetic 091",
+   "finalUrl": "https://synthetic-091.example/",
+   "states": "pcupuuupuuppuppppfupupcu"
+  },
+  {
+   "n": 92,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000092",
+   "title": "Synthetic 092",
+   "finalUrl": "https://synthetic-092.example/",
+   "states": "pppcxuuppuppppcppfppcupc"
+  },
+  {
+   "n": 93,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000093",
+   "title": "Synthetic 093",
+   "finalUrl": "https://synthetic-093.example/",
+   "states": "pcupupcppuppucppppfpuuuu"
+  },
+  {
+   "n": 94,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000094",
+   "title": "Synthetic 094",
+   "finalUrl": "https://synthetic-094.example/",
+   "states": "ppppupppuupuuppccuuuuupu"
+  },
+  {
+   "n": 95,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000095",
+   "title": "Synthetic 095",
+   "finalUrl": "https://synthetic-095.example/",
+   "states": "pfppuuucucpcuuppppcpuucc"
+  },
+  {
+   "n": 96,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000096",
+   "title": "Synthetic 096",
+   "finalUrl": "https://synthetic-096.example/",
+   "states": "pppfcpcpuuppuupufccucupc"
+  },
+  {
+   "n": 97,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000097",
+   "title": "Synthetic 097",
+   "finalUrl": "https://synthetic-097.example/",
+   "states": "ppppuuuuxppuuuppuppcuuup"
+  },
+  {
+   "n": 98,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000098",
+   "title": "Synthetic 098",
+   "finalUrl": "https://synthetic-098.example/",
+   "states": "pcupuupuuuppuuupcuuuuuuu"
+  },
+  {
+   "n": 99,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000099",
+   "title": "Synthetic 099",
+   "finalUrl": "https://synthetic-099.example/",
+   "states": "pppucupppucuuppppcppuppc"
+  },
+  {
+   "n": 100,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000100",
+   "title": "Synthetic 100",
+   "finalUrl": "https://synthetic-100.example/",
+   "states": "pfxpucuuuupuuupcpuffudpp"
+  },
+  {
+   "n": 101,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000101",
+   "title": "Synthetic 101",
+   "finalUrl": "https://synthetic-101.example/",
+   "states": "puupfpccxpcuuppupuuccuup"
+  },
+  {
+   "n": 102,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000102",
+   "title": "Synthetic 102",
+   "finalUrl": "https://synthetic-102.example/",
+   "states": "pcppucpucupuucfcpuucpupp"
+  },
+  {
+   "n": 103,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000103",
+   "title": "Synthetic 103",
+   "finalUrl": "https://synthetic-103.example/",
+   "states": "pfupcdupducuucppuuupupuc"
+  },
+  {
+   "n": 104,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000104",
+   "title": "Synthetic 104",
+   "finalUrl": "https://synthetic-104.example/",
+   "states": "pppcuucppufuufpupupcppcp"
+  },
+  {
+   "n": 105,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000105",
+   "title": "Synthetic 105",
+   "finalUrl": "https://synthetic-105.example/",
+   "states": "pppfcpuuuuppcpufpfupucup"
+  },
+  {
+   "n": 106,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000106",
+   "title": "Synthetic 106",
+   "finalUrl": "https://synthetic-106.example/",
+   "states": "puucfuppuupuucuppupcuupp"
+  },
+  {
+   "n": 107,
+   "quarter": 3,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000107",
+   "title": "Synthetic 107",
+   "finalUrl": "https://synthetic-107.example/",
+   "states": "pcppuupuuufufuuppuppuppp"
+  },
+  {
+   "n": 108,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000108",
+   "title": "Synthetic 108",
+   "finalUrl": "https://synthetic-108.example/",
+   "states": "dppcupuuupuuupuppfcpuupu"
+  },
+  {
+   "n": 109,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000109",
+   "title": "Synthetic 109",
+   "finalUrl": "https://synthetic-109.example/",
+   "states": "pupffuupufcpcpuppdufppfu"
+  },
+  {
+   "n": 110,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000110",
+   "title": "Synthetic 110",
+   "finalUrl": "https://synthetic-110.example/",
+   "states": "ppupccppcupuuuuupupxuucp"
+  },
+  {
+   "n": 111,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000111",
+   "title": "Synthetic 111",
+   "finalUrl": "https://synthetic-111.example/",
+   "states": "ppuuupffpuppcupuuuppcufd"
+  },
+  {
+   "n": 112,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000112",
+   "title": "Synthetic 112",
+   "finalUrl": "https://synthetic-112.example/",
+   "states": "ppppuuppppuuupfppuppuufu"
+  },
+  {
+   "n": 113,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000113",
+   "title": "Synthetic 113",
+   "finalUrl": "https://synthetic-113.example/",
+   "states": "pfpcupuccppuucpppcpuuupp"
+  },
+  {
+   "n": 114,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000114",
+   "title": "Synthetic 114",
+   "finalUrl": "https://synthetic-114.example/",
+   "states": "pcupuuupuupuuppppupcppfp"
+  },
+  {
+   "n": 115,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000115",
+   "title": "Synthetic 115",
+   "finalUrl": "https://synthetic-115.example/",
+   "states": "pcupcuufuppuuppfxuppucuu"
+  },
+  {
+   "n": 116,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000116",
+   "title": "Synthetic 116",
+   "finalUrl": "https://synthetic-116.example/",
+   "states": "ppufupppcuppfpppppcpuppu"
+  },
+  {
+   "n": 117,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000117",
+   "title": "Synthetic 117",
+   "finalUrl": "https://synthetic-117.example/",
+   "states": "ppuuupupfpppuudupfpcuucu"
+  },
+  {
+   "n": 118,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000118",
+   "title": "Synthetic 118",
+   "finalUrl": "https://synthetic-118.example/",
+   "states": "ppppcuuufpfpuuppuffuuupp"
+  },
+  {
+   "n": 119,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000119",
+   "title": "Synthetic 119",
+   "finalUrl": "https://synthetic-119.example/",
+   "states": "ppppfuuucpcpcppppuppuudp"
+  },
+  {
+   "n": 120,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000120",
+   "title": "Synthetic 120",
+   "finalUrl": "https://synthetic-120.example/",
+   "states": "pppfcuccuuppucpppucccuup"
+  },
+  {
+   "n": 121,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000121",
+   "title": "Synthetic 121",
+   "finalUrl": "https://synthetic-121.example/",
+   "states": "pupfupuccpppucuppupccppp"
+  },
+  {
+   "n": 122,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000122",
+   "title": "Synthetic 122",
+   "finalUrl": "https://synthetic-122.example/",
+   "states": "pppfupuupucuufpppuucuppp"
+  },
+  {
+   "n": 123,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000123",
+   "title": "Synthetic 123",
+   "finalUrl": "https://synthetic-123.example/",
+   "states": "ppppuucpcuuppcpppupuuupu"
+  },
+  {
+   "n": 124,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000124",
+   "title": "Synthetic 124",
+   "finalUrl": "https://synthetic-124.example/",
+   "states": "ppppupppuuuuuuuuuucpuupp"
+  },
+  {
+   "n": 125,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000125",
+   "title": "Synthetic 125",
+   "finalUrl": "https://synthetic-125.example/",
+   "states": "pcffuppcuuppuuppuuucuppp"
+  },
+  {
+   "n": 126,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000126",
+   "title": "Synthetic 126",
+   "finalUrl": "https://synthetic-126.example/",
+   "states": "ppupuppucucuuupppucuuppc"
+  },
+  {
+   "n": 127,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000127",
+   "title": "Synthetic 127",
+   "finalUrl": "https://synthetic-127.example/",
+   "states": "ppucufpucuppufpppccpuppp"
+  },
+  {
+   "n": 128,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000128",
+   "title": "Synthetic 128",
+   "finalUrl": "https://synthetic-128.example/",
+   "states": "pppfupccucppuppppuffpuuc"
+  },
+  {
+   "n": 129,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000129",
+   "title": "Synthetic 129",
+   "finalUrl": "https://synthetic-129.example/",
+   "states": "dufpuuupfupuuppcccdpupup"
+  },
+  {
+   "n": 130,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000130",
+   "title": "Synthetic 130",
+   "finalUrl": "https://synthetic-130.example/",
+   "states": "ppppuppppppppcpcuufpuucu"
+  },
+  {
+   "n": 131,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000131",
+   "title": "Synthetic 131",
+   "finalUrl": "https://synthetic-131.example/",
+   "states": "ppupupxpcuuuucpppuuccupc"
+  },
+  {
+   "n": 132,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000132",
+   "title": "Synthetic 132",
+   "finalUrl": "https://synthetic-132.example/",
+   "states": "ppupppupuffupuppcuuuuppc"
+  },
+  {
+   "n": 133,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000133",
+   "title": "Synthetic 133",
+   "finalUrl": "https://synthetic-133.example/",
+   "states": "puppuuupxupuuppppcpppupp"
+  },
+  {
+   "n": 134,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000134",
+   "title": "Synthetic 134",
+   "finalUrl": "https://synthetic-134.example/",
+   "states": "ppppfpfppcpuuuppuuupcpup"
+  },
+  {
+   "n": 135,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000135",
+   "title": "Synthetic 135",
+   "finalUrl": "https://synthetic-135.example/",
+   "states": "pcppuppupuppufcfupcpuuup"
+  },
+  {
+   "n": 136,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000136",
+   "title": "Synthetic 136",
+   "finalUrl": "https://synthetic-136.example/",
+   "states": "ppppcuppuuppuupppcpppupp"
+  },
+  {
+   "n": 137,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000137",
+   "title": "Synthetic 137",
+   "finalUrl": "https://synthetic-137.example/",
+   "states": "ppupfpppupppuuppppcppppc"
+  },
+  {
+   "n": 138,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000138",
+   "title": "Synthetic 138",
+   "finalUrl": "https://synthetic-138.example/",
+   "states": "pfcuffpfuucpcuupucucuuuu"
+  },
+  {
+   "n": 139,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000139",
+   "title": "Synthetic 139",
+   "finalUrl": "https://synthetic-139.example/",
+   "states": "ppppfpupcppuuuppufppuufp"
+  },
+  {
+   "n": 140,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000140",
+   "title": "Synthetic 140",
+   "finalUrl": "https://synthetic-140.example/",
+   "states": "ppupupppppppuuuucupucppp"
+  },
+  {
+   "n": 141,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000141",
+   "title": "Synthetic 141",
+   "finalUrl": "https://synthetic-141.example/",
+   "states": "pcppupxufuppuudppuucuppp"
+  },
+  {
+   "n": 142,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000142",
+   "title": "Synthetic 142",
+   "finalUrl": "https://synthetic-142.example/",
+   "states": "pfuucdcpuppuuupppxucpupp"
+  },
+  {
+   "n": 143,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000143",
+   "title": "Synthetic 143",
+   "finalUrl": "https://synthetic-143.example/",
+   "states": "ppupupuufpppuuuuucduuupu"
+  },
+  {
+   "n": 144,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000144",
+   "title": "Synthetic 144",
+   "finalUrl": "https://synthetic-144.example/",
+   "states": "ppuuufcuucfuuppppcppcppu"
+  },
+  {
+   "n": 145,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000145",
+   "title": "Synthetic 145",
+   "finalUrl": "https://synthetic-145.example/",
+   "states": "ppupupcupcpuuuppuppuuppp"
+  },
+  {
+   "n": 146,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000146",
+   "title": "Synthetic 146",
+   "finalUrl": "https://synthetic-146.example/",
+   "states": "ppupcpupcuupuppfpuppxcxu"
+  },
+  {
+   "n": 147,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000147",
+   "title": "Synthetic 147",
+   "finalUrl": "https://synthetic-147.example/",
+   "states": "ppuxuuuuufuuuupppuuucpup"
+  },
+  {
+   "n": 148,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000148",
+   "title": "Synthetic 148",
+   "finalUrl": "https://synthetic-148.example/",
+   "states": "puupuppppupppppppuuppxpu"
+  },
+  {
+   "n": 149,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000149",
+   "title": "Synthetic 149",
+   "finalUrl": "https://synthetic-149.example/",
+   "states": "ppppfpcuupupufpppuppcupc"
+  },
+  {
+   "n": 150,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000150",
+   "title": "Synthetic 150",
+   "finalUrl": "https://synthetic-150.example/",
+   "states": "puppufpufufpccpppcucuppu"
+  },
+  {
+   "n": 151,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000151",
+   "title": "Synthetic 151",
+   "finalUrl": "https://synthetic-151.example/",
+   "states": "ppupuupcpcxppcpcuuccuufp"
+  },
+  {
+   "n": 152,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000152",
+   "title": "Synthetic 152",
+   "finalUrl": "https://synthetic-152.example/",
+   "states": "duppfpppufpcuucppcppccfu"
+  },
+  {
+   "n": 153,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000153",
+   "title": "Synthetic 153",
+   "finalUrl": "https://synthetic-153.example/",
+   "states": "ppupuuupuupuufuppupdpufp"
+  },
+  {
+   "n": 154,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000154",
+   "title": "Synthetic 154",
+   "finalUrl": "https://synthetic-154.example/",
+   "states": "ppupupupfpppuuufdcpuuucp"
+  },
+  {
+   "n": 155,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000155",
+   "title": "Synthetic 155",
+   "finalUrl": "https://synthetic-155.example/",
+   "states": "ppuucfucupupuppuuuuppppc"
+  },
+  {
+   "n": 156,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000156",
+   "title": "Synthetic 156",
+   "finalUrl": "https://synthetic-156.example/",
+   "states": "ppupuuppupcpcpppuudupppc"
+  },
+  {
+   "n": 157,
+   "quarter": 1,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000157",
+   "title": "Synthetic 157",
+   "finalUrl": "https://synthetic-157.example/",
+   "states": "ppfpupcpuxppufppucpcuuuu"
+  },
+  {
+   "n": 158,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000158",
+   "title": "Synthetic 158",
+   "finalUrl": "https://synthetic-158.example/",
+   "states": "ppupcpcpcupupupppupupufp"
+  },
+  {
+   "n": 159,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000159",
+   "title": "Synthetic 159",
+   "finalUrl": "https://synthetic-159.example/",
+   "states": "pcupupppufppucpppupuupfu"
+  },
+  {
+   "n": 160,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000160",
+   "title": "Synthetic 160",
+   "finalUrl": "https://synthetic-160.example/",
+   "states": "pppcuuppuucpuupcuccppupc"
+  },
+  {
+   "n": 161,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000161",
+   "title": "Synthetic 161",
+   "finalUrl": "https://synthetic-161.example/",
+   "states": "pppfcpucppppupppucucuccp"
+  },
+  {
+   "n": 162,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000162",
+   "title": "Synthetic 162",
+   "finalUrl": "https://synthetic-162.example/",
+   "states": "ppufupcuducuuppuufcuupup"
+  },
+  {
+   "n": 163,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000163",
+   "title": "Synthetic 163",
+   "finalUrl": "https://synthetic-163.example/",
+   "states": "pppxupupucppupppucupuucu"
+  },
+  {
+   "n": 164,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000164",
+   "title": "Synthetic 164",
+   "finalUrl": "https://synthetic-164.example/",
+   "states": "ppfpufupuppuuucppupcuuuu"
+  },
+  {
+   "n": 165,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000165",
+   "title": "Synthetic 165",
+   "finalUrl": "https://synthetic-165.example/",
+   "states": "pcupuuupcupuuupfpupuupcu"
+  },
+  {
+   "n": 166,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000166",
+   "title": "Synthetic 166",
+   "finalUrl": "https://synthetic-166.example/",
+   "states": "ppupupcpcpcpupdpuuucupuu"
+  },
+  {
+   "n": 167,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000167",
+   "title": "Synthetic 167",
+   "finalUrl": "https://synthetic-167.example/",
+   "states": "ppfpuucppuppcuuppfufcppu"
+  },
+  {
+   "n": 168,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000168",
+   "title": "Synthetic 168",
+   "finalUrl": "https://synthetic-168.example/",
+   "states": "ppupufppuppuufpppuppuufp"
+  },
+  {
+   "n": 169,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000169",
+   "title": "Synthetic 169",
+   "finalUrl": "https://synthetic-169.example/",
+   "states": "ppppuuuufucdufpppuupuuup"
+  },
+  {
+   "n": 170,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000170",
+   "title": "Synthetic 170",
+   "finalUrl": "https://synthetic-170.example/",
+   "states": "pxpufucpfucuucpppufufpup"
+  },
+  {
+   "n": 171,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000171",
+   "title": "Synthetic 171",
+   "finalUrl": "https://synthetic-171.example/",
+   "states": "ppupupcpuupuucppufcpuxup"
+  },
+  {
+   "n": 172,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000172",
+   "title": "Synthetic 172",
+   "finalUrl": "https://synthetic-172.example/",
+   "states": "pppcufpuuucucppcufcpuppp"
+  },
+  {
+   "n": 173,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000173",
+   "title": "Synthetic 173",
+   "finalUrl": "https://synthetic-173.example/",
+   "states": "pcppuuuucupuuppfpfupcppu"
+  },
+  {
+   "n": 174,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000174",
+   "title": "Synthetic 174",
+   "finalUrl": "https://synthetic-174.example/",
+   "states": "ppuduuuppupupufppupucpcp"
+  },
+  {
+   "n": 175,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000175",
+   "title": "Synthetic 175",
+   "finalUrl": "https://synthetic-175.example/",
+   "states": "pppcfucuuuccpfpppuppucup"
+  },
+  {
+   "n": 176,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000176",
+   "title": "Synthetic 176",
+   "finalUrl": "https://synthetic-176.example/",
+   "states": "ppuuuupcupuuuupppcpcuupu"
+  },
+  {
+   "n": 177,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000177",
+   "title": "Synthetic 177",
+   "finalUrl": "https://synthetic-177.example/",
+   "states": "puucupudupppuuppcpppcuup"
+  },
+  {
+   "n": 178,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000178",
+   "title": "Synthetic 178",
+   "finalUrl": "https://synthetic-178.example/",
+   "states": "puppuuppuufxufcpcupppupc"
+  },
+  {
+   "n": 179,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000179",
+   "title": "Synthetic 179",
+   "finalUrl": "https://synthetic-179.example/",
+   "states": "ppxpcuppuupufufpuudcuucu"
+  },
+  {
+   "n": 180,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000180",
+   "title": "Synthetic 180",
+   "finalUrl": "https://synthetic-180.example/",
+   "states": "pcppupppuppuxupcpuuuupuu"
+  },
+  {
+   "n": 181,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000181",
+   "title": "Synthetic 181",
+   "finalUrl": "https://synthetic-181.example/",
+   "states": "ppcfuucccdppfuuppufccccp"
+  },
+  {
+   "n": 182,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000182",
+   "title": "Synthetic 182",
+   "finalUrl": "https://synthetic-182.example/",
+   "states": "pcfpfpufupcpupuppuupccpp"
+  },
+  {
+   "n": 183,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000183",
+   "title": "Synthetic 183",
+   "finalUrl": "https://synthetic-183.example/",
+   "states": "ppppupucuppucfcupucpuppp"
+  },
+  {
+   "n": 184,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000184",
+   "title": "Synthetic 184",
+   "finalUrl": "https://synthetic-184.example/",
+   "states": "pcupuuucuupucupudupuupfu"
+  },
+  {
+   "n": 185,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000185",
+   "title": "Synthetic 185",
+   "finalUrl": "https://synthetic-185.example/",
+   "states": "pcufuppupupuufpuupcpxupp"
+  },
+  {
+   "n": 186,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000186",
+   "title": "Synthetic 186",
+   "finalUrl": "https://synthetic-186.example/",
+   "states": "ppfcuufucucpuccppuuuuppp"
+  },
+  {
+   "n": 187,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000187",
+   "title": "Synthetic 187",
+   "finalUrl": "https://synthetic-187.example/",
+   "states": "pcufufppuppufuppuuppcuup"
+  },
+  {
+   "n": 188,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000188",
+   "title": "Synthetic 188",
+   "finalUrl": "https://synthetic-188.example/",
+   "states": "pppuupppppupcpupuufuucpp"
+  },
+  {
+   "n": 189,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000189",
+   "title": "Synthetic 189",
+   "finalUrl": "https://synthetic-189.example/",
+   "states": "ppppupupcppppppuuupduupu"
+  },
+  {
+   "n": 190,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000190",
+   "title": "Synthetic 190",
+   "finalUrl": "https://synthetic-190.example/",
+   "states": "ppupuuupppppuxppfpcuuuup"
+  },
+  {
+   "n": 191,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000191",
+   "title": "Synthetic 191",
+   "finalUrl": "https://synthetic-191.example/",
+   "states": "pcppupcpuppppccpucupuuuu"
+  },
+  {
+   "n": 192,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000192",
+   "title": "Synthetic 192",
+   "finalUrl": "https://synthetic-192.example/",
+   "states": "ppffcuupuppuuupppuppuppc"
+  },
+  {
+   "n": 193,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000193",
+   "title": "Synthetic 193",
+   "finalUrl": "https://synthetic-193.example/",
+   "states": "ppupuuupuuppufpppuccpufp"
+  },
+  {
+   "n": 194,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000194",
+   "title": "Synthetic 194",
+   "finalUrl": "https://synthetic-194.example/",
+   "states": "ppupuuupuuppupucfcupuuup"
+  },
+  {
+   "n": 195,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000195",
+   "title": "Synthetic 195",
+   "finalUrl": "https://synthetic-195.example/",
+   "states": "pppfupufcuppxuppupuucupp"
+  },
+  {
+   "n": 196,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000196",
+   "title": "Synthetic 196",
+   "finalUrl": "https://synthetic-196.example/",
+   "states": "pcfpuppucuppucppcccpupfc"
+  },
+  {
+   "n": 197,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000197",
+   "title": "Synthetic 197",
+   "finalUrl": "https://synthetic-197.example/",
+   "states": "ppupffuuuupuucffppuppucc"
+  },
+  {
+   "n": 198,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000198",
+   "title": "Synthetic 198",
+   "finalUrl": "https://synthetic-198.example/",
+   "states": "ppppupuupufuuupppuuppupu"
+  },
+  {
+   "n": 199,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000199",
+   "title": "Synthetic 199",
+   "finalUrl": "https://synthetic-199.example/",
+   "states": "pcfpfpppuupcufppuuupuupp"
+  },
+  {
+   "n": 200,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000200",
+   "title": "Synthetic 200",
+   "finalUrl": "https://synthetic-200.example/",
+   "states": "pucpuuufppfpupudpuuuuupu"
+  },
+  {
+   "n": 201,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000201",
+   "title": "Synthetic 201",
+   "finalUrl": "https://synthetic-201.example/",
+   "states": "pxpufuupfuppuppuppppuuuu"
+  },
+  {
+   "n": 202,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000202",
+   "title": "Synthetic 202",
+   "finalUrl": "https://synthetic-202.example/",
+   "states": "pupuuppxccdpupfupcpfuupu"
+  },
+  {
+   "n": 203,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000203",
+   "title": "Synthetic 203",
+   "finalUrl": "https://synthetic-203.example/",
+   "states": "pccpupcpcupppupppuppuucu"
+  },
+  {
+   "n": 204,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000204",
+   "title": "Synthetic 204",
+   "finalUrl": "https://synthetic-204.example/",
+   "states": "pcufuuupupfpuuppuuuuucpu"
+  },
+  {
+   "n": 205,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000205",
+   "title": "Synthetic 205",
+   "finalUrl": "https://synthetic-205.example/",
+   "states": "ppppdpcppppucupppuuucdpc"
+  },
+  {
+   "n": 206,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000206",
+   "title": "Synthetic 206",
+   "finalUrl": "https://synthetic-206.example/",
+   "states": "puupfppupuppufpuuupfcuup"
+  },
+  {
+   "n": 207,
+   "quarter": 3,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000207",
+   "title": "Synthetic 207",
+   "finalUrl": "https://synthetic-207.example/",
+   "states": "pfppppuuucpppcpfpuppuupp"
+  },
+  {
+   "n": 208,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000208",
+   "title": "Synthetic 208",
+   "finalUrl": "https://synthetic-208.example/",
+   "states": "ppupupppccuppcpcuuuppupp"
+  },
+  {
+   "n": 209,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000209",
+   "title": "Synthetic 209",
+   "finalUrl": "https://synthetic-209.example/",
+   "states": "ppppuuucuuppupxfpuffuufp"
+  },
+  {
+   "n": 210,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000210",
+   "title": "Synthetic 210",
+   "finalUrl": "https://synthetic-210.example/",
+   "states": "pcupcuupcxuuufppxupppcpd"
+  },
+  {
+   "n": 211,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000211",
+   "title": "Synthetic 211",
+   "finalUrl": "https://synthetic-211.example/",
+   "states": "ppupupupccppuupcpuupuuup"
+  },
+  {
+   "n": 212,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000212",
+   "title": "Synthetic 212",
+   "finalUrl": "https://synthetic-212.example/",
+   "states": "ppppuucpuppufupppuxuuucu"
+  },
+  {
+   "n": 213,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000213",
+   "title": "Synthetic 213",
+   "finalUrl": "https://synthetic-213.example/",
+   "states": "pcpuupccupppfxuppuppuppp"
+  },
+  {
+   "n": 214,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000214",
+   "title": "Synthetic 214",
+   "finalUrl": "https://synthetic-214.example/",
+   "states": "ppppupcpuuppcppfuuppucpp"
+  },
+  {
+   "n": 215,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000215",
+   "title": "Synthetic 215",
+   "finalUrl": "https://synthetic-215.example/",
+   "states": "ppppcuppcccpupcppcpppcfu"
+  },
+  {
+   "n": 216,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000216",
+   "title": "Synthetic 216",
+   "finalUrl": "https://synthetic-216.example/",
+   "states": "pppfucpucxppfpupcuppppup"
+  },
+  {
+   "n": 217,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000217",
+   "title": "Synthetic 217",
+   "finalUrl": "https://synthetic-217.example/",
+   "states": "upppupuppucuufpdpuuuuucp"
+  },
+  {
+   "n": 218,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000218",
+   "title": "Synthetic 218",
+   "finalUrl": "https://synthetic-218.example/",
+   "states": "pfupfcufddppppppuuppuuup"
+  },
+  {
+   "n": 219,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000219",
+   "title": "Synthetic 219",
+   "finalUrl": "https://synthetic-219.example/",
+   "states": "pfpfupupupcufcpfpupucucp"
+  },
+  {
+   "n": 220,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000220",
+   "title": "Synthetic 220",
+   "finalUrl": "https://synthetic-220.example/",
+   "states": "pcucupppuupuuuuucuuuupcp"
+  },
+  {
+   "n": 221,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000221",
+   "title": "Synthetic 221",
+   "finalUrl": "https://synthetic-221.example/",
+   "states": "pcupupuppppuuuppcupfuupc"
+  },
+  {
+   "n": 222,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000222",
+   "title": "Synthetic 222",
+   "finalUrl": "https://synthetic-222.example/",
+   "states": "pppucuppuucuucpppcpuupuc"
+  },
+  {
+   "n": 223,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000223",
+   "title": "Synthetic 223",
+   "finalUrl": "https://synthetic-223.example/",
+   "states": "ppupuucpuuuuuupppuppuupp"
+  },
+  {
+   "n": 224,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000224",
+   "title": "Synthetic 224",
+   "finalUrl": "https://synthetic-224.example/",
+   "states": "pppuufcpuppufppufcpucppp"
+  },
+  {
+   "n": 225,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000225",
+   "title": "Synthetic 225",
+   "finalUrl": "https://synthetic-225.example/",
+   "states": "ppppuupufpdpuuppcupcupup"
+  },
+  {
+   "n": 226,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000226",
+   "title": "Synthetic 226",
+   "finalUrl": "https://synthetic-226.example/",
+   "states": "pcppucpucufucupcucfccupu"
+  },
+  {
+   "n": 227,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000227",
+   "title": "Synthetic 227",
+   "finalUrl": "https://synthetic-227.example/",
+   "states": "ppupuuupuucucfpppcppuuuu"
+  },
+  {
+   "n": 228,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000228",
+   "title": "Synthetic 228",
+   "finalUrl": "https://synthetic-228.example/",
+   "states": "ppupcpuuuupuupppcpuucpuc"
+  },
+  {
+   "n": 229,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000229",
+   "title": "Synthetic 229",
+   "finalUrl": "https://synthetic-229.example/",
+   "states": "ppucupccuufufpdpuupcuuup"
+  },
+  {
+   "n": 230,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000230",
+   "title": "Synthetic 230",
+   "finalUrl": "https://synthetic-230.example/",
+   "states": "ppppcuufpupuuuppuppfuucc"
+  },
+  {
+   "n": 231,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000231",
+   "title": "Synthetic 231",
+   "finalUrl": "https://synthetic-231.example/",
+   "states": "ppupcpupuupuppcppuupcpcp"
+  },
+  {
+   "n": 232,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000232",
+   "title": "Synthetic 232",
+   "finalUrl": "https://synthetic-232.example/",
+   "states": "pppucpfuuuppcuppufppuupu"
+  },
+  {
+   "n": 233,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000233",
+   "title": "Synthetic 233",
+   "finalUrl": "https://synthetic-233.example/",
+   "states": "pupfuuucpupuucuppfppupcc"
+  },
+  {
+   "n": 234,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000234",
+   "title": "Synthetic 234",
+   "finalUrl": "https://synthetic-234.example/",
+   "states": "pcufuuppppxcuuppufpppupp"
+  },
+  {
+   "n": 235,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000235",
+   "title": "Synthetic 235",
+   "finalUrl": "https://synthetic-235.example/",
+   "states": "ppupuxppuuppdfpppcucuucc"
+  },
+  {
+   "n": 236,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000236",
+   "title": "Synthetic 236",
+   "finalUrl": "https://synthetic-236.example/",
+   "states": "ppffuccpuupuuuuupfuuucup"
+  },
+  {
+   "n": 237,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000237",
+   "title": "Synthetic 237",
+   "finalUrl": "https://synthetic-237.example/",
+   "states": "ppppucppuupcppcppuppuucp"
+  },
+  {
+   "n": 238,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000238",
+   "title": "Synthetic 238",
+   "finalUrl": "https://synthetic-238.example/",
+   "states": "ppupupupuuppcuuupfupuccp"
+  },
+  {
+   "n": 239,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000239",
+   "title": "Synthetic 239",
+   "finalUrl": "https://synthetic-239.example/",
+   "states": "puupdpppuuppupuupppuuupp"
+  },
+  {
+   "n": 240,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000240",
+   "title": "Synthetic 240",
+   "finalUrl": "https://synthetic-240.example/",
+   "states": "pfpcucupuppxdupuucucxuup"
+  },
+  {
+   "n": 241,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000241",
+   "title": "Synthetic 241",
+   "finalUrl": "https://synthetic-241.example/",
+   "states": "ppppuupuupppuppfupupcpfp"
+  },
+  {
+   "n": 242,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000242",
+   "title": "Synthetic 242",
+   "finalUrl": "https://synthetic-242.example/",
+   "states": "ppupfdpcuuppuppupupccpux"
+  },
+  {
+   "n": 243,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000243",
+   "title": "Synthetic 243",
+   "finalUrl": "https://synthetic-243.example/",
+   "states": "ppppupuccppuufppdfpuuuuu"
+  },
+  {
+   "n": 244,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000244",
+   "title": "Synthetic 244",
+   "finalUrl": "https://synthetic-244.example/",
+   "states": "puppfpppppppuupupuppucdc"
+  },
+  {
+   "n": 245,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000245",
+   "title": "Synthetic 245",
+   "finalUrl": "https://synthetic-245.example/",
+   "states": "ppxpfccfupppuuppduppccpu"
+  },
+  {
+   "n": 246,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000246",
+   "title": "Synthetic 246",
+   "finalUrl": "https://synthetic-246.example/",
+   "states": "pppucfucuppppdppuupufuux"
+  },
+  {
+   "n": 247,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000247",
+   "title": "Synthetic 247",
+   "finalUrl": "https://synthetic-247.example/",
+   "states": "pppuupupcuuuppppuuxpcupu"
+  },
+  {
+   "n": 248,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000248",
+   "title": "Synthetic 248",
+   "finalUrl": "https://synthetic-248.example/",
+   "states": "ppppuuupuppuuppfpuupuufu"
+  },
+  {
+   "n": 249,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000249",
+   "title": "Synthetic 249",
+   "finalUrl": "https://synthetic-249.example/",
+   "states": "pcpcuppppppuuppppucppupu"
+  },
+  {
+   "n": 250,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000250",
+   "title": "Synthetic 250",
+   "finalUrl": "https://synthetic-250.example/",
+   "states": "ppcpuucccfpppupppupucpxp"
+  },
+  {
+   "n": 251,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000251",
+   "title": "Synthetic 251",
+   "finalUrl": "https://synthetic-251.example/",
+   "states": "ppupuuppuupuuupupupcupfp"
+  },
+  {
+   "n": 252,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000252",
+   "title": "Synthetic 252",
+   "finalUrl": "https://synthetic-252.example/",
+   "states": "ppppuupcuuppcpcpucpfppuu"
+  },
+  {
+   "n": 253,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000253",
+   "title": "Synthetic 253",
+   "finalUrl": "https://synthetic-253.example/",
+   "states": "pcufupuufupuuupppuccpupp"
+  },
+  {
+   "n": 254,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000254",
+   "title": "Synthetic 254",
+   "finalUrl": "https://synthetic-254.example/",
+   "states": "pdpcuuufuupufcppuuupuucc"
+  },
+  {
+   "n": 255,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000255",
+   "title": "Synthetic 255",
+   "finalUrl": "https://synthetic-255.example/",
+   "states": "ppupuuuxfupuupppufppppuc"
+  },
+  {
+   "n": 256,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000256",
+   "title": "Synthetic 256",
+   "finalUrl": "https://synthetic-256.example/",
+   "states": "puppupupuupuucpuucppuupu"
+  },
+  {
+   "n": 257,
+   "quarter": 1,
+   "source": "reddit",
+   "tag": "sample",
+   "hnId": "90000257",
+   "title": "Synthetic 257",
+   "finalUrl": "https://synthetic-257.example/",
+   "states": "pudxupuuppfpfcfucupfppuu"
+  },
+  {
+   "n": 258,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000258",
+   "title": "Synthetic 258",
+   "finalUrl": "https://synthetic-258.example/",
+   "states": "ppfcufupuufucupppuupucuu"
+  },
+  {
+   "n": 259,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000259",
+   "title": "Synthetic 259",
+   "finalUrl": "https://synthetic-259.example/",
+   "states": "pfupupuxcupuucpuuucppupu"
+  },
+  {
+   "n": 260,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000260",
+   "title": "Synthetic 260",
+   "finalUrl": "https://synthetic-260.example/",
+   "states": "pppcupupcccpuppppcppuucu"
+  },
+  {
+   "n": 261,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000261",
+   "title": "Synthetic 261",
+   "finalUrl": "https://synthetic-261.example/",
+   "states": "ppppffupupcpuufppcpdcpfp"
+  },
+  {
+   "n": 262,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000262",
+   "title": "Synthetic 262",
+   "finalUrl": "https://synthetic-262.example/",
+   "states": "ppupuuppppcpucpcpuuuupuu"
+  },
+  {
+   "n": 263,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000263",
+   "title": "Synthetic 263",
+   "finalUrl": "https://synthetic-263.example/",
+   "states": "ppufuucppcppufppuuupucpp"
+  },
+  {
+   "n": 264,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000264",
+   "title": "Synthetic 264",
+   "finalUrl": "https://synthetic-264.example/",
+   "states": "upppfuupuupuucuupupcuuuu"
+  },
+  {
+   "n": 265,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000265",
+   "title": "Synthetic 265",
+   "finalUrl": "https://synthetic-265.example/",
+   "states": "ppppuuuuuupuuppduxupfufp"
+  },
+  {
+   "n": 266,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000266",
+   "title": "Synthetic 266",
+   "finalUrl": "https://synthetic-266.example/",
+   "states": "ppppupcuuufuuppfcxfcuufu"
+  },
+  {
+   "n": 267,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000267",
+   "title": "Synthetic 267",
+   "finalUrl": "https://synthetic-267.example/",
+   "states": "ppuffuuccppuuppxuufuupup"
+  },
+  {
+   "n": 268,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000268",
+   "title": "Synthetic 268",
+   "finalUrl": "https://synthetic-268.example/",
+   "states": "pfcpufppupuuuudpuuupuucp"
+  },
+  {
+   "n": 269,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000269",
+   "title": "Synthetic 269",
+   "finalUrl": "https://synthetic-269.example/",
+   "states": "pcdpupupuupfuupppuupcupp"
+  },
+  {
+   "n": 270,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000270",
+   "title": "Synthetic 270",
+   "finalUrl": "https://synthetic-270.example/",
+   "states": "pcppupppucppufcpcuuppupp"
+  },
+  {
+   "n": 271,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000271",
+   "title": "Synthetic 271",
+   "finalUrl": "https://synthetic-271.example/",
+   "states": "ppupuupppucuuccpuucpuuup"
+  },
+  {
+   "n": 272,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000272",
+   "title": "Synthetic 272",
+   "finalUrl": "https://synthetic-272.example/",
+   "states": "pcppcppcupppffuppuppuuuu"
+  },
+  {
+   "n": 273,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000273",
+   "title": "Synthetic 273",
+   "finalUrl": "https://synthetic-273.example/",
+   "states": "ppupuuppuuppuupppupccufp"
+  },
+  {
+   "n": 274,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000274",
+   "title": "Synthetic 274",
+   "finalUrl": "https://synthetic-274.example/",
+   "states": "pcpuupupfupuuucppuxpcppp"
+  },
+  {
+   "n": 275,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000275",
+   "title": "Synthetic 275",
+   "finalUrl": "https://synthetic-275.example/",
+   "states": "pupcuppppcuuupcppfpuuufp"
+  },
+  {
+   "n": 276,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000276",
+   "title": "Synthetic 276",
+   "finalUrl": "https://synthetic-276.example/",
+   "states": "ppppuuuuuucucppppucpuupp"
+  },
+  {
+   "n": 277,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000277",
+   "title": "Synthetic 277",
+   "finalUrl": "https://synthetic-277.example/",
+   "states": "pucupcxuucpucccpcfpxupcp"
+  },
+  {
+   "n": 278,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000278",
+   "title": "Synthetic 278",
+   "finalUrl": "https://synthetic-278.example/",
+   "states": "ppppfpupcpupupppucufpuuc"
+  },
+  {
+   "n": 279,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000279",
+   "title": "Synthetic 279",
+   "finalUrl": "https://synthetic-279.example/",
+   "states": "ppdcfppuuppupufcppucuuup"
+  },
+  {
+   "n": 280,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000280",
+   "title": "Synthetic 280",
+   "finalUrl": "https://synthetic-280.example/",
+   "states": "puupupuuupuupupcpuucpupc"
+  },
+  {
+   "n": 281,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000281",
+   "title": "Synthetic 281",
+   "finalUrl": "https://synthetic-281.example/",
+   "states": "pcpfuuupcuupupufpuuucupp"
+  },
+  {
+   "n": 282,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000282",
+   "title": "Synthetic 282",
+   "finalUrl": "https://synthetic-282.example/",
+   "states": "ppfcudupupcpccfpcucuupcp"
+  },
+  {
+   "n": 283,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000283",
+   "title": "Synthetic 283",
+   "finalUrl": "https://synthetic-283.example/",
+   "states": "ppupfucpfpppuuucupucuccu"
+  },
+  {
+   "n": 284,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000284",
+   "title": "Synthetic 284",
+   "finalUrl": "https://synthetic-284.example/",
+   "states": "ppppupucfccppppfufpcpuup"
+  },
+  {
+   "n": 285,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000285",
+   "title": "Synthetic 285",
+   "finalUrl": "https://synthetic-285.example/",
+   "states": "puppupupfuppuuupuuufuufp"
+  },
+  {
+   "n": 286,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000286",
+   "title": "Synthetic 286",
+   "finalUrl": "https://synthetic-286.example/",
+   "states": "pfffuuupuucpucppccpuccfp"
+  },
+  {
+   "n": 287,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000287",
+   "title": "Synthetic 287",
+   "finalUrl": "https://synthetic-287.example/",
+   "states": "pcppupcffpppuuudpuupuccp"
+  },
+  {
+   "n": 288,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000288",
+   "title": "Synthetic 288",
+   "finalUrl": "https://synthetic-288.example/",
+   "states": "ppupfuuppucpdcppucffuupp"
+  },
+  {
+   "n": 289,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000289",
+   "title": "Synthetic 289",
+   "finalUrl": "https://synthetic-289.example/",
+   "states": "puupuppppupppuuupfucpupp"
+  },
+  {
+   "n": 290,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000290",
+   "title": "Synthetic 290",
+   "finalUrl": "https://synthetic-290.example/",
+   "states": "pppfucuufpppcuppuppuuuuu"
+  },
+  {
+   "n": 291,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000291",
+   "title": "Synthetic 291",
+   "finalUrl": "https://synthetic-291.example/",
+   "states": "pdppppupuupuupcppufpucuu"
+  },
+  {
+   "n": 292,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000292",
+   "title": "Synthetic 292",
+   "finalUrl": "https://synthetic-292.example/",
+   "states": "puppupuupucupcpppuuuuuup"
+  },
+  {
+   "n": 293,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000293",
+   "title": "Synthetic 293",
+   "finalUrl": "https://synthetic-293.example/",
+   "states": "pudpuuppuupduppppuuuucuc"
+  },
+  {
+   "n": 294,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000294",
+   "title": "Synthetic 294",
+   "finalUrl": "https://synthetic-294.example/",
+   "states": "pcuuufupfuppfppppucppupc"
+  },
+  {
+   "n": 295,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000295",
+   "title": "Synthetic 295",
+   "finalUrl": "https://synthetic-295.example/",
+   "states": "pcpcfuppuppcpfuxcupcuucu"
+  },
+  {
+   "n": 296,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000296",
+   "title": "Synthetic 296",
+   "finalUrl": "https://synthetic-296.example/",
+   "states": "pppffppuupcpuufppuuppduu"
+  },
+  {
+   "n": 297,
+   "quarter": 1,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000297",
+   "title": "Synthetic 297",
+   "finalUrl": "https://synthetic-297.example/",
+   "states": "pdpfufcpuuppucpuuucudpuu"
+  },
+  {
+   "n": 298,
+   "quarter": 2,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000298",
+   "title": "Synthetic 298",
+   "finalUrl": "https://synthetic-298.example/",
+   "states": "pppuxpduuccpucuppuufcppc"
+  },
+  {
+   "n": 299,
+   "quarter": 3,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000299",
+   "title": "Synthetic 299",
+   "finalUrl": "https://synthetic-299.example/",
+   "states": "pfppfcccfucuuccppuuuuupc"
+  },
+  {
+   "n": 300,
+   "quarter": 4,
+   "source": "show-hn",
+   "tag": "sample",
+   "hnId": "90000300",
+   "title": "Synthetic 300",
+   "finalUrl": "https://synthetic-300.example/",
+   "states": "puppuppcuppupccfpupccpcp"
+  }
+ ],
+ "unconfirmed": [],
+ "gate": {
+  "checks": [
+   {
+    "checkId": "output-reproducible",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "assumptions-catalogued",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "intended-use-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "acceptance-criteria-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "acceptance-criteria-met",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "failure-modes-tested",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "limitations-stated",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "deliverable-gate-passed",
+    "status": "missed",
+    "reason": "agreement below the pre-registered threshold",
+    "ac1": 0.41,
+    "ac1CI": [
+     0.3,
+     0.52
+    ],
+    "precision": {
+     "c": 11,
+     "m": 20
+    },
+    "goldPasses": 22
+   },
+   {
+    "checkId": "operational-owner-assigned",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "assurance-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "fallback-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "recovery-tested",
+    "status": "released-not-estimable",
+    "reason": "fewer than ten gold passes",
+    "ac1": 0.9,
+    "ac1CI": [
+     0.85,
+     0.95
+    ],
+    "precision": {
+     "c": 4,
+     "m": 5
+    },
+    "goldPasses": 6
+   },
+   {
+    "checkId": "support-maintenance-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "operating-cost-known",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "outcome-measure-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "baseline-defined",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "outcome-measured",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "measurement-definition-consistent",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "important-confounds-named",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "outcome-evidence-available",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "full-cost-accounted",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "risk-tradeoffs-assessed",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "alternatives-compared",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   },
+   {
+    "checkId": "value-rule-explicit",
+    "status": "released",
+    "reason": "agreement and precision met the pre-registered thresholds",
+    "ac1": 0.82,
+    "ac1CI": [
+     0.76,
+     0.88
+    ],
+    "precision": {
+     "c": 18,
+     "m": 20
+    },
+    "goldPasses": 25
+   }
+  ]
+ },
+ "ledger": []
+}

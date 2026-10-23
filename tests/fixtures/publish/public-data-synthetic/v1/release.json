@@ -1,0 +1,3077 @@
+{
+  "schema": 1,
+  "kind": "fixture",
+  "version": "v1",
+  "date": "2026-10-30",
+  "n": 300,
+  "figures": {
+    "checks-pass": {
+      "id": "checks-pass",
+      "title": "Checks evidenced with a confirmed pass",
+      "measure": "share of included launches with a confirmed pass",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|pass|all",
+          "label": "The artefact or action can be reproduced or inspected.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q1",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q2",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q3",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q4",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|src:show-hn",
+          "label": "The artefact or action can be reproduced or inspected. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|output-reproducible|pass|src:reddit",
+          "label": "The artefact or action can be reproduced or inspected. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|pass|src:github-only",
+          "label": "The artefact or action can be reproduced or inspected. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|all",
+          "label": "Important supplied context, assumptions, and inferences are visible.",
+          "state": "released",
+          "c": 182,
+          "n": 300,
+          "pct": 61,
+          "ci": [
+            55,
+            66
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q1",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 1)",
+          "state": "released",
+          "c": 37,
+          "n": 75,
+          "pct": 49,
+          "ci": [
+            38,
+            60
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q2",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 2)",
+          "state": "released",
+          "c": 46,
+          "n": 75,
+          "pct": 61,
+          "ci": [
+            50,
+            72
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q3",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 3)",
+          "state": "released",
+          "c": 48,
+          "n": 75,
+          "pct": 64,
+          "ci": [
+            53,
+            74
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q4",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 4)",
+          "state": "released",
+          "c": 51,
+          "n": 75,
+          "pct": 68,
+          "ci": [
+            57,
+            77
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:show-hn",
+          "label": "Important supplied context, assumptions, and inferences are visible. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:reddit",
+          "label": "Important supplied context, assumptions, and inferences are visible. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:github-only",
+          "label": "Important supplied context, assumptions, and inferences are visible. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|all",
+          "label": "The intended use and boundaries are explicit.",
+          "state": "released",
+          "c": 145,
+          "n": 300,
+          "pct": 48,
+          "ci": [
+            43,
+            54
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q1",
+          "label": "The intended use and boundaries are explicit. (quarter 1)",
+          "state": "released",
+          "c": 42,
+          "n": 75,
+          "pct": 56,
+          "ci": [
+            45,
+            67
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q2",
+          "label": "The intended use and boundaries are explicit. (quarter 2)",
+          "state": "released",
+          "c": 31,
+          "n": 75,
+          "pct": 41,
+          "ci": [
+            31,
+            53
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q3",
+          "label": "The intended use and boundaries are explicit. (quarter 3)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q4",
+          "label": "The intended use and boundaries are explicit. (quarter 4)",
+          "state": "released",
+          "c": 38,
+          "n": 75,
+          "pct": 51,
+          "ci": [
+            40,
+            62
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:show-hn",
+          "label": "The intended use and boundaries are explicit. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:reddit",
+          "label": "The intended use and boundaries are explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:github-only",
+          "label": "The intended use and boundaries are explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|all",
+          "label": "Acceptance criteria are explicit and testable enough for the use.",
+          "state": "released",
+          "c": 187,
+          "n": 300,
+          "pct": 62,
+          "ci": [
+            57,
+            68
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q1",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 1)",
+          "state": "released",
+          "c": 46,
+          "n": 75,
+          "pct": 61,
+          "ci": [
+            50,
+            72
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q2",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 2)",
+          "state": "released",
+          "c": 46,
+          "n": 75,
+          "pct": 61,
+          "ci": [
+            50,
+            72
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q3",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 3)",
+          "state": "released",
+          "c": 52,
+          "n": 75,
+          "pct": 69,
+          "ci": [
+            58,
+            79
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q4",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 4)",
+          "state": "released",
+          "c": 43,
+          "n": 75,
+          "pct": 57,
+          "ci": [
+            46,
+            68
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:show-hn",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:reddit",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:github-only",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|all",
+          "label": "Evidence shows the acceptance criteria were met.",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q1",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q2",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q3",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q4",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:show-hn",
+          "label": "Evidence shows the acceptance criteria were met. (Show HN)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:reddit",
+          "label": "Evidence shows the acceptance criteria were met. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:github-only",
+          "label": "Evidence shows the acceptance criteria were met. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|all",
+          "label": "Relevant failure modes and fallback behaviour were evaluated.",
+          "state": "released",
+          "c": 129,
+          "n": 300,
+          "pct": 43,
+          "ci": [
+            38,
+            49
+          ]
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q1",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 1)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q2",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 2)",
+          "state": "released",
+          "c": 27,
+          "n": 75,
+          "pct": 36,
+          "ci": [
+            26,
+            47
+          ]
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q3",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 3)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q4",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 4)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:show-hn",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:reddit",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:github-only",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|limitations-stated|pass|all",
+          "label": "Known limitations and out-of-scope conditions are stated.",
+          "state": "released",
+          "c": 102,
+          "n": 300,
+          "pct": 34,
+          "ci": [
+            29,
+            40
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q1",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 1)",
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q2",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 2)",
+          "state": "released",
+          "c": 23,
+          "n": 75,
+          "pct": 31,
+          "ci": [
+            21,
+            42
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q3",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 3)",
+          "state": "released",
+          "c": 25,
+          "n": 75,
+          "pct": 33,
+          "ci": [
+            24,
+            45
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q4",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 4)",
+          "state": "released",
+          "c": 37,
+          "n": 75,
+          "pct": 49,
+          "ci": [
+            38,
+            60
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:show-hn",
+          "label": "Known limitations and out-of-scope conditions are stated. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:reddit",
+          "label": "Known limitations and out-of-scope conditions are stated. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:github-only",
+          "label": "Known limitations and out-of-scope conditions are stated. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|all",
+          "label": "The Deliverable gate for the intended use has passed.",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q1",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 1)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q2",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 2)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q3",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 3)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q4",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 4)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:show-hn",
+          "label": "The Deliverable gate for the intended use has passed. (Show HN)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:reddit",
+          "label": "The Deliverable gate for the intended use has passed. (Reddit)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:github-only",
+          "label": "The Deliverable gate for the intended use has passed. (GitHub-only)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|all",
+          "label": "Operational ownership is explicit.",
+          "state": "released",
+          "c": 53,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            22
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q1",
+          "label": "Operational ownership is explicit. (quarter 1)",
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q2",
+          "label": "Operational ownership is explicit. (quarter 2)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q3",
+          "label": "Operational ownership is explicit. (quarter 3)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q4",
+          "label": "Operational ownership is explicit. (quarter 4)",
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:show-hn",
+          "label": "Operational ownership is explicit. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:reddit",
+          "label": "Operational ownership is explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:github-only",
+          "label": "Operational ownership is explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|assurance-defined|pass|all",
+          "label": "The assurance mechanism is defined for the important failure modes.",
+          "state": "released",
+          "c": 105,
+          "n": 300,
+          "pct": 35,
+          "ci": [
+            30,
+            41
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|pass|q1",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 1)",
+          "state": "released",
+          "c": 27,
+          "n": 75,
+          "pct": 36,
+          "ci": [
+            26,
+            47
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|pass|q2",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 2)",
+          "state": "released",
+          "c": 22,
+          "n": 75,
+          "pct": 29,
+          "ci": [
+            20,
+            40
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|pass|q3",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 3)",
+          "state": "released",
+          "c": 27,
+          "n": 75,
+          "pct": 36,
+          "ci": [
+            26,
+            47
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|pass|q4",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 4)",
+          "state": "released",
+          "c": 29,
+          "n": 75,
+          "pct": 39,
+          "ci": [
+            28,
+            50
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:show-hn",
+          "label": "The assurance mechanism is defined for the important failure modes. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:reddit",
+          "label": "The assurance mechanism is defined for the important failure modes. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:github-only",
+          "label": "The assurance mechanism is defined for the important failure modes. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|fallback-defined|pass|all",
+          "label": "Fallback or escalation is defined.",
+          "state": "released",
+          "c": 197,
+          "n": 300,
+          "pct": 66,
+          "ci": [
+            60,
+            71
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|q1",
+          "label": "Fallback or escalation is defined. (quarter 1)",
+          "state": "released",
+          "c": 56,
+          "n": 75,
+          "pct": 75,
+          "ci": [
+            64,
+            83
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|q2",
+          "label": "Fallback or escalation is defined. (quarter 2)",
+          "state": "released",
+          "c": 45,
+          "n": 75,
+          "pct": 60,
+          "ci": [
+            49,
+            70
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|q3",
+          "label": "Fallback or escalation is defined. (quarter 3)",
+          "state": "released",
+          "c": 50,
+          "n": 75,
+          "pct": 67,
+          "ci": [
+            55,
+            76
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|q4",
+          "label": "Fallback or escalation is defined. (quarter 4)",
+          "state": "released",
+          "c": 46,
+          "n": 75,
+          "pct": 61,
+          "ci": [
+            50,
+            72
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:show-hn",
+          "label": "Fallback or escalation is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:reddit",
+          "label": "Fallback or escalation is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:github-only",
+          "label": "Fallback or escalation is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|pass|all",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it.",
+          "state": "released",
+          "c": 152,
+          "n": 300,
+          "pct": 51,
+          "ci": [
+            45,
+            56
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q1",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 1)",
+          "state": "released",
+          "c": 42,
+          "n": 75,
+          "pct": 56,
+          "ci": [
+            45,
+            67
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q2",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 2)",
+          "state": "released",
+          "c": 38,
+          "n": 75,
+          "pct": 51,
+          "ci": [
+            40,
+            62
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q3",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 3)",
+          "state": "released",
+          "c": 35,
+          "n": 75,
+          "pct": 47,
+          "ci": [
+            36,
+            58
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q4",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 4)",
+          "state": "released",
+          "c": 37,
+          "n": 75,
+          "pct": 49,
+          "ci": [
+            38,
+            60
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:show-hn",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:reddit",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:github-only",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|all",
+          "label": "Support, maintenance, debugging, and change responsibility are defined.",
+          "state": "released",
+          "c": 31,
+          "n": 300,
+          "pct": 10,
+          "ci": [
+            7,
+            14
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q1",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q2",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q3",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 3)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q4",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 4)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:show-hn",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:reddit",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:github-only",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|all",
+          "label": "The relevant operating-cost boundary is known well enough for the decision.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q1",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 1)",
+          "state": "released",
+          "c": 25,
+          "n": 75,
+          "pct": 33,
+          "ci": [
+            24,
+            45
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q2",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 2)",
+          "state": "released",
+          "c": 20,
+          "n": 75,
+          "pct": 27,
+          "ci": [
+            18,
+            38
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q3",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q4",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 4)",
+          "state": "released",
+          "c": 21,
+          "n": 75,
+          "pct": 28,
+          "ci": [
+            19,
+            39
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:show-hn",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (Show HN)",
+          "state": "released",
+          "c": 85,
+          "n": 294,
+          "pct": 29,
+          "ci": [
+            24,
+            34
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:reddit",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:github-only",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|all",
+          "label": "The outcome measure is defined.",
+          "state": "released",
+          "c": 200,
+          "n": 300,
+          "pct": 67,
+          "ci": [
+            61,
+            72
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q1",
+          "label": "The outcome measure is defined. (quarter 1)",
+          "state": "released",
+          "c": 48,
+          "n": 75,
+          "pct": 64,
+          "ci": [
+            53,
+            74
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q2",
+          "label": "The outcome measure is defined. (quarter 2)",
+          "state": "released",
+          "c": 51,
+          "n": 75,
+          "pct": 68,
+          "ci": [
+            57,
+            77
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q3",
+          "label": "The outcome measure is defined. (quarter 3)",
+          "state": "released",
+          "c": 49,
+          "n": 75,
+          "pct": 65,
+          "ci": [
+            54,
+            75
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q4",
+          "label": "The outcome measure is defined. (quarter 4)",
+          "state": "released",
+          "c": 52,
+          "n": 75,
+          "pct": 69,
+          "ci": [
+            58,
+            79
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:show-hn",
+          "label": "The outcome measure is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:reddit",
+          "label": "The outcome measure is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:github-only",
+          "label": "The outcome measure is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|baseline-defined|pass|all",
+          "label": "A comparable baseline or counterfactual is defined.",
+          "state": "released",
+          "c": 187,
+          "n": 300,
+          "pct": 62,
+          "ci": [
+            57,
+            68
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|pass|q1",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 1)",
+          "state": "released",
+          "c": 46,
+          "n": 75,
+          "pct": 61,
+          "ci": [
+            50,
+            72
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|pass|q2",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 2)",
+          "state": "released",
+          "c": 51,
+          "n": 75,
+          "pct": 68,
+          "ci": [
+            57,
+            77
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|pass|q3",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 3)",
+          "state": "released",
+          "c": 45,
+          "n": 75,
+          "pct": 60,
+          "ci": [
+            49,
+            70
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|pass|q4",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 4)",
+          "state": "released",
+          "c": 45,
+          "n": 75,
+          "pct": 60,
+          "ci": [
+            49,
+            70
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:show-hn",
+          "label": "A comparable baseline or counterfactual is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:reddit",
+          "label": "A comparable baseline or counterfactual is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:github-only",
+          "label": "A comparable baseline or counterfactual is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-measured|pass|all",
+          "label": "The outcome was measured after the intervention.",
+          "state": "released",
+          "c": 166,
+          "n": 300,
+          "pct": 55,
+          "ci": [
+            50,
+            61
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|pass|q1",
+          "label": "The outcome was measured after the intervention. (quarter 1)",
+          "state": "released",
+          "c": 44,
+          "n": 75,
+          "pct": 59,
+          "ci": [
+            47,
+            69
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|pass|q2",
+          "label": "The outcome was measured after the intervention. (quarter 2)",
+          "state": "released",
+          "c": 37,
+          "n": 75,
+          "pct": 49,
+          "ci": [
+            38,
+            60
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|pass|q3",
+          "label": "The outcome was measured after the intervention. (quarter 3)",
+          "state": "released",
+          "c": 42,
+          "n": 75,
+          "pct": 56,
+          "ci": [
+            45,
+            67
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|pass|q4",
+          "label": "The outcome was measured after the intervention. (quarter 4)",
+          "state": "released",
+          "c": 43,
+          "n": 75,
+          "pct": 57,
+          "ci": [
+            46,
+            68
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:show-hn",
+          "label": "The outcome was measured after the intervention. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:reddit",
+          "label": "The outcome was measured after the intervention. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:github-only",
+          "label": "The outcome was measured after the intervention. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|all",
+          "label": "Before/after measurements use the same relevant definition.",
+          "state": "released",
+          "c": 36,
+          "n": 300,
+          "pct": 12,
+          "ci": [
+            9,
+            16
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q1",
+          "label": "Before/after measurements use the same relevant definition. (quarter 1)",
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q2",
+          "label": "Before/after measurements use the same relevant definition. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q3",
+          "label": "Before/after measurements use the same relevant definition. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q4",
+          "label": "Before/after measurements use the same relevant definition. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:show-hn",
+          "label": "Before/after measurements use the same relevant definition. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:reddit",
+          "label": "Before/after measurements use the same relevant definition. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:github-only",
+          "label": "Before/after measurements use the same relevant definition. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|all",
+          "label": "Material confounds, uncertainty, or attribution limits are named.",
+          "state": "released",
+          "c": 128,
+          "n": 300,
+          "pct": 43,
+          "ci": [
+            37,
+            48
+          ]
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q1",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 1)",
+          "state": "released",
+          "c": 31,
+          "n": 75,
+          "pct": 41,
+          "ci": [
+            31,
+            53
+          ]
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q2",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 2)",
+          "state": "released",
+          "c": 32,
+          "n": 75,
+          "pct": 43,
+          "ci": [
+            32,
+            54
+          ]
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q3",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 3)",
+          "state": "released",
+          "c": 31,
+          "n": 75,
+          "pct": 41,
+          "ci": [
+            31,
+            53
+          ]
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q4",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 4)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:show-hn",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:reddit",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:github-only",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|all",
+          "label": "Outcome evidence relevant to the decision is available.",
+          "state": "released",
+          "c": 139,
+          "n": 300,
+          "pct": 46,
+          "ci": [
+            41,
+            52
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q1",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 1)",
+          "state": "released",
+          "c": 35,
+          "n": 75,
+          "pct": 47,
+          "ci": [
+            36,
+            58
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q2",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 2)",
+          "state": "released",
+          "c": 29,
+          "n": 75,
+          "pct": 39,
+          "ci": [
+            28,
+            50
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q3",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 3)",
+          "state": "released",
+          "c": 41,
+          "n": 75,
+          "pct": 55,
+          "ci": [
+            43,
+            65
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q4",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 4)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:show-hn",
+          "label": "Outcome evidence relevant to the decision is available. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:reddit",
+          "label": "Outcome evidence relevant to the decision is available. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:github-only",
+          "label": "Outcome evidence relevant to the decision is available. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|all",
+          "label": "The full relevant cost boundary is accounted for.",
+          "state": "released",
+          "c": 51,
+          "n": 300,
+          "pct": 17,
+          "ci": [
+            13,
+            22
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q1",
+          "label": "The full relevant cost boundary is accounted for. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q2",
+          "label": "The full relevant cost boundary is accounted for. (quarter 2)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q3",
+          "label": "The full relevant cost boundary is accounted for. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q4",
+          "label": "The full relevant cost boundary is accounted for. (quarter 4)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:show-hn",
+          "label": "The full relevant cost boundary is accounted for. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:reddit",
+          "label": "The full relevant cost boundary is accounted for. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:github-only",
+          "label": "The full relevant cost boundary is accounted for. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|all",
+          "label": "Material risks and trade-offs are assessed.",
+          "state": "released",
+          "c": 98,
+          "n": 300,
+          "pct": 33,
+          "ci": [
+            28,
+            38
+          ]
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q1",
+          "label": "Material risks and trade-offs are assessed. (quarter 1)",
+          "state": "released",
+          "c": 24,
+          "n": 75,
+          "pct": 32,
+          "ci": [
+            23,
+            43
+          ]
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q2",
+          "label": "Material risks and trade-offs are assessed. (quarter 2)",
+          "state": "released",
+          "c": 27,
+          "n": 75,
+          "pct": 36,
+          "ci": [
+            26,
+            47
+          ]
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q3",
+          "label": "Material risks and trade-offs are assessed. (quarter 3)",
+          "state": "released",
+          "c": 21,
+          "n": 75,
+          "pct": 28,
+          "ci": [
+            19,
+            39
+          ]
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q4",
+          "label": "Material risks and trade-offs are assessed. (quarter 4)",
+          "state": "released",
+          "c": 26,
+          "n": 75,
+          "pct": 35,
+          "ci": [
+            25,
+            46
+          ]
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:show-hn",
+          "label": "Material risks and trade-offs are assessed. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:reddit",
+          "label": "Material risks and trade-offs are assessed. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:github-only",
+          "label": "Material risks and trade-offs are assessed. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|all",
+          "label": "Reasonable alternatives or the status quo are compared.",
+          "state": "released",
+          "c": 119,
+          "n": 300,
+          "pct": 40,
+          "ci": [
+            34,
+            45
+          ]
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q1",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 1)",
+          "state": "released",
+          "c": 28,
+          "n": 75,
+          "pct": 37,
+          "ci": [
+            27,
+            49
+          ]
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q2",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 2)",
+          "state": "released",
+          "c": 31,
+          "n": 75,
+          "pct": 41,
+          "ci": [
+            31,
+            53
+          ]
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q3",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 3)",
+          "state": "released",
+          "c": 30,
+          "n": 75,
+          "pct": 40,
+          "ci": [
+            30,
+            51
+          ]
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q4",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 4)",
+          "state": "released",
+          "c": 30,
+          "n": 75,
+          "pct": 40,
+          "ci": [
+            30,
+            51
+          ]
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:show-hn",
+          "label": "Reasonable alternatives or the status quo are compared. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:reddit",
+          "label": "Reasonable alternatives or the status quo are compared. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:github-only",
+          "label": "Reasonable alternatives or the status quo are compared. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|all",
+          "label": "The rule for scale, renew, expand, or stop is explicit.",
+          "state": "released",
+          "c": 160,
+          "n": 300,
+          "pct": 53,
+          "ci": [
+            48,
+            59
+          ]
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q1",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 1)",
+          "state": "released",
+          "c": 49,
+          "n": 75,
+          "pct": 65,
+          "ci": [
+            54,
+            75
+          ]
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q2",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 2)",
+          "state": "released",
+          "c": 42,
+          "n": 75,
+          "pct": 56,
+          "ci": [
+            45,
+            67
+          ]
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q3",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 3)",
+          "state": "released",
+          "c": 41,
+          "n": 75,
+          "pct": 55,
+          "ci": [
+            43,
+            65
+          ]
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q4",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 4)",
+          "state": "released",
+          "c": 28,
+          "n": 75,
+          "pct": 37,
+          "ci": [
+            27,
+            49
+          ]
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:show-hn",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:reddit",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:github-only",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "checks-claimed": {
+      "id": "checks-claimed",
+      "title": "Checks claimed without a linked artefact",
+      "measure": "share of included launches that claim the check",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|claimed|all",
+          "label": "The artefact or action can be reproduced or inspected.",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q1",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q2",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q3",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q4",
+          "label": "The artefact or action can be reproduced or inspected. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:show-hn",
+          "label": "The artefact or action can be reproduced or inspected. (Show HN)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:reddit",
+          "label": "The artefact or action can be reproduced or inspected. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:github-only",
+          "label": "The artefact or action can be reproduced or inspected. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|all",
+          "label": "Important supplied context, assumptions, and inferences are visible.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q1",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 1)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q2",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q3",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 3)",
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q4",
+          "label": "Important supplied context, assumptions, and inferences are visible. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:show-hn",
+          "label": "Important supplied context, assumptions, and inferences are visible. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:reddit",
+          "label": "Important supplied context, assumptions, and inferences are visible. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:github-only",
+          "label": "Important supplied context, assumptions, and inferences are visible. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|all",
+          "label": "The intended use and boundaries are explicit.",
+          "state": "released",
+          "c": 19,
+          "n": 300,
+          "pct": 6,
+          "ci": [
+            4,
+            10
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q1",
+          "label": "The intended use and boundaries are explicit. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q2",
+          "label": "The intended use and boundaries are explicit. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q3",
+          "label": "The intended use and boundaries are explicit. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q4",
+          "label": "The intended use and boundaries are explicit. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:show-hn",
+          "label": "The intended use and boundaries are explicit. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:reddit",
+          "label": "The intended use and boundaries are explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:github-only",
+          "label": "The intended use and boundaries are explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|all",
+          "label": "Acceptance criteria are explicit and testable enough for the use.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q1",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q2",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q3",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 3)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q4",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (quarter 4)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:show-hn",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:reddit",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:github-only",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|all",
+          "label": "Evidence shows the acceptance criteria were met.",
+          "state": "released",
+          "c": 41,
+          "n": 300,
+          "pct": 14,
+          "ci": [
+            10,
+            18
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q1",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q2",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q3",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 3)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q4",
+          "label": "Evidence shows the acceptance criteria were met. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:show-hn",
+          "label": "Evidence shows the acceptance criteria were met. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:reddit",
+          "label": "Evidence shows the acceptance criteria were met. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:github-only",
+          "label": "Evidence shows the acceptance criteria were met. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|all",
+          "label": "Relevant failure modes and fallback behaviour were evaluated.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q1",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q2",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q3",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q4",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:show-hn",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:reddit",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:github-only",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|all",
+          "label": "Known limitations and out-of-scope conditions are stated.",
+          "state": "released",
+          "c": 54,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q1",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 1)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q2",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 2)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q3",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 3)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q4",
+          "label": "Known limitations and out-of-scope conditions are stated. (quarter 4)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:show-hn",
+          "label": "Known limitations and out-of-scope conditions are stated. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:reddit",
+          "label": "Known limitations and out-of-scope conditions are stated. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:github-only",
+          "label": "Known limitations and out-of-scope conditions are stated. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|all",
+          "label": "The Deliverable gate for the intended use has passed.",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q1",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 1)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q2",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 2)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q3",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 3)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q4",
+          "label": "The Deliverable gate for the intended use has passed. (quarter 4)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:show-hn",
+          "label": "The Deliverable gate for the intended use has passed. (Show HN)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:reddit",
+          "label": "The Deliverable gate for the intended use has passed. (Reddit)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:github-only",
+          "label": "The Deliverable gate for the intended use has passed. (GitHub-only)",
+          "state": "withheld",
+          "reason": "agreement below the pre-registered threshold"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|all",
+          "label": "Operational ownership is explicit.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q1",
+          "label": "Operational ownership is explicit. (quarter 1)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q2",
+          "label": "Operational ownership is explicit. (quarter 2)",
+          "state": "released",
+          "c": 18,
+          "n": 75,
+          "pct": 24,
+          "ci": [
+            16,
+            35
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q3",
+          "label": "Operational ownership is explicit. (quarter 3)",
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q4",
+          "label": "Operational ownership is explicit. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:show-hn",
+          "label": "Operational ownership is explicit. (Show HN)",
+          "state": "released",
+          "c": 57,
+          "n": 294,
+          "pct": 19,
+          "ci": [
+            15,
+            24
+          ]
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:reddit",
+          "label": "Operational ownership is explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:github-only",
+          "label": "Operational ownership is explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|all",
+          "label": "The assurance mechanism is defined for the important failure modes.",
+          "state": "released",
+          "c": 27,
+          "n": 300,
+          "pct": 9,
+          "ci": [
+            6,
+            13
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q1",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q2",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q3",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 3)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q4",
+          "label": "The assurance mechanism is defined for the important failure modes. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:show-hn",
+          "label": "The assurance mechanism is defined for the important failure modes. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:reddit",
+          "label": "The assurance mechanism is defined for the important failure modes. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:github-only",
+          "label": "The assurance mechanism is defined for the important failure modes. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|all",
+          "label": "Fallback or escalation is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q1",
+          "label": "Fallback or escalation is defined. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q2",
+          "label": "Fallback or escalation is defined. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q3",
+          "label": "Fallback or escalation is defined. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q4",
+          "label": "Fallback or escalation is defined. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:show-hn",
+          "label": "Fallback or escalation is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:reddit",
+          "label": "Fallback or escalation is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:github-only",
+          "label": "Fallback or escalation is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|all",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q1",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q2",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q3",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q4",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:show-hn",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:reddit",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:github-only",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|all",
+          "label": "Support, maintenance, debugging, and change responsibility are defined.",
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q1",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 1)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q2",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 2)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q3",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 3)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q4",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (quarter 4)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:show-hn",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:reddit",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:github-only",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|all",
+          "label": "The relevant operating-cost boundary is known well enough for the decision.",
+          "state": "released",
+          "c": 55,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q1",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 1)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q2",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 2)",
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q3",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 3)",
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q4",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (quarter 4)",
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:show-hn",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:reddit",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:github-only",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|all",
+          "label": "The outcome measure is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q1",
+          "label": "The outcome measure is defined. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q2",
+          "label": "The outcome measure is defined. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q3",
+          "label": "The outcome measure is defined. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q4",
+          "label": "The outcome measure is defined. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:show-hn",
+          "label": "The outcome measure is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:reddit",
+          "label": "The outcome measure is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:github-only",
+          "label": "The outcome measure is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|all",
+          "label": "A comparable baseline or counterfactual is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q1",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q2",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q3",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 3)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q4",
+          "label": "A comparable baseline or counterfactual is defined. (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:show-hn",
+          "label": "A comparable baseline or counterfactual is defined. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:reddit",
+          "label": "A comparable baseline or counterfactual is defined. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:github-only",
+          "label": "A comparable baseline or counterfactual is defined. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|all",
+          "label": "The outcome was measured after the intervention.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q1",
+          "label": "The outcome was measured after the intervention. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q2",
+          "label": "The outcome was measured after the intervention. (quarter 2)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q3",
+          "label": "The outcome was measured after the intervention. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q4",
+          "label": "The outcome was measured after the intervention. (quarter 4)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:show-hn",
+          "label": "The outcome was measured after the intervention. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:reddit",
+          "label": "The outcome was measured after the intervention. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:github-only",
+          "label": "The outcome was measured after the intervention. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|all",
+          "label": "Before/after measurements use the same relevant definition.",
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q1",
+          "label": "Before/after measurements use the same relevant definition. (quarter 1)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q2",
+          "label": "Before/after measurements use the same relevant definition. (quarter 2)",
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q3",
+          "label": "Before/after measurements use the same relevant definition. (quarter 3)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q4",
+          "label": "Before/after measurements use the same relevant definition. (quarter 4)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:show-hn",
+          "label": "Before/after measurements use the same relevant definition. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:reddit",
+          "label": "Before/after measurements use the same relevant definition. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:github-only",
+          "label": "Before/after measurements use the same relevant definition. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|all",
+          "label": "Material confounds, uncertainty, or attribution limits are named.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q1",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q2",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q3",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q4",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:show-hn",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:reddit",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:github-only",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|all",
+          "label": "Outcome evidence relevant to the decision is available.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q1",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 1)",
+          "state": "released",
+          "c": 22,
+          "n": 75,
+          "pct": 29,
+          "ci": [
+            20,
+            40
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q2",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 2)",
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q3",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 3)",
+          "state": "released",
+          "c": 18,
+          "n": 75,
+          "pct": 24,
+          "ci": [
+            16,
+            35
+          ]
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q4",
+          "label": "Outcome evidence relevant to the decision is available. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:show-hn",
+          "label": "Outcome evidence relevant to the decision is available. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:reddit",
+          "label": "Outcome evidence relevant to the decision is available. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:github-only",
+          "label": "Outcome evidence relevant to the decision is available. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|all",
+          "label": "The full relevant cost boundary is accounted for.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q1",
+          "label": "The full relevant cost boundary is accounted for. (quarter 1)",
+          "state": "released",
+          "c": 18,
+          "n": 75,
+          "pct": 24,
+          "ci": [
+            16,
+            35
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q2",
+          "label": "The full relevant cost boundary is accounted for. (quarter 2)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q3",
+          "label": "The full relevant cost boundary is accounted for. (quarter 3)",
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q4",
+          "label": "The full relevant cost boundary is accounted for. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:show-hn",
+          "label": "The full relevant cost boundary is accounted for. (Show HN)",
+          "state": "released",
+          "c": 57,
+          "n": 294,
+          "pct": 19,
+          "ci": [
+            15,
+            24
+          ]
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:reddit",
+          "label": "The full relevant cost boundary is accounted for. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:github-only",
+          "label": "The full relevant cost boundary is accounted for. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|all",
+          "label": "Material risks and trade-offs are assessed.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q1",
+          "label": "Material risks and trade-offs are assessed. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q2",
+          "label": "Material risks and trade-offs are assessed. (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q3",
+          "label": "Material risks and trade-offs are assessed. (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q4",
+          "label": "Material risks and trade-offs are assessed. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:show-hn",
+          "label": "Material risks and trade-offs are assessed. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:reddit",
+          "label": "Material risks and trade-offs are assessed. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:github-only",
+          "label": "Material risks and trade-offs are assessed. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|all",
+          "label": "Reasonable alternatives or the status quo are compared.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q1",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 1)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q2",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q3",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q4",
+          "label": "Reasonable alternatives or the status quo are compared. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:show-hn",
+          "label": "Reasonable alternatives or the status quo are compared. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:reddit",
+          "label": "Reasonable alternatives or the status quo are compared. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:github-only",
+          "label": "Reasonable alternatives or the status quo are compared. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|all",
+          "label": "The rule for scale, renew, expand, or stop is explicit.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q1",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q2",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 2)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q3",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 3)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q4",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (quarter 4)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:show-hn",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (Show HN)",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:reddit",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (Reddit)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:github-only",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    }
+  }
+}

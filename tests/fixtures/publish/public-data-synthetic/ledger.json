@@ -1,0 +1,842 @@
+[
+  {
+    "id": "chk|assumptions-catalogued|pass|all",
+    "n": 300,
+    "c": 182,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|all",
+    "n": 300,
+    "c": 145,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|pass|all",
+    "n": 300,
+    "c": 187,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|pass|all",
+    "n": 300,
+    "c": 129,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|all",
+    "n": 300,
+    "c": 102,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|pass|all",
+    "n": 300,
+    "c": 53,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|pass|all",
+    "n": 300,
+    "c": 105,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|all",
+    "n": 300,
+    "c": 197,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|pass|all",
+    "n": 300,
+    "c": 152,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|pass|all",
+    "n": 300,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|pass|all",
+    "n": 300,
+    "c": 200,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|pass|all",
+    "n": 300,
+    "c": 187,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|pass|all",
+    "n": 300,
+    "c": 166,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|pass|all",
+    "n": 300,
+    "c": 36,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|pass|all",
+    "n": 300,
+    "c": 128,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|pass|all",
+    "n": 300,
+    "c": 139,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|pass|all",
+    "n": 300,
+    "c": 51,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|pass|all",
+    "n": 300,
+    "c": 98,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|pass|all",
+    "n": 300,
+    "c": 119,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|pass|all",
+    "n": 300,
+    "c": 160,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|all",
+    "n": 300,
+    "c": 19,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-met|claimed|all",
+    "n": 300,
+    "c": 41,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|all",
+    "n": 300,
+    "c": 54,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|claimed|all",
+    "n": 300,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|all",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|all",
+    "n": 300,
+    "c": 55,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|all",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|pass|q1",
+    "n": 75,
+    "c": 37,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q1",
+    "n": 75,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|pass|q1",
+    "n": 75,
+    "c": 46,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|pass|q1",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q1",
+    "n": 75,
+    "c": 17,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|pass|q1",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|pass|q1",
+    "n": 75,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|q1",
+    "n": 75,
+    "c": 56,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|pass|q1",
+    "n": 75,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q1",
+    "n": 75,
+    "c": 25,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|pass|q1",
+    "n": 75,
+    "c": 48,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|pass|q1",
+    "n": 75,
+    "c": 46,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|pass|q1",
+    "n": 75,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|pass|q1",
+    "n": 75,
+    "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|pass|q1",
+    "n": 75,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|pass|q1",
+    "n": 75,
+    "c": 35,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|pass|q1",
+    "n": 75,
+    "c": 24,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|pass|q1",
+    "n": 75,
+    "c": 28,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|pass|q1",
+    "n": 75,
+    "c": 49,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|claimed|q1",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|q1",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|q1",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|q1",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q1",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|q1",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|claimed|q1",
+    "n": 75,
+    "c": 22,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|claimed|q1",
+    "n": 75,
+    "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|pass|q2",
+    "n": 75,
+    "c": 46,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q2",
+    "n": 75,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|pass|q2",
+    "n": 75,
+    "c": 46,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|pass|q2",
+    "n": 75,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q2",
+    "n": 75,
+    "c": 23,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|pass|q2",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|pass|q2",
+    "n": 75,
+    "c": 22,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|q2",
+    "n": 75,
+    "c": 45,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|pass|q2",
+    "n": 75,
+    "c": 38,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q2",
+    "n": 75,
+    "c": 20,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|pass|q2",
+    "n": 75,
+    "c": 51,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|pass|q2",
+    "n": 75,
+    "c": 51,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|pass|q2",
+    "n": 75,
+    "c": 37,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|pass|q2",
+    "n": 75,
+    "c": 32,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|pass|q2",
+    "n": 75,
+    "c": 29,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|pass|q2",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|pass|q2",
+    "n": 75,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|pass|q2",
+    "n": 75,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|pass|q2",
+    "n": 75,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|q2",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|q2",
+    "n": 75,
+    "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|q2",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q2",
+    "n": 75,
+    "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|claimed|q2",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|q2",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|claimed|q2",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|claimed|q2",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|pass|q3",
+    "n": 75,
+    "c": 48,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q3",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|pass|q3",
+    "n": 75,
+    "c": 52,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|pass|q3",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q3",
+    "n": 75,
+    "c": 25,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|pass|q3",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|pass|q3",
+    "n": 75,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|q3",
+    "n": 75,
+    "c": 50,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|pass|q3",
+    "n": 75,
+    "c": 35,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|pass|q3",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|pass|q3",
+    "n": 75,
+    "c": 49,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|pass|q3",
+    "n": 75,
+    "c": 45,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|pass|q3",
+    "n": 75,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|pass|q3",
+    "n": 75,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|pass|q3",
+    "n": 75,
+    "c": 41,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|pass|q3",
+    "n": 75,
+    "c": 21,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|pass|q3",
+    "n": 75,
+    "c": 30,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|pass|q3",
+    "n": 75,
+    "c": 41,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|claimed|q3",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|claimed|q3",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-met|claimed|q3",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|q3",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|q3",
+    "n": 75,
+    "c": 17,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|claimed|q3",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|q3",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q3",
+    "n": 75,
+    "c": 17,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|claimed|q3",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|q3",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|claimed|q3",
+    "n": 75,
+    "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|claimed|q3",
+    "n": 75,
+    "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|pass|q4",
+    "n": 75,
+    "c": 51,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q4",
+    "n": 75,
+    "c": 38,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|pass|q4",
+    "n": 75,
+    "c": 43,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|pass|q4",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q4",
+    "n": 75,
+    "c": 37,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|pass|q4",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|pass|q4",
+    "n": 75,
+    "c": 29,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|q4",
+    "n": 75,
+    "c": 46,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|pass|q4",
+    "n": 75,
+    "c": 37,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|pass|q4",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q4",
+    "n": 75,
+    "c": 21,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|pass|q4",
+    "n": 75,
+    "c": 52,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|pass|q4",
+    "n": 75,
+    "c": 45,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|pass|q4",
+    "n": 75,
+    "c": 43,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|pass|q4",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|pass|q4",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|pass|q4",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|pass|q4",
+    "n": 75,
+    "c": 26,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|pass|q4",
+    "n": 75,
+    "c": 30,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|pass|q4",
+    "n": 75,
+    "c": 28,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|claimed|q4",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|q4",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|q4",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q4",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|claimed|q4",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|q4",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|src:show-hn",
+    "n": 294,
+    "c": 85,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|src:show-hn",
+    "n": 294,
+    "c": 57,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|claimed|src:show-hn",
+    "n": 294,
+    "c": 57,
+    "version": "v1"
+  }
+]
