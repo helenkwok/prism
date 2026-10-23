@@ -83,8 +83,13 @@ test("reasoning wrappers remain invalid, final-only corrections escalate and a v
   const run = (db = f.db) => runApprovedStage({ ...f, db, stage: "second-coder", client, log: () => {} });
   assert.equal((await run()).ok, true); assert.equal(bodies.length, 3);
   assert.ok(bodies[1].messages[0].content.includes("never reasoning, <think> or </think> tags"));
+  assert.ok(bodies[1].messages[0].content.startsWith("/no_think\n"));
+  assert.equal(bodies[1].chat_template_kwargs.enable_thinking, false);
+  assert.equal(bodies[1].reasoning_effort, undefined);
+  assert.ok(!bodies[0].messages[0].content.startsWith("/no_think\n"));
   assert.ok(bodies[1].messages[0].content.includes("use unknown with an empty spanIds array instead of refusing"));
   assert.ok(bodies[2].messages[0].content.includes('Begin immediately with {"checks":'));
+  assert.ok(bodies[2].messages[0].content.startsWith("/no_think\n"));
   assert.notDeepEqual(bodies[0], bodies[1]); assert.notDeepEqual(bodies[1], bodies[2]);
   const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
   assert.equal((await run(freshDb)).ok, true); assert.equal(bodies.length, 3);

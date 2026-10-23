@@ -56,7 +56,7 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
   const parseRepairInstructions = [finalOnly, `${finalOnly} Begin immediately with {"checks": and complete the required JSON object. Include every required check key; do not introduce or conclude the answer with prose.`, `${finalOnly} This is the final format retry. Emit only the checks object in the supplied schema, with quoted keys, proposedState values and spanIds arrays. The first output character must be { and the last must be }.`];
   for (const chunk of chunkSpans(spans)) {
     const result = await codeProjectWithRetry({ client: o.client, cfg: {}, contract: o.contract, spanIds: chunk.map(s => s.id), callOnce: async (_c, _cfg, schema, ids) => {
-      const makeBody = (requestSchema: unknown, feedback?: string) => buildChatBody({ model: o.role.model, messages: buildCodingMessages(ids, o.codebook, requestSchema, chunk).map((message, i) => i === 0 && feedback ? { ...message, content: `${message.content}\n\nFormat correction: ${feedback}` } : message), mode: "json_schema", schema: { name: "gate_checks", schema: requestSchema, strict: true }, thinking: o.role.reasoning === true, ...(typeof o.role.reasoning === "string" ? { reasoningEffort: o.role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
+      const makeBody = (requestSchema: unknown, feedback?: string, noThink = false) => buildChatBody({ model: o.role.model, messages: buildCodingMessages(ids, o.codebook, requestSchema, chunk).map((message, i) => i === 0 ? { ...message, content: `${noThink ? "/no_think\n" : ""}${message.content}${feedback ? `\n\nFormat correction: ${feedback}` : ""}` } : message), mode: "json_schema", schema: { name: "gate_checks", schema: requestSchema, strict: true }, thinking: noThink ? false : o.role.reasoning === true, ...(typeof o.role.reasoning === "string" && !noThink ? { reasoningEffort: o.role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
       let body = makeBody(schema);
       const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
       const baseCache = readCached<string>(cacheDir, stageCacheKey(String(e.hn_id), `approved-${o.stage}-chunk`, { digest: baseDigest, provider: o.role.provider }));
@@ -74,13 +74,14 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
         else if (failure === "span_resolve") body = makeBody(citationSchema(schema, chunk.map(s => s.id)), `Your previous citations did not resolve. Cite only these exact span ids: ${JSON.stringify(chunk.map(s => s.id))}. Never invent, alias or shorten an id. Use an empty spanIds array when no listed span supports the state. Return every required check.`);
         else if (failure === "json_parse") {
           // Existing successful variants stay reusable; never read or salvage raw failed replies.
-          for (const feedback of [jsonOnly, oldParseRepair, ...parseRepairInstructions]) {
-            const candidate = makeBody(schema, feedback);
+          for (const feedback of [jsonOnly, oldParseRepair, ...parseRepairInstructions]) for (const noThink of [false, true]) {
+            const candidate = makeBody(schema, feedback, noThink);
             const candidateDigest = crypto.createHash("sha256").update(JSON.stringify(candidate)).digest("hex");
             const cached = readCached<string>(cacheDir, stageCacheKey(String(e.hn_id), `approved-${o.stage}-chunk`, { digest: candidateDigest, provider: o.role.provider }));
             if (cached.hit && isSchemaValid(cached.value, chunk.map(s => s.id), o.contract.zodSchema).valid) return cached.value;
           }
-          body = makeBody(schema, parseRepairInstructions[Math.min(parseRepairs.get(baseDigest) ?? 0, 2)]);
+          // The model's documented system control complements the API setting; parsing stays strict.
+          body = makeBody(schema, parseRepairInstructions[Math.min(parseRepairs.get(baseDigest) ?? 0, 2)], true);
         } else body = makeBody(schema, jsonOnly);
       }
       const digest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
