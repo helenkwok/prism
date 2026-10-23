@@ -16,6 +16,7 @@ import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
 import { Route as PProjectIdRouteImport } from './routes/p.$projectId'
 import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as PProjectIdSnapshotHashRouteImport } from './routes/p.$projectId_.snapshot.$hash'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PProjectIdSnapshotHashRoute = PProjectIdSnapshotHashRouteImport.update({
+  id: '/p/$projectId_/snapshot/$hash',
+  path: '/p/$projectId/snapshot/$hash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/p/$projectId/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/p/$projectId/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/p/$projectId_/snapshot/$hash': typeof PProjectIdSnapshotHashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
+    | '/p/$projectId/snapshot/$hash'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
+    | '/p/$projectId/snapshot/$hash'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/p/$projectId'
     | '/review/$projectN'
     | '/api/auth/$'
+    | '/p/$projectId_/snapshot/$hash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   PProjectIdRoute: typeof PProjectIdRoute
   ReviewProjectNRoute: typeof ReviewProjectNRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  PProjectIdSnapshotHashRoute: typeof PProjectIdSnapshotHashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$projectId_/snapshot/$hash': {
+      id: '/p/$projectId_/snapshot/$hash'
+      path: '/p/$projectId/snapshot/$hash'
+      fullPath: '/p/$projectId/snapshot/$hash'
+      preLoaderRoute: typeof PProjectIdSnapshotHashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   PProjectIdRoute: PProjectIdRoute,
   ReviewProjectNRoute: ReviewProjectNRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  PProjectIdSnapshotHashRoute: PProjectIdSnapshotHashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -19,6 +19,45 @@ export async function ensureReportViewSchema(db: Kysely<any>): Promise<void> {
     .addColumn("generated_at", "text", (c) => c.notNull())
     .addPrimaryKeyConstraint("app_report_view_pk", ["project_ref", "view"])
     .execute();
+  await db.schema
+    .createTable("app_snapshot")
+    .ifNotExists()
+    .addColumn("project_ref", "text", (c) => c.notNull())
+    .addColumn("hash", "text", (c) => c.notNull())
+    .addColumn("url", "text", (c) => c.notNull())
+    .addColumn("archived_at", "text", (c) => c.notNull())
+    .addColumn("text", "text", (c) => c.notNull())
+    .addColumn("fixture", "integer", (c) => c.notNull())
+    .addPrimaryKeyConstraint("app_snapshot_pk", ["project_ref", "hash"])
+    .execute();
+}
+
+/** One archived page's extracted text, identifiable view only (07-UI-SPEC "Snapshot view", plan 07-08). */
+export interface Snapshot {
+  projectRef: string;
+  hash: string;
+  url: string;
+  archivedAt: string;
+  text: string;
+  fixture: boolean;
+}
+
+export async function upsertSnapshot(db: Kysely<any>, s: Snapshot): Promise<void> {
+  await db
+    .replaceInto("app_snapshot")
+    .values({ project_ref: s.projectRef, hash: s.hash, url: s.url, archived_at: s.archivedAt, text: s.text, fixture: s.fixture ? 1 : 0 })
+    .execute();
+}
+
+/** Keyed by project and hash together, so a hash never opens another project's page (T-07-31). */
+export async function readSnapshot(db: Kysely<any>, projectRef: string, hash: string): Promise<Snapshot | null> {
+  const r = await db
+    .selectFrom("app_snapshot")
+    .selectAll()
+    .where("project_ref", "=", projectRef)
+    .where("hash", "=", hash)
+    .executeTakeFirst();
+  return r ? { projectRef: r.project_ref, hash: r.hash, url: r.url, archivedAt: r.archived_at, text: r.text, fixture: r.fixture === 1 } : null;
 }
 
 export async function upsertReportView(db: Kysely<any>, v: AnyView): Promise<void> {

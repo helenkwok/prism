@@ -31,7 +31,7 @@ import { ensureAccessSchema, upsertProjectAccess } from "../src/app/server/acces
 import { loadCodebook } from "../src/pipeline/coding/codebook-prompt.ts";
 import { runGate } from "../src/pipeline/gate/run-gate.ts";
 import { buildDocumentFrequency, deidentifyView, dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
-import { ensureReportViewSchema, upsertReportView } from "../src/report/store.ts";
+import { ensureReportViewSchema, upsertReportView, upsertSnapshot } from "../src/report/store.ts";
 import { buildReportView, gateCheckOrder, loadGapText, sourceFromFixture } from "../src/report/view.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -121,10 +121,18 @@ if (key) await ensureAccessSchema(db);
 
 const fixture = corpus.synthetic === true;
 let rows = 0;
+let snapshots = 0;
 await db.transaction().execute(async (trx) => {
   for (const b of built) {
     await upsertReportView(trx, b.view);
     rows++;
+    // The archived text behind each page (plan 07-08); identifiable only, keyed by project and hash.
+    for (const page of b.p.pages) {
+      const text = b.p.snapshots?.[page.snapshotHash];
+      if (typeof text !== "string") continue;
+      await upsertSnapshot(trx, { projectRef: b.view.projectRef, hash: page.snapshotHash, url: page.url, archivedAt: b.p.collectedAt, text, fixture });
+      snapshots++;
+    }
   }
   if (!key) return;
   // A new key renames every pseudonym: drop this run's earlier de-identified rows and free the pseudonyms first.
@@ -149,4 +157,5 @@ await db.transaction().execute(async (trx) => {
   }
 });
 console.log(`REPORT rows=${rows}`);
+console.log(`SNAPSHOT rows=${snapshots}`);
 await db.destroy();

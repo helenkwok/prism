@@ -1,5 +1,6 @@
 // APP-04 / SC3 / 07-UI-SPEC: the report reads gate first, in evidence language,
 // with every quote linked to its archived snapshot and its live page.
+import fs from "node:fs";
 import { expect, test } from "@playwright/test";
 import { stateFor } from "./helpers.ts";
 
@@ -126,4 +127,57 @@ test("fixture notice above the h1; robots meta noindex, nofollow", async ({ page
     return !!n && !!h1 && !!(n.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
   expect(above).toBe(true);
+});
+
+// Snapshot view (Task 3). The unmatched-span case is the unit test tests/report/marks.test.mjs:
+// every span in the synthetic corpus is found in its archived text.
+const corpus = JSON.parse(fs.readFileSync("tests/fixtures/report/synthetic-corpus.json", "utf8"));
+const pagesOf = (id: string): { url: string; snapshotHash: string }[] =>
+  corpus.projects.find((p: { projectId: string }) => p.projectId === id).pages;
+
+test("a quote's snapshot link lands on its marked span, focused, with the meta block and back links", async ({ page }) => {
+  await page.goto("/p/P01");
+  await card(page, "output-reproducible").locator('[data-span="s012"]').getByRole("link", { name: "Open archived snapshot" }).click();
+  await expect(page).toHaveURL(/\/p\/P01\/snapshot\/[0-9a-f]{64}\?check=output-reproducible#span-s012$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Archived page");
+  const mark = page.locator("mark#span-s012");
+  await expect(mark).toHaveText('Paste <script>alert("x")</script> & <b>bold</b> into the box; it is shown as text.');
+  await expect(mark).toBeFocused();
+  await expect(page.locator("[data-snapshot-text] script, [data-snapshot-text] b, iframe")).toHaveCount(0);
+  const hash = pagesOf("P01")[2].snapshotHash;
+  const meta = page.locator("[data-snapshot-meta]");
+  await expect(meta).toContainText("https://p01.example/pricing");
+  await expect(meta).toContainText("2026-10-11");
+  await expect(meta).toContainText(hash.slice(0, 12));
+  await expect(meta).not.toContainText(hash.slice(0, 13));
+  await expect(meta.getByRole("link")).toHaveCount(0);
+  await expect(page.locator('[data-notice="info"]')).toHaveText("Archived text as collected. Links, images and scripts are not reproduced.");
+  const back = page.locator("[data-back]");
+  await expect(back).toHaveCount(2);
+  for (const href of await back.evaluateAll((as) => as.map((a) => a.getAttribute("href")))) expect(href).toBe("/p/P01#check-output-reproducible");
+  // Every span the report cites on this page is marked; nothing else is.
+  const p01 = corpus.projects.find((p: { projectId: string }) => p.projectId === "P01");
+  const cited = new Set(Object.values(p01.cites as Record<string, string[]>).flat());
+  const expected = Object.entries(p01.spans as Record<string, { snapshotHash: string }>)
+    .filter(([id, s]) => cited.has(id) && s.snapshotHash === hash)
+    .map(([id]) => `span-${id}`)
+    .sort();
+  expect(expected).toContain("span-s012");
+  expect(await page.locator("mark").evaluateAll((ms) => ms.map((m) => m.id).sort())).toEqual(expected);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
+});
+
+test.describe("company A on snapshots", () => {
+  test.use({ storageState: ({}, use) => stateFor("companyA").then(use) });
+
+  test("opens its own snapshot; gets 403 on P02's and on P02's hash under its own project", async ({ page }) => {
+    const own = pagesOf("P01")[0].snapshotHash;
+    const other = pagesOf("P02")[0].snapshotHash;
+    expect((await page.goto(`/p/P01/snapshot/${own}`))?.status()).toBe(200);
+    expect((await page.goto(`/p/P02/snapshot/${other}`))?.status()).toBe(403);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not available to your account");
+    expect((await page.goto(`/p/P01/snapshot/${other}`))?.status()).toBe(403);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not available to your account");
+    await expect(page.locator("[data-snapshot-text]")).toHaveCount(0);
+  });
 });
