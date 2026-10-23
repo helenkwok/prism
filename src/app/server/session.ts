@@ -7,3 +7,9 @@ export const getSessionEmail = createServerFn({ method: "GET" }).handler(async (
   const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
   return session ? { email: session.user.email } : null;
 });
+
+/** The signed-in user's email and role, or null when there is no valid session. */
+export const getSessionUser = createServerFn({ method: "GET" }).handler(async () => {
+  const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
+  return session ? { email: session.user.email, role: session.user.role ?? null } : null;
+});

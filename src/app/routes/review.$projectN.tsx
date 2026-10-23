@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { getAuth } from "../server/auth.ts";
+import { AccessError, requireRole } from "../server/access.ts";
 import { getDb, resolveDataDir } from "../server/db.ts";
-import { getSessionEmail } from "../server/session.ts";
+import { getSessionUser } from "../server/session.ts";
 import { loadGateFile, resolveGatesPath, PROPOSED_STATES } from "../../pipeline/coding/contract.ts";
 import { loadCodebook } from "../../pipeline/coding/codebook-prompt.ts";
 import {
@@ -29,8 +28,7 @@ export const getTrail = createServerFn({ method: "GET" })
     return { projectN, blind: Boolean(d.blind) };
   })
   .handler(async ({ data }) => {
-    const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
-    if (!session) throw new Error("unauthenticated");
+    const session = await requireRole("admin");
     return readTrail(getDb(), resolveDataDir(), data.projectN, { blind: data.blind });
   });
 
@@ -48,8 +46,7 @@ export const submitEdit = createServerFn({ method: "POST" })
       .parse(d);
   })
   .handler(async ({ data }) => {
-    const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
-    if (!session) throw new Error("unauthenticated");
+    const session = await requireRole("admin");
     return recordEdit(getDb(), resolveDataDir(), {
       projectN: data.projectN,
       checkId: data.checkId,
@@ -73,8 +70,7 @@ export const submitDecision = createServerFn({ method: "POST" })
       .parse(d);
   })
   .handler(async ({ data }) => {
-    const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
-    if (!session) throw new Error("unauthenticated");
+    const session = await requireRole("admin");
     await recordPersonDecision(getDb(), resolveDataDir(), {
       projectN: data.projectN,
       checkId: data.checkId,
@@ -110,8 +106,7 @@ export const submitGold = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    const session = await getAuth().api.getSession({ headers: getRequestHeaders() });
-    if (!session) throw new Error("unauthenticated");
+    const session = await requireRole("admin");
     const codebook = loadCodebook();
     await recordPersonGold(getDb(), resolveDataDir(), {
       projectN: data.projectN,
@@ -129,8 +124,9 @@ export const Route = createFileRoute("/review/$projectN")({
     blind: typeof s.blind === "string" ? s.blind : undefined,
   }),
   beforeLoad: async () => {
-    const user = await getSessionEmail();
+    const user = await getSessionUser();
     if (!user) throw redirect({ to: "/sign-in" });
+    if (user.role !== "admin") throw new AccessError(403);
     return { user };
   },
   component: ReviewPage,

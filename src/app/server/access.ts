@@ -15,6 +15,26 @@ export interface ProjectAccess {
 }
 
 /**
+ * Route-file classes, keyed by file name under src/app/routes. A file of a
+ * role class opens every handler with requireRole(exactly these roles); a file
+ * of a view class with requireProjectAccess(view). The source-scan test applies
+ * these to route files later plans add. Company does not open /method
+ * (07-UI-SPEC open question 3, default hidden).
+ */
+export const PATH_CLASSES: readonly {
+  name: string;
+  pattern: RegExp;
+  roles?: readonly Role[];
+  view?: View;
+}[] = [
+  { name: "review", pattern: /^review\./, roles: ["admin"] },
+  { name: "run", pattern: /^run/, roles: ["admin"] },
+  { name: "method", pattern: /^method\./, roles: ["admin", "judge"] },
+  { name: "p", pattern: /^p\./, view: "identifiable" },
+  { name: "j", pattern: /^j\./, view: "deidentified" },
+];
+
+/**
  * One message per status. A missing project and a forbidden one both raise
  * 403 "forbidden", so no refusal reveals whether a record exists.
  */
