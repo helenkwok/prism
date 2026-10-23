@@ -22,6 +22,35 @@ test("both stages pin the same base image, by tag and digest", () => {
   assert.match(refs[0], /^[\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}$/, `not pinned by tag and digest: ${refs[0]}`);
 });
 
+// 07-12c: the VM build failed on a src import of a scripts/ file the image never copied.
+test("every scripts/ module that src imports (and what it imports) is copied into the build stage", () => {
+  const files = new Set();
+  const visit = (file) => {
+    for (const m of fs.readFileSync(file, "utf8").matchAll(/from\s+"(\.{1,2}\/[^"]+\.mjs)"/g)) {
+      const target = path.resolve(path.dirname(file), m[1]);
+      const rel = path.relative(root, target);
+      if (rel.startsWith("scripts/") && !files.has(rel)) {
+        files.add(rel);
+        visit(target);
+      }
+    }
+  };
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(ts|tsx|mjs)$/.test(e.name)) visit(p);
+    }
+  };
+  walk(path.join(root, "src"));
+  assert.ok(files.size > 0);
+  const buildStage = dockerfile.slice(dockerfile.indexOf(fromLines[0]), dockerfile.indexOf(fromLines[1]));
+  for (const f of files) {
+    assert.ok(buildStage.includes(f), `Dockerfile build stage does not copy ${f}`);
+    assert.ok(dockerignoreLines.includes(`!${f}`), `.dockerignore does not allow ${f}`);
+  }
+});
+
 test("the container runs as a non-root user", () => {
   assert.match(dockerfile, /^USER node\s*$/m);
 });

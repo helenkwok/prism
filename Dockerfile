@@ -25,6 +25,9 @@ RUN npm ci
 RUN sha256sum -c "docker/better-sqlite3/linux-$(node -p process.arch).sha256"
 COPY rsbuild.config.ts postcss.config.mjs tsconfig.json ./
 COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
+# src/pipeline/select imports the robots-first preflight from the spike script.
+COPY scripts/spikes/pick-projects.mjs ./scripts/spikes/pick-projects.mjs
+COPY scripts/spikes/lib/preflight.mjs scripts/spikes/lib/paths.mjs ./scripts/spikes/lib/
 COPY src ./src
 RUN npm run build
 RUN npm prune --omit=dev

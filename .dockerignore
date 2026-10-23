@@ -21,6 +21,11 @@
 !scripts
 !scripts/check-data-dir.mjs
 !scripts/serve.mjs
+!scripts/spikes
+!scripts/spikes/pick-projects.mjs
+!scripts/spikes/lib
+!scripts/spikes/lib/preflight.mjs
+!scripts/spikes/lib/paths.mjs
 !vendor
 !vendor/**
 !codebook.md
