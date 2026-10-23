@@ -138,7 +138,8 @@
   }
   header nav,
   header button,
-  a[href="#content"] {
+  a[href="#content"],
+  [data-print-hide] {
     display: none !important;
   }
   [data-check-card],

@@ -121,6 +121,17 @@ test.describe("report print layout (/p/P01, admin)", () => {
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe("14px");
   });
 
+  test("the signed-in email and role badge are not printed (shown on screen)", async ({ page }) => {
+    const { email } = readCreds().admin;
+    const role = page.locator("header").getByText("Admin", { exact: true });
+    await page.emulateMedia({ media: "screen" });
+    await expect(page.getByText(email)).toBeVisible();
+    await expect(role).toBeVisible();
+    await page.emulateMedia({ media: "print", colorScheme: "light" });
+    await expect(page.getByText(email)).toBeHidden();
+    await expect(role).toBeHidden();
+  });
+
   test("the scope disclaimer ends within the first A4 page", async ({ page }) => {
     const bottom = await page
       .locator("[data-scope-disclaimer]")

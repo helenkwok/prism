@@ -71,8 +71,9 @@ export function AppShell({ user, pathname, children }: { user: ShellUser; pathna
             </ul>
           </nav>
           <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
-            <span className="hidden text-[0.8125rem] text-muted-foreground sm:inline">{user.email}</span>
-            <span className="rounded-md border border-border px-2 py-0.5 text-[0.8125rem]">
+            {/* data-print-hide: a printed or PDF report must not carry who printed it. */}
+            <span data-print-hide="" className="hidden text-[0.8125rem] text-muted-foreground sm:inline">{user.email}</span>
+            <span data-print-hide="" className="rounded-md border border-border px-2 py-0.5 text-[0.8125rem]">
               {ROLE_LABEL[user.role ?? ""] ?? "No role"}
             </span>
             <Button variant="ghost" onClick={signOut} disabled={signingOut} className="h-8">
