@@ -5,7 +5,7 @@ import { getAuth } from "./auth.ts";
 import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
 import { ensureReportViewSchema } from "../../report/store.ts";
-import { ensureLiveRunSchema, runnerFromEnv } from "./live-run.ts";
+import { ensureLiveRunSchema, markInterruptedJobs, runnerFromEnv } from "./live-run.ts";
 
 function refuse(check: string, err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
@@ -43,6 +43,9 @@ export default async function boot(): Promise<void> {
   }
   try {
     await ensureLiveRunSchema(getDb());
+    // Pattern 6 boot rule: a run cut off by a restart is interrupted and its $0.10 charged.
+    const n = await markInterruptedJobs(getDb());
+    if (n > 0) console.log(`[prism] live run: ${n} unfinished run(s) marked interrupted; their reservations were charged as spent`);
   } catch (err) {
     refuse("live-run tables", err);
   }

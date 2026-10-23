@@ -3,15 +3,24 @@
 // server functions in run-fns.ts load this module on the server only, and the
 // unit tests call the *As / core functions with an in-memory database.
 //
-// Order of checks in startLiveRunAs: admin role, trusted Origin, URL shape,
-// own/opt-in pre-flight (07-02). A refusal writes nothing and makes no request.
-import type { Kysely } from "kysely";
+// Order of checks in startLiveRunAs: admin role, trusted Origin, a configured
+// cap, URL shape, own/opt-in pre-flight (07-02), then the $0.10 reservation.
+// A refusal writes no job and makes no request.
+//
+// Money (D-80, caveat C7): each run reserves $0.10 in app_spend_ledger before
+// its job row exists; the run's DollarBudget has the ledger as parent; the end
+// of a run releases the reservation and adds the actual spend; a restart
+// charges every unfinished reservation as spent. spent_usd only ever grows.
+// Each ledger change is one conditional UPDATE, not a Kysely transaction:
+// Kysely's SQLite driver shares one connection with no lock, so a transaction
+// here would interleave with other requests' queries.
+import { sql, type Kysely } from "kysely";
 import pLimit from "p-limit";
 import { z } from "zod";
 
 import { AccessError, checkRole } from "./access.ts";
 import { preflightLiveUrl, type PreflightRefusal } from "./live-preflight.ts";
-import { DollarBudget } from "../../pipeline/coding/spend-guards.ts";
+import { BudgetExceededError, DollarBudget, formatBudgetLine } from "../../pipeline/coding/spend-guards.ts";
 import type { Boundary } from "../../pipeline/evidence/boundary.ts";
 
 export const STAGES = ["queued", "screen", "collect", "code", "gate", "confirm", "report"] as const;
@@ -34,6 +43,7 @@ export const RUN_BUDGET_USD = 0.1;
 export const LEDGER_SCOPE = "live-run";
 export const NOT_CONFIGURED = "Live run is not configured on this server";
 export const FIXTURE_ADDRESS = "93.184.216.34";
+const EPS = 1e-9;
 
 export type Refusal = PreflightRefusal | "budget" | "not-configured";
 export type StartResult = { jobId: number } | { refused: Refusal };
@@ -54,6 +64,7 @@ export async function ensureLiveRunSchema(db: Kysely<any>): Promise<void> {
     .addColumn("created_by", "text", (c) => c.notNull())
     .addColumn("created_at", "text", (c) => c.notNull())
     .addColumn("finished_at", "text")
+    .addColumn("report_ready", "integer", (c) => c.notNull().defaultTo(0))
     .execute();
   await db.schema
     .createTable("app_job_event")
@@ -205,6 +216,8 @@ export async function startLiveRunCore(
   { db, runner, resolver, env = process.env }: StartDeps,
 ): Promise<StartResult> {
   await assertTrustedOrigin(headers, env);
+  const cap = parseCap(env);
+  if (cap === null) return { refused: "not-configured" };
   const parsed = urlSchema.safeParse(rawUrl);
   if (!parsed.success) return { refused: "bad-url" };
   const list = await liveBoundaries(db);
@@ -216,12 +229,18 @@ export async function startLiveRunCore(
   if (!pre.ok) return { refused: pre.reason };
   const projectRef = list.find((l) => l.boundary === pre.boundary)!.projectId;
   const url = new URL(parsed.data).toString();
-  const createdAt = now();
-  const inserted = await db
-    .insertInto("app_job")
-    .values({ project_ref: projectRef, url, host: new URL(url).hostname, status: "queued", created_by: session.user.id, created_at: createdAt })
-    .executeTakeFirstOrThrow();
-  const jobId = Number(inserted.insertId);
+  if (!(await reserveRun(db, cap))) return { refused: "budget" };
+  let jobId: number;
+  try {
+    const inserted = await db
+      .insertInto("app_job")
+      .values({ project_ref: projectRef, url, host: new URL(url).hostname, status: "queued", created_by: session.user.id, created_at: now() })
+      .executeTakeFirstOrThrow();
+    jobId = Number(inserted.insertId);
+  } catch (err) {
+    await settleRun(db, 0); // no job, so nothing spent: give the reservation back
+    throw err;
+  }
   await addEvent(db, jobId, "queued", "running", "Waiting for the runner.");
   enqueue(db, jobId, runner);
   return { jobId };
@@ -231,6 +250,117 @@ export async function startLiveRunCore(
 export async function startLiveRunAs(headers: Headers, rawUrl: unknown, deps: StartDeps): Promise<StartResult> {
   const session = await checkRole({ headers, roles: ["admin"] });
   return startLiveRunCore(session, headers, rawUrl, deps);
+}
+
+// ---- ledger --------------------------------------------------------------------
+
+/** PRISM_LIVE_RUN_CAP_USD as a positive number, or null: no cap means no live run. */
+export function parseCap(env: NodeJS.ProcessEnv = process.env): number | null {
+  const raw = env.PRISM_LIVE_RUN_CAP_USD;
+  if (raw === undefined || raw.trim() === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export interface LedgerState {
+  cap: number;
+  spent: number;
+  reserved: number;
+}
+
+export async function readLedger(db: Kysely<any>): Promise<LedgerState> {
+  const r = await db.selectFrom("app_spend_ledger").selectAll().where("scope", "=", LEDGER_SCOPE).executeTakeFirst();
+  return { cap: Number(r?.cap_usd ?? 0), spent: Number(r?.spent_usd ?? 0), reserved: Number(r?.reserved_usd ?? 0) };
+}
+
+/** One atomic statement: reserve $0.10 only if spent + reserved + 0.10 stays within the cap. */
+async function reserveRun(db: Kysely<any>, cap: number): Promise<boolean> {
+  await db
+    .insertInto("app_spend_ledger")
+    .values({ scope: LEDGER_SCOPE, cap_usd: cap, spent_usd: 0, reserved_usd: 0 })
+    .onConflict((oc) => oc.column("scope").doUpdateSet({ cap_usd: cap }))
+    .execute();
+  const r = await db
+    .updateTable("app_spend_ledger")
+    .set({ reserved_usd: sql`reserved_usd + ${RUN_BUDGET_USD}` })
+    .where("scope", "=", LEDGER_SCOPE)
+    .where(sql<number>`spent_usd + reserved_usd + ${RUN_BUDGET_USD}`, "<=", cap + EPS)
+    .executeTakeFirst();
+  return Number(r.numUpdatedRows) === 1;
+}
+
+/** Releases one run's reservation and charges what it spent (never negative). */
+async function settleRun(db: Kysely<any>, charged: number): Promise<void> {
+  await db
+    .updateTable("app_spend_ledger")
+    .set({
+      reserved_usd: sql`max(0, reserved_usd - ${RUN_BUDGET_USD})`,
+      spent_usd: sql`spent_usd + ${Math.max(0, charged)}`,
+    })
+    .where("scope", "=", LEDGER_SCOPE)
+    .execute();
+}
+
+const RESTARTED = "The server restarted during this run.";
+
+/**
+ * Boot rule (Pattern 6): every job left queued or running is interrupted and its
+ * $0.10 reservation charged as spent, so a restart never resets or undercounts
+ * the ledger. Idempotent: a second boot finds nothing to change.
+ */
+export async function markInterruptedJobs(db: Kysely<any>): Promise<number> {
+  const open = await db.selectFrom("app_job").select("id").where("status", "in", [...ACTIVE]).orderBy("id").execute();
+  let n = 0;
+  for (const { id } of open as { id: number }[]) {
+    const last = await db.selectFrom("app_job_event").select("stage").where("job_id", "=", id).orderBy("seq", "desc").executeTakeFirst();
+    const stage = (last?.stage as Stage | undefined) ?? "queued";
+    const r = await db
+      .updateTable("app_job")
+      .set({ status: "interrupted", stop_stage: stage, message: RESTARTED, spent_usd: RUN_BUDGET_USD, finished_at: now() })
+      .where("id", "=", id)
+      .where("status", "in", [...ACTIVE])
+      .executeTakeFirst();
+    if (Number(r.numUpdatedRows) !== 1) continue;
+    await addEvent(db, id, stage, "interrupted", RESTARTED);
+    await settleRun(db, RUN_BUDGET_USD);
+    n += 1;
+  }
+  return n;
+}
+
+export interface BudgetSummary {
+  configured: boolean;
+  cap: number;
+  /** Spent plus what runs still going have reserved: what the cap has already committed. */
+  used: number;
+  line: string;
+  disabled: boolean;
+  notice: string | null;
+}
+
+const usd = (n: number) => `$${n.toFixed(2)}`;
+
+/** The /run meter, its line and whether the form is disabled (07-UI-SPEC). */
+export function budgetSummary(s: { configured: boolean; cap: number; spent: number; reserved: number }): BudgetSummary {
+  const used = Math.round((s.spent + s.reserved) * 1e6) / 1e6;
+  if (!s.configured) {
+    return { configured: false, cap: 0, used, line: "Live-run budget: not configured", disabled: true, notice: "Live runs are not configured on this server: no budget cap is set." };
+  }
+  const disabled = s.cap - used < RUN_BUDGET_USD - EPS;
+  return {
+    configured: true,
+    cap: s.cap,
+    used,
+    line: `Live-run budget: ${usd(used)} of ${usd(s.cap)} spent`,
+    disabled,
+    notice: disabled ? `The live-run budget is spent (${usd(used)} of ${usd(s.cap)}). Raise the cap in the server settings to run again.` : null,
+  };
+}
+
+export async function readBudgetSummary(db: Kysely<any>, env: NodeJS.ProcessEnv = process.env): Promise<BudgetSummary> {
+  const cap = parseCap(env);
+  const l = await readLedger(db);
+  return budgetSummary({ configured: cap !== null, cap: cap ?? 0, spent: l.spent, reserved: l.reserved });
 }
 
 // ---- the queue -------------------------------------------------------------------
@@ -252,15 +382,19 @@ export async function whenIdle(): Promise<void> {
 }
 
 async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promise<void> {
-  const row = await db.selectFrom("app_job").selectAll().where("id", "=", jobId).executeTakeFirst();
-  if (!row || row.status !== "queued") return; // interrupted at boot, or gone
-  await db.updateTable("app_job").set({ status: "running" }).where("id", "=", jobId).execute();
+  const started = await db.updateTable("app_job").set({ status: "running" }).where("id", "=", jobId).where("status", "=", "queued").executeTakeFirst();
+  if (Number(started.numUpdatedRows) !== 1) return; // interrupted at boot, or gone
+  const row = await db.selectFrom("app_job").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
   await addEvent(db, jobId, "queued", "done", "Started.");
-  let stage: Stage = "queued";
-  const budget = new DollarBudget(RUN_BUDGET_USD);
+  // The parent holds everything else the ledger has committed; this run's own
+  // $0.10 is already reserved there, so the child cap is the binding one.
+  const l = await readLedger(db);
+  const ledger = new DollarBudget(Math.max(l.cap, RUN_BUDGET_USD), { initialSpent: Math.max(0, l.spent + l.reserved - RUN_BUDGET_USD) });
+  const budget = new DollarBudget(RUN_BUDGET_USD, { parent: ledger });
+  let stage = "queued" as Stage; // set by emit, inside the runner
+  let reportReady = false;
   const job: RunJob = { id: jobId, url: row.url, host: row.host, projectRef: row.project_ref };
-  const finish = (values: Record<string, unknown>) =>
-    db.updateTable("app_job").set({ ...values, spent_usd: budget.spent, finished_at: now() }).where("id", "=", jobId).execute();
+  let end: Record<string, unknown>;
   try {
     const result = await runner({
       db,
@@ -271,15 +405,35 @@ async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promi
         await addEvent(db, jobId, s, status, message);
       },
       setReport: async (projectRef) => {
+        reportReady = true;
         await db.updateTable("app_job").set({ project_ref: projectRef }).where("id", "=", jobId).execute();
       },
     });
-    await finish({ status: "done", project_ref: result.projectRef, stop_stage: null, message: null });
+    end = { status: "done", project_ref: result.projectRef, report_ready: 1, stop_stage: null, message: null };
   } catch (err) {
-    const message = (err instanceof Error ? err.message : String(err)).slice(0, 300);
-    if (stage !== "queued") await addEvent(db, jobId, stage, "error", message);
-    await finish({ status: "error", stop_stage: stage === "queued" ? "screen" : stage, message });
+    const at: Stage = stage === "queued" ? "screen" : stage;
+    if (err instanceof BudgetExceededError) {
+      const message = "Stopped at the $0.10 run budget.";
+      await addEvent(db, jobId, at, "stopped", message);
+      // A report exists only if the runner built one after the gate.
+      end = { status: "stopped", stop_stage: at, message, report_ready: reportReady && (at === "confirm" || at === "report") ? 1 : 0 };
+    } else {
+      const message = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+      await addEvent(db, jobId, at, "error", message);
+      end = { status: "error", stop_stage: at, message, report_ready: 0 };
+    }
   }
+  // Only a job still running is finished here: one the boot rule already marked
+  // interrupted was charged in full and must not be released a second time.
+  const finished = await db
+    .updateTable("app_job")
+    .set({ ...end, spent_usd: budget.spent, finished_at: now() })
+    .where("id", "=", jobId)
+    .where("status", "=", "running")
+    .executeTakeFirst();
+  // ponytail: two statements; a crash between them leaves this $0.10 reserved for good (over-counts, never under).
+  if (Number(finished.numUpdatedRows) === 1) await settleRun(db, budget.spent);
+  console.log(`[prism] live run ${jobId} ${String(end.status)} ${formatBudgetLine({ estimated: budget.estimated, spent: budget.spent, cap: budget.cap })}`);
 }
 
 // ---- read side ---------------------------------------------------------------------
@@ -346,7 +500,7 @@ export async function readRunStatus(db: Kysely<any>, jobId: number): Promise<Run
   if (job.projectRef && (job.status === "done" || job.status === "stopped")) {
     const { readReportView } = await import("../../report/store.ts");
     const v = await readReportView(db, job.projectRef, "identifiable");
-    if (v && v.view === "identifiable" && (job.status === "done" || job.stopStage === "confirm" || job.stopStage === "report")) {
+    if (v && v.view === "identifiable" && r.report_ready === 1) {
       report = { projectRef: job.projectRef, pages: v.collection.pages, pass: v.checks.filter((c) => c.published === "pass").length, fixture: v.fixture };
     }
   }

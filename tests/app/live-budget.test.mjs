@@ -219,7 +219,7 @@ test("interrupted: a restart charges every queued or running reservation as spen
 test("not configured: with PRISM_LIVE_RUN_CAP_USD unset (or not a positive number) startLiveRun refuses and writes nothing", async () => {
   const runner = live.createFixtureRunner({ stageMs: 0 });
   for (const cap of [undefined, "", "0", "-1", "abc"]) {
-    assert.deepEqual(await live.startLiveRunAs(admin, "https://p01.example/", deps(runner, cap)), { refused: "not-configured" }, String(cap));
+    assert.deepEqual(await live.startLiveRunAs(admin, "https://p01.example/", { ...deps(runner), env: env(cap) }), { refused: "not-configured" }, String(cap));
   }
   assert.equal((await jobs()).length, 0);
   assert.equal(await db.selectFrom("app_spend_ledger").selectAll().executeTakeFirst(), undefined);
@@ -274,7 +274,7 @@ test("no code path in live-run.ts lowers spent_usd", () => {
   const src = fs.readFileSync(path.join(repoRoot, "src/app/server/live-run.ts"), "utf8");
   // Ledger writes are SQL expressions; each one only adds to spent_usd.
   const sqlWrites = [...src.matchAll(/spent_usd: sql`[^`]*`/g)].map((m) => m[0]);
-  assert.ok(sqlWrites.length >= 2, "the release and the interrupted charge write spent_usd");
+  assert.ok(sqlWrites.length >= 1, "settleRun (end of run and the interrupted charge) writes spent_usd");
   for (const w of sqlWrites) assert.match(w, /^spent_usd: sql`spent_usd \+ /, w);
   assert.doesNotMatch(src, /spent_usd\s*-/);
   assert.doesNotMatch(src, /doUpdateSet\([^)]*spent_usd/);

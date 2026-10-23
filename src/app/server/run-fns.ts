@@ -45,5 +45,5 @@ export const getRunStatus = createServerFn({ method: "GET" })
 export const listRecentRuns = createServerFn({ method: "GET" }).handler(async () => {
   await requireRole("admin");
   const { db, live } = await deps();
-  return { runs: await live.readRecentRuns(db) };
+  return { runs: await live.readRecentRuns(db), budget: await live.readBudgetSummary(db) };
 });

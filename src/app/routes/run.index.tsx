@@ -44,7 +44,7 @@ const th = "px-2 py-1 text-left text-[0.8125rem] font-semibold tracking-[0.04em]
 const td = "border-t border-border px-2 py-1 align-top";
 
 function RunPage() {
-  const { runs } = Route.useLoaderData();
+  const { runs, budget } = Route.useLoaderData();
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
   const [refused, setRefused] = useState<Refusal | null>(null);
@@ -77,6 +77,11 @@ function RunPage() {
           <span data-refused={refused}>{REFUSED[refused]}</span>
         </Notice>
       ) : null}
+      {budget.notice ? (
+        <Notice variant="refused" className="mt-8">
+          <span data-budget-notice="">{budget.notice}</span>
+        </Notice>
+      ) : null}
       <form className="mt-8 max-w-[640px]" onSubmit={onSubmit}>
         <label htmlFor="run-url" className="block text-base font-semibold">
           Project URL
@@ -96,9 +101,17 @@ function RunPage() {
         <p id="run-url-help" className="mt-2 text-[0.8125rem] text-muted-foreground">
           {HELP}
         </p>
-        <Button type="submit" size="lg" className="mt-4" disabled={pending}>
-          Run PRISM on this URL
-        </Button>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <Button type="submit" size="lg" disabled={pending || budget.disabled}>
+            Run PRISM on this URL
+          </Button>
+          <div className="flex items-center gap-2 text-[0.8125rem] tabular-nums" data-budget="">
+            {budget.configured ? (
+              <meter min={0} max={budget.cap} value={budget.used} aria-label="Live-run budget spent" className="h-2 w-[240px]" />
+            ) : null}
+            <span>{budget.line}</span>
+          </div>
+        </div>
       </form>
       <h2 className="mt-12 text-[1.25rem] leading-[1.2] font-semibold">Recent runs</h2>
       {runs.length === 0 ? <p className="mt-4">No live runs yet.</p> : <RecentRuns runs={runs} />}

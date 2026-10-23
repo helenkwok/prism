@@ -85,7 +85,8 @@ beforeEach(async () => {
 
 after(() => fs.rmSync(dataDir, { recursive: true, force: true }));
 
-const deps = (extra = {}) => ({ db, runner: live.createFixtureRunner({ stageMs: 0 }), resolver: live.fixtureResolver, ...extra });
+const env = { ...process.env, PRISM_LIVE_RUN_CAP_USD: "1.00" };
+const deps = (extra = {}) => ({ db, runner: live.createFixtureRunner({ stageMs: 0 }), resolver: live.fixtureResolver, env, ...extra });
 const jobCount = async () => Number((await db.selectFrom("app_job").select((eb) => eb.fn.countAll().as("n")).executeTakeFirst()).n);
 
 test("fixture run: queued -> running -> done, seven stages in order with one message each, report flagged fixture", async () => {

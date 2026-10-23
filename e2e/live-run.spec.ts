@@ -38,6 +38,10 @@ test.describe("admin", () => {
 
   test("an off-list URL is refused above the form with the URL kept and no job created", async ({ page }) => {
     await page.goto("/run");
+    // The fixture runner spends nothing, so the $1.00 cap from e2e/serve.mjs is untouched.
+    await expect(page.locator("[data-budget]")).toHaveText("Live-run budget: $0.00 of $1.00 spent");
+    await expect(page.locator("[data-budget] meter")).toHaveAttribute("max", "1");
+    await expect(page.getByRole("button", { name: "Run PRISM on this URL" })).toBeEnabled();
     const before = await page.locator("[data-run]").count();
     const field = page.getByLabel("Project URL");
     await field.fill("https://not-listed.example/");
