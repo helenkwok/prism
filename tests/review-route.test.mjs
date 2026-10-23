@@ -47,9 +47,9 @@ test("the route exports getTrail, submitEdit, submitDecision, submitGold and Rou
   );
 });
 
-test("route source has no dangerouslySetInnerHTML and at least four getSession calls", () => {
+test("route source has no dangerouslySetInnerHTML and exactly four requireRole(\"admin\") calls", () => {
   assert.equal((routeSource.match(/dangerouslySetInnerHTML/g) ?? []).length, 0);
-  assert.ok((routeSource.match(/getSession/g) ?? []).length >= 4);
+  assert.equal((routeSource.match(/requireRole\("admin"\)/g) ?? []).length, 4);
 });
 
 test("getTrail with no request context throws before any database write", async () => {
