@@ -76,7 +76,11 @@ export function assertIndependent(role: RoleName, model: string): void {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export type ThinkingEnvelopeAudit = { model: string; rawContent: string; reasoningContent: string | null; content: string; split: boolean };
+export type ThinkingEnvelopeAudit = { model: string; nativeResponse: string; status: number; rawContent: string; reasoningContent: string | null; content: string; split: boolean };
+
+export function thinkingEnvelopeEnabled(stage: string | undefined, model: string, requested: boolean): boolean {
+  return requested && stage === "second-coder" && /^nemotron-3-super(?::cloud)?$/.test(model);
+}
 
 /** Split one leading channel envelope only. Final-answer validation remains the caller's job. */
 export function splitLeadingThinkingBlock(raw: string): { reasoning: string; content: string } | null {
@@ -135,6 +139,7 @@ export function ollamaClient({
     { method = "POST", body }: { method?: string; body?: any } = {},
   ): Promise<{ ok: boolean; status: number; json: unknown; text: string }> {
     if (!body?.model || !body?.messages) throw new Error("ollamaClient: body.model and body.messages required");
+    if (thinkingEnvelopeEnabled(stage, body.model, splitNemotronThinking) && !onThinkingEnvelope) throw new Error("second-coder envelope separation requires a private audit callback");
     const maxTokens = outputTokenLimit(body.max_tokens);
     const rf = body.response_format;
     const format =
@@ -181,6 +186,16 @@ export function ollamaClient({
         const measured = prompt !== null && completion !== null;
         const actual = measured ? measuredCostUsd(body.model, prompt, completion, cached) : projectedUsd;
         dollarBudget.settle(projectedUsd, actual);
+        const rawContent = parsed?.message?.content ?? "";
+        let content = rawContent;
+        let channelFields = {};
+        if (thinkingEnvelopeEnabled(stage, body.model, splitNemotronThinking)) {
+          const envelope = typeof rawContent === "string" ? splitLeadingThinkingBlock(rawContent) : null;
+          if (envelope) content = envelope.content;
+          const reasoning = envelope?.reasoning ?? (typeof parsed?.message?.thinking === "string" ? parsed.message.thinking : null);
+          channelFields = { raw_content: rawContent, ...(reasoning !== null ? { reasoning_content: reasoning } : {}) };
+          onThinkingEnvelope?.({ model: body.model, nativeResponse: text, status: res.status, rawContent: typeof rawContent === "string" ? rawContent : "", reasoningContent: reasoning, content: typeof content === "string" ? content : "", split: envelope !== null });
+        }
         onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
           inputTokens: prompt, outputTokens: completion, cachedInputTokens: cached,
           prefixDigest: prefixDigest(body.messages), chargedUsd: actual, measured,
@@ -200,15 +215,6 @@ export function ollamaClient({
           continue;
         }
         if (concurrent) throw new QuotaStop(res.status, `OLLAMA concurrency limit: stop and report (${formatOllamaSummary(counters)})`);
-        const rawContent = parsed?.message?.content ?? "";
-        let content = rawContent;
-        let channelFields = {};
-        if (splitNemotronThinking && /(?:^|\/)nemotron(?:-|$)/i.test(body.model.replace(/:cloud$/, "")) && typeof rawContent === "string") {
-          const envelope = splitLeadingThinkingBlock(rawContent);
-          if (envelope) content = envelope.content;
-          channelFields = { raw_content: rawContent, ...(envelope ? { reasoning_content: envelope.reasoning } : {}) };
-          onThinkingEnvelope?.({ model: body.model, rawContent, reasoningContent: envelope?.reasoning ?? null, content, split: envelope !== null });
-        }
         const finish = parsed?.done_reason ?? (parsed?.done ? "stop" : undefined);
         return {
           ok: res.ok,

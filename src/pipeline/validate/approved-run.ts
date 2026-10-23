@@ -43,6 +43,15 @@ export function summarizeCacheUsage(observations: UsageObservation[]) {
   }));
 }
 
+export function validateSecondCoderEnvelopeReport(report: any): boolean {
+  const count = (value: unknown) => Number.isSafeInteger(value) && Number(value) >= 0;
+  return !!report && report.version === 1 && report.stage === "second-coder" && report.model === "nemotron-3-super:cloud" && report.strictValidation === true && report.complete === true &&
+    typeof report.validationScope === "string" && report.validationScope.length > 0 &&
+    [report.total, report.valid, report.failed, report.envelopeCount, report.envelopeValid, report.envelopeFailed].every(count) &&
+    report.total > 0 && report.valid + report.failed === report.total && report.envelopeCount <= report.total &&
+    report.envelopeValid + report.envelopeFailed === report.envelopeCount && report.envelopeValid <= report.valid && report.envelopeFailed <= report.failed;
+}
+
 export async function runApproved(stage: ApprovedStage, options: { splitNemotronThinking?: boolean } = {}) {
   if (stage === "full-confirm") throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
   if (!["signoff", "recode", "gold", "second-coder", "spike"].includes(stage)) throw new Error("explicit approved stage required");
@@ -56,10 +65,15 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
   const protocol = fs.readFileSync("protocol/PROTOCOL.md", "utf8");
   const protocolPath = path.resolve("protocol/PROTOCOL.md");
   const signoffPath = path.join(dataDir, "decisions", "signoff.jsonl");
+  const splitNemotronThinking = stage === "second-coder" && options.splitNemotronThinking !== false;
   if (stage !== "signoff") {
     assertA8Signed({ protocolPath, signoffPath });
     assertA9Signed({ protocolPath, signoffPath });
     assertA10Signed({ protocolPath, signoffPath });
+    if (splitNemotronThinking) {
+      const offlinePath = path.join(validation, "second-coder-envelope-offline.json");
+      if (!fs.existsSync(offlinePath) || !validateSecondCoderEnvelopeReport(JSON.parse(fs.readFileSync(offlinePath, "utf8")))) throw new Error("second-coder envelope separation requires a complete strict offline validation report");
+    }
     const preflight = measurePromptSizes({ dataDir });
     log(`PROMPT_SIZE: ${JSON.stringify(preflight)}`);
     if (preflight.projects !== 300 || preflight.refused || !preflight.n) throw new Error("prompt preflight refused");
@@ -86,8 +100,15 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
     } else {
       role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : false };
       client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage,
-        splitNemotronThinking: options.splitNemotronThinking === true,
-        onThinkingEnvelope: options.splitNemotronThinking === true ? audit => fs.appendFileSync(path.join(validation, "thinking-envelope-audit.jsonl"), JSON.stringify({ ...audit, stage, at: new Date().toISOString() }) + "\n", { mode: 0o600 }) : undefined,
+        splitNemotronThinking,
+        onThinkingEnvelope: splitNemotronThinking ? audit => {
+          const auditPath = path.join(validation, "thinking-envelope-audit.jsonl");
+          let parsedResult: unknown = null;
+          let jsonParseValid = false;
+          try { parsedResult = JSON.parse(audit.content); jsonParseValid = true; } catch {}
+          fs.appendFileSync(auditPath, JSON.stringify({ ...audit, parsedResult, jsonParseValid, stage, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+          fs.chmodSync(auditPath, 0o600);
+        } : undefined,
       });
     }
     if (stage === "signoff") {
