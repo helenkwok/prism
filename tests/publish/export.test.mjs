@@ -1,4 +1,8 @@
-// PUB-03 / PUB-01: the export boundary on the synthetic store (plan 06-01).
+// PUB-03 / PUB-01: the export boundary on the synthetic store (plans 06-01, 06-04).
+//
+// The full synthetic export (source split on, with the six-launch Reddit group) is slow, so it runs once,
+// in the staleness test; other base-release assertions read the committed release that test proves fresh,
+// and variants export with the source split off (sourceMinGroup 10).
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -19,6 +23,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const STORE = path.join(REPO, "tests/fixtures/publish/synthetic-store.json");
 const COMMITTED = path.join(REPO, "tests/fixtures/publish/public-data-synthetic");
 const raw = () => JSON.parse(fs.readFileSync(STORE, "utf8"));
+const FAST = { sourceMinGroup: 10 };
 
 const LOW = "acceptance-criteria-met"; // 6 passes of 300
 const HIGH = "output-reproducible"; // 295 passes of 300
@@ -31,8 +36,22 @@ function outDir() {
   return path.join(fs.mkdtempSync(path.join(os.tmpdir(), "prism-export-")), "out");
 }
 const read = (dir, f) => fs.readFileSync(path.join(dir, f), "utf8");
-const rowsOf = (release) => Object.values(release.figures).flatMap((f) => f.rows);
+
+/** Every Row-shaped object anywhere in a release, one per id (figures repeat rows across views). */
+function rowsOf(x, out = new Map()) {
+  if (Array.isArray(x)) for (const v of x) rowsOf(v, out);
+  else if (x && typeof x === "object") {
+    if (typeof x.id === "string" && typeof x.state === "string" && typeof x.label === "string") {
+      if (!out.has(x.id)) out.set(x.id, x);
+    } else for (const v of Object.values(x)) rowsOf(v, out);
+  }
+  return [...out.values()];
+}
 const row = (release, id) => rowsOf(release).find((r) => r.id === id);
+const committed = {
+  release: JSON.parse(read(COMMITTED, "v1/release.json")),
+  manifest: JSON.parse(read(COMMITTED, "v1/manifest.json")),
+};
 
 /** Set the pass count of one check in one quarter to `count` by turning passes into unknowns. */
 function plantQuarter(store, checkId, quarter, count) {
@@ -41,7 +60,10 @@ function plantQuarter(store, checkId, quarter, count) {
   for (const p of store.projects) {
     if (p.quarter !== quarter || p.states[k] !== "p") continue;
     if (keep > 0) keep--;
-    else p.states = p.states.slice(0, k) + "u" + p.states.slice(k + 1);
+    else {
+      p.states = p.states.slice(0, k) + "u" + p.states.slice(k + 1);
+      p.decisions = undefined; // re-derived consistency is not the subject here
+    }
   }
   return store;
 }
@@ -57,30 +79,29 @@ function assertNothingWritten(out) {
   assert.deepEqual(fs.readdirSync(path.dirname(out)), [], "no out dir and no temp sibling after a refusal");
 }
 
-const base = await exportRelease({ input: expandFixture(raw()), outDir: outDir() });
-
 describe("task 1: synthetic store to an audited release", () => {
-  test("base export: fixture kind, every publishable tuple, both priors pass", () => {
-    assert.equal(base.line.kind, "fixture");
-    assert.equal(base.line.audit, "pass(all,interior)");
+  test("base release: fixture kind, every publishable check tuple, both priors pass", () => {
+    assert.equal(committed.manifest.kind, "fixture");
+    assert.equal(committed.manifest.audit.pass, true);
+    assert.deepEqual(committed.manifest.audit.priors, ["all", "interior"]);
     // 23 publishable checks (one is missed) x 2 states x 7 partitions with launches
-    assert.equal(base.line.tuples, 23 * 2 * 7);
-    assert.equal(base.release.kind, "fixture");
-    assert.equal(base.release.date, "2026-10-30");
-    assert.equal(base.release.n, 300);
+    assert.equal(toTruth(buildTables(expandFixture(raw()))).tuples.length, 23 * 2 * 7);
+    assert.equal(committed.release.kind, "fixture");
+    assert.equal(committed.release.date, "2026-10-30");
+    assert.equal(committed.release.n, 300);
   });
 
   test("6 of 300 renders lt10 with no number; 295 of 300 renders suppressed", () => {
-    assert.deepEqual(Object.keys(row(base.release, tupleId(LOW, "pass", "all"))).sort(), ["id", "label", "state"]);
-    assert.equal(row(base.release, tupleId(LOW, "pass", "all")).state, "lt10");
-    const high = row(base.release, tupleId(HIGH, "pass", "all"));
+    assert.deepEqual(Object.keys(row(committed.release, tupleId(LOW, "pass", "all"))).sort(), ["id", "label", "state"]);
+    assert.equal(row(committed.release, tupleId(LOW, "pass", "all")).state, "lt10");
+    const high = row(committed.release, tupleId(HIGH, "pass", "all"));
     assert.equal(high.state, "suppressed");
     for (const k of ["c", "n", "pct", "ci"]) assert.equal(high[k], undefined);
   });
 
   test("released rows carry c, n, pct and the rounded Wilson interval; no other row carries a number", () => {
     let released = 0;
-    for (const r of rowsOf(base.release)) {
+    for (const r of rowsOf(committed.release)) {
       if (r.state !== "released") {
         for (const k of ["c", "n", "pct", "ci"]) assert.equal(r[k], undefined, `${r.id} ${k}`);
         continue;
@@ -94,10 +115,11 @@ describe("task 1: synthetic store to an audited release", () => {
   });
 
   test("manifest digest matches the file, and two runs are byte-identical", async () => {
+    assert.equal(committed.manifest.files["release.json"], crypto.createHash("sha256").update(read(COMMITTED, "v1/release.json")).digest("hex"));
     const a = outDir();
     const b = outDir();
-    await exportRelease({ input: expandFixture(raw()), outDir: a });
-    await exportRelease({ input: expandFixture(raw()), outDir: b });
+    await exportRelease({ input: expandFixture(raw()), outDir: a, ...FAST });
+    await exportRelease({ input: expandFixture(raw()), outDir: b, ...FAST });
     const manifest = JSON.parse(read(a, "v1/manifest.json"));
     assert.equal(manifest.files["release.json"], crypto.createHash("sha256").update(read(a, "v1/release.json")).digest("hex"));
     for (const f of ["v1/release.json", "v1/manifest.json", "ledger.json"]) assert.equal(read(a, f), read(b, f), f);
@@ -124,19 +146,19 @@ describe("task 2: partitions, display rows, ledger, planted cells", () => {
   });
 
   test("GitHub-only has no launches: absent rows with the fixed reason, no tuple", () => {
-    const r = row(base.release, tupleId(PLANT, "pass", "src:github-only"));
+    const r = row(committed.release, tupleId(PLANT, "pass", "src:github-only"));
     assert.deepEqual(r.state, "absent");
     assert.equal(r.reason, "no GitHub-only launches met the inclusion criteria");
   });
 
   test("the Reddit group (n 6) is suppressed in every cell and the export still succeeds", () => {
-    const reddit = rowsOf(base.release).filter((r) => r.id.endsWith("|src:reddit") && !r.id.includes(MISSED));
+    const reddit = rowsOf(committed.release).filter((r) => r.id.startsWith("chk|") && r.id.endsWith("|src:reddit") && !r.id.includes(MISSED));
     assert.equal(reddit.length, 23 * 2);
     assert.ok(reddit.every((r) => r.state === "lt10"));
   });
 
   test("display-rows: every <10 tuple carries c <= 9 and every suppressed tuple c >= 10", async () => {
-    const s = await secure(toTruth(buildTables(expandFixture(raw()))));
+    const s = await secure(toTruth(buildTables(expandFixture(raw()), FAST)));
     const rows = new Map(s.release.constraints.filter((c) => c.terms.length === 1).map((c) => [c.terms[0].id, c]));
     for (const t of s.release.tuples.filter((t) => t.c === null)) {
       const r = rows.get(t.id);
@@ -165,7 +187,7 @@ describe("task 2: partitions, display rows, ledger, planted cells", () => {
   });
 
   test("plant-closable: a quarter cell recoverable by differencing is closed, not refused", async () => {
-    const res = await exportRelease({ input: expandFixture(plantQuarter(raw(), PLANT, 3, 5)), outDir: outDir() });
+    const res = await exportRelease({ input: expandFixture(plantQuarter(raw(), PLANT, 3, 5)), outDir: outDir(), ...FAST });
     assert.equal(res.line.audit, "pass(all,interior)");
     assert.equal(row(res.release, tupleId(PLANT, "pass", "q3")).state, "lt10");
     const quarterSide = ["all", "q1", "q2", "q4"].map((p) => tupleId(PLANT, "pass", p));
@@ -182,13 +204,13 @@ describe("task 2: partitions, display rows, ledger, planted cells", () => {
 
   test("ledger: the first export lists every published tuple; a later version unions it in and appends only new ones", async () => {
     const out = outDir();
-    const v1 = await exportRelease({ input: expandFixture(raw()), outDir: out });
+    const v1 = await exportRelease({ input: expandFixture(raw()), outDir: out, ...FAST });
     const published = rowsOf(v1.release).filter((r) => r.state === "released");
-    assert.equal(v1.ledger.length, published.length);
+    assert.deepEqual(v1.ledger.map((e) => e.id).sort(), published.map((r) => r.id).sort());
     assert.ok(v1.ledger.every((e) => e.version === "v1"));
     const next = raw();
     next.release.version = "v2";
-    const v2 = await exportRelease({ input: expandFixture(next), outDir: out });
+    const v2 = await exportRelease({ input: expandFixture(next), outDir: out, ...FAST });
     assert.equal(v2.ledger.length, v1.ledger.length);
     assert.ok(fs.existsSync(path.join(out, "v1/release.json")) && fs.existsSync(path.join(out, "v2/release.json")));
   });
@@ -235,20 +257,21 @@ describe("task 3: input refusals, withheld rows, committed release", () => {
     const store = raw();
     store.gate.checks.find((g) => g.checkId === MISSED).reason = "AC1 0.41 under 0.60";
     store.gate.checks.find((g) => g.checkId === PLANT).status = "withheld";
-    const res = await exportRelease({ input: expandFixture(store), outDir: outDir() });
-    const missed = rowsOf(res.release).filter((r) => r.id.includes(`|${MISSED}|`));
+    const res = await exportRelease({ input: expandFixture(store), outDir: outDir(), ...FAST });
+    const missed = rowsOf(res.release).filter((r) => r.id.startsWith(`chk|${MISSED}|`));
     assert.equal(missed.length, 2 * 8);
     assert.ok(missed.every((r) => r.state === "withheld" && r.reason === "agreement below the pre-registered threshold"));
-    const withheld = rowsOf(res.release).filter((r) => r.id.includes(`|${PLANT}|`));
+    const withheld = rowsOf(res.release).filter((r) => r.id.startsWith(`chk|${PLANT}|`));
     assert.ok(withheld.every((r) => r.state === "withheld" && r.reason === "withheld under the pre-registered shortfall rule"));
-    assert.equal(res.line.tuples, 22 * 2 * 7);
+    // 22 publishable checks x 2 states x 5 partitions (all and four quarters; the source split is off)
+    assert.equal(res.model.truth.tuples.filter((t) => t.id.startsWith("chk|")).length, 22 * 2 * 5);
     for (const r of rowsOf(res.release)) {
       for (const k of ["reason", "note"]) if (r[k]) assert.doesNotMatch(r[k], /\d/, `${r.id} ${k}`);
     }
   });
 
   test("released-not-estimable rows stay released with their numbers and carry the R10 note", () => {
-    const rows = rowsOf(base.release).filter((r) => r.id.includes(`|${NOT_ESTIMABLE}|`) && r.state === "released");
+    const rows = rowsOf(committed.release).filter((r) => r.id.includes(`|${NOT_ESTIMABLE}|`) && r.state === "released");
     assert.ok(rows.length > 0);
     assert.ok(rows.every((r) => Number.isInteger(r.c) && r.note === "agreement not estimable: fewer than ten gold passes"));
   });
@@ -262,11 +285,13 @@ describe("task 3: input refusals, withheld rows, committed release", () => {
     assert.equal(fs.existsSync(path.join(pd, "synthetic-test")), false);
   });
 
-  test("the committed synthetic release equals a fresh export", async () => {
-    const fresh = await exportRelease({ input: expandFixture(raw()), outDir: outDir(), ledger: [] });
-    const committed = JSON.parse(fs.readFileSync(path.join(COMMITTED, "v1/manifest.json"), "utf8"));
-    assert.equal(committed.kind, "fixture");
-    assert.deepEqual(committed.files, fresh.manifest.files);
-    assert.deepEqual(committed, fresh.manifest);
+  test("the committed synthetic release equals a fresh full export", async () => {
+    const out = outDir();
+    const fresh = await exportRelease({ input: expandFixture(raw()), outDir: out, ledger: [] });
+    assert.equal(committed.manifest.kind, "fixture");
+    assert.deepEqual(committed.manifest.files, fresh.manifest.files);
+    assert.deepEqual(committed.manifest, fresh.manifest);
+    assert.equal(read(COMMITTED, "v1/release.json"), read(out, "v1/release.json"));
+    assert.match(JSON.stringify(fresh.line), /"lint":0,"scan":0/);
   });
 });

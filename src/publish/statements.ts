@@ -43,12 +43,22 @@ export function claimsSentence(a: { c: number; x: number; n: number; checkId: st
 }
 
 /** Share of launches whose confirmed check states let the deterministic gate support a decision. */
-export function decisionSentence(a: { c: number; n: number; pct: number; ci: [number, number] }): Statement {
+export function decisionSentence(a: { c: number; n: number; pct: number; ci: [number, number]; decisionId?: string }): Statement {
   return st(
-    "decision:share",
+    a.decisionId ? `decision:${a.decisionId}` : "decision:share",
     "finding",
-    `At least ${a.c} of ${a.n} launches publicly evidence enough checks for the deterministic gate to support a decision on public evidence (${a.pct}%, 95% CI ${a.ci[0]}–${a.ci[1]}%).`,
+    `At least ${a.c} of ${a.n} launches publicly evidence enough checks for the deterministic gate to support ${a.decisionId ? `the \`${a.decisionId}\` decision` : "a decision"} on public evidence (${a.pct}%, 95% CI ${a.ci[0]}–${a.ci[1]}%).`,
   );
+}
+
+const HYPOTHESIS: Record<"h1" | "h3", string> = {
+  h1: "H1 (a majority of launches claim at least one check without linking an artefact, so they do not publicly evidence it)",
+  h3: "H3 (fewer than half of launches publicly evidence at least one `rely`-decision check)",
+};
+
+/** H1 or H3 when its count is not released: the result without any number that could reveal the count. */
+export function hypothesisWithheldSentence(id: "h1" | "h3", supported: boolean): Statement {
+  return st(`hypothesis:${id}`, "finding", `${HYPOTHESIS[id]} ${verdict(supported)}; its count is suppressed by disclosure control.`);
 }
 
 type BinomialTest = {
@@ -76,13 +86,13 @@ export function hypothesisSentence(id: "h1" | "h2" | "h3", r: BinomialTest | H2T
     return st(
       "hypothesis:h1",
       "finding",
-      `H1 (a majority of launches claim at least one check without linking an artefact, so they do not publicly evidence it) ${verdict(t.supported)}: ${t.c} of ${t.n} launches (${pctOf(t.c, t.n)}%), one-sided exact binomial, Holm-adjusted ${fmtP(t.pAdjusted)}; ${bound}.`,
+      `${HYPOTHESIS.h1} ${verdict(t.supported)}: ${t.c} of ${t.n} launches (${pctOf(t.c, t.n)}%), one-sided exact binomial, Holm-adjusted ${fmtP(t.pAdjusted)}; ${bound}.`,
     );
   }
   return st(
     "hypothesis:h3",
     "finding",
-    `H3 (fewer than half of launches publicly evidence at least one \`rely\`-decision check) ${verdict(t.supported)}: at least ${t.c} of ${t.n} launches (${pctOf(t.c, t.n)}%) publicly evidence one, one-sided exact binomial, Holm-adjusted ${fmtP(t.pAdjusted)}; ${bound}.`,
+    `${HYPOTHESIS.h3} ${verdict(t.supported)}: at least ${t.c} of ${t.n} launches (${pctOf(t.c, t.n)}%) publicly evidence one, one-sided exact binomial, Holm-adjusted ${fmtP(t.pAdjusted)}; ${bound}.`,
   );
 }
 
@@ -196,13 +206,74 @@ export function wholePageSpanDefect(): Statement {
   );
 }
 
-export function agentRoles(roles: { role: string; model: string; host: string }[]): Statement {
+export function agentRoles(roles: { role: string; model: string; host: string }[], { noHumanEdits = true } = {}): Statement {
   const list = roles.map((r) => `${r.role} (${r.model} on ${r.host})`).join("; ");
   return st(
     "limitation:agent-roles",
     "limitation",
-    `Every role is an agent: ${list}. No human edited a label. Agreement figures are agreement with an independent labeller.`,
+    `Every role is an agent: ${list}.${noHumanEdits ? " No human edited a label." : ""} Agreement figures are agreement with an independent labeller.`,
   );
+}
+
+/** D-74 / D-83: the computed person-edit count. "Agent roles, no human edits." only when it is 0. */
+export function personEdits(a: { count: number; total: number }): Statement {
+  return a.count === 0
+    ? st("validation:person-edits", "method", "Agent roles, no human edits.")
+    : st("validation:person-edits", "method", `${a.count} of ${a.total} published check states (${pctOf(a.count, a.total)}%) were edited by a person.`);
+}
+
+export function sourceTypesOverlap(): Statement {
+  return st("method:source-types-overlap", "method", "One launch can count under several source types, so the shares do not sum to 100%.");
+}
+
+export function sensitivityLine(a: { excluded: number }): Statement {
+  return st(
+    "method:sensitivity",
+    "method",
+    `Each headline figure is repeated excluding the ${a.excluded} launches whose site could not be read (protocol section 3).`,
+  );
+}
+
+/** D-77 / A4: the community layer appears only as exploratory aggregate counts, or as this note. */
+export function communityNote(published: boolean): Statement {
+  return published
+    ? st("exploratory:community", "exploratory", "Exploratory: the community layer (addendum A4) is reported as aggregate counts only and enters no confirmatory statistic.")
+    : st("exploratory:community", "exploratory", "The community layer (addendum A4) is not part of this release.");
+}
+
+// ---------- methods (review section 3) ----------
+
+export function methodStatements(a: { frame: string; window: string; floor: number; minValues: number; alpha: number }): Statement[] {
+  return [
+    st(
+      "method:eligibility",
+      "method",
+      "A launch is included when it is an AI product with its own site, screened in two stages: first its title and URL, then the text of its own page.",
+    ),
+    st("method:frame", "method", `The sampling frame is ${a.frame}, ${a.window}, drawn in a seeded order.`),
+    st("method:collection", "method", "Evidence is collected from each launch's own site and own repository only."),
+    st(
+      "method:self-claim",
+      "method",
+      "A check counts as publicly evidenced only when the launch's own page quotes it and links an artefact; a quote with no linked artefact is coded as claimed.",
+    ),
+    st(
+      "method:confirmation",
+      "method",
+      "Every positive is confirmed by a confirmer that did not code it before it enters any figure. A rejected positive counts as not evidenced and stays in the denominator; a downgraded pass counts as claimed.",
+    ),
+    st("method:gate", "method", "The deterministic gate, not a model, decides each decision from the confirmed check states."),
+    st(
+      "method:disclosure",
+      "method",
+      `Every figure is a count of launches under disclosure control: a count, its complement or its group size under ${a.floor} is suppressed, and an exact audit requires at least ${a.minValues} possible values for every suppressed count.`,
+    ),
+    st(
+      "method:hypotheses",
+      "method",
+      `H1 and H3 use one-sided exact binomial tests and H2 a permutation test with Cramér's V. Holm's correction holds the family-wise level at ${a.alpha}, and a hypothesis is supported only when it also holds with the measured collection recall as a bound.`,
+    ),
+  ];
 }
 
 export function providerVisibility(): Statement {

@@ -7,6 +7,8 @@
 // evidenced and stays in N; a downgraded pass counts as claimed.
 
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { PublishedBasis, PublishedState } from "../pipeline/confirm/confirm.ts";
 
@@ -29,6 +31,14 @@ export interface Project {
   hnId: string;
   title: string;
   finalUrl: string;
+  /** One letter per decision in decision-gates.json order: P (PASS), B (BLOCKED), I (INSUFFICIENT_EVIDENCE). */
+  decisions?: string;
+  /** Extraction failed or the site was blocked: excluded from the section 3 sensitivity lines. */
+  collectionFailed?: boolean;
+  /** Source types of this launch's confirmed positives (classified from cited span URLs in plan 08). */
+  sourceTypes?: string[];
+  /** Every confirmed positive came only from provider-extracted text. */
+  providerOnly?: boolean;
 }
 
 export interface LedgerEntry {
@@ -47,6 +57,46 @@ export interface AggregateInput {
   gate: { checks: GateCheck[] };
   ledger: LedgerEntry[];
   picks?: { tag: string }[];
+  /** Release seed label (H2 permutation). */
+  seed?: string;
+  method?: { frame: string; window: string };
+  validation?: Validation;
+  /** PRISMA: frame size and the draw.ts prismaCounts of the screening log. */
+  screening?: { identified: number; counts: Record<string, number> };
+  roles?: RoleRecord[];
+  /** Label edits made by a person (effective states with a person actor). */
+  edits?: { projectN: number; checkId: string }[];
+  /** A4 community layer: aggregate counts over included launches, or null when not part of the release. */
+  community?: Record<string, number> | null;
+  /** Hand-written, kind-tagged statements from the private side; linted like every template. */
+  notes?: { id: string; kind: string; text: string }[];
+  /** Display label overrides by key (check id or "decision:<id>"). */
+  labels?: Record<string, string>;
+}
+
+export interface RoleRecord {
+  role: string;
+  kind: string;
+  modelId: string;
+  host: string;
+  manifest: { promptVersion: string; codebookVersion: string; seed: string; tokenCap: number };
+}
+
+export interface Validation {
+  screeningAudit: { errors: number; audited: number; bar: number; remeasureErrors: number; sample: number };
+  collectionRecall: {
+    supportedFound: number;
+    supported: number;
+    contributed: number;
+    projects: number;
+    rawFound: number;
+    raw: number;
+    gathered: number;
+    gatheredSupported: number;
+    unsupported: number;
+    boilerplate: number;
+  };
+  crossCheck: { projects: number; positiveAgreement: number; allStates: number };
 }
 
 export type CountState = "pass" | "claimed";
@@ -122,5 +172,82 @@ export function expandFixture(raw: any): AggregateInput {
     gate: raw.gate,
     ledger: raw.ledger ?? [],
     picks: raw.picks,
+    seed: raw.seed,
+    method: raw.method,
+    validation: raw.validation,
+    screening: raw.screening,
+    roles: raw.roles,
+    edits: raw.edits ?? [],
+    community: raw.community ?? null,
+    notes: raw.notes ?? [],
+    labels: raw.labels ?? {},
   };
+}
+
+// ---------- decisions (PUB-01; the deterministic gate decides, never a model) ----------
+
+const GATES_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../vendor/ai-output-to-value/schemas/v1/decision-gates.json");
+
+/** decision id -> required check ids, in decision-gates.json order (the order of Project.decisions). */
+export function loadDecisionRules(file = GATES_PATH): Map<string, string[]> {
+  const gates = JSON.parse(fs.readFileSync(file, "utf8")).decisions as Record<string, { requiredChecks: { id: string }[] }>;
+  return new Map(Object.entries(gates).map(([id, d]) => [id, d.requiredChecks.map((c) => c.id)]));
+}
+
+/** decision id -> the gate file's label. */
+export function loadDecisionLabels(file = GATES_PATH): Record<string, string> {
+  const gates = JSON.parse(fs.readFileSync(file, "utf8")).decisions as Record<string, { label: string }>;
+  return Object.fromEntries(Object.entries(gates).map(([id, d]) => [id, d.label]));
+}
+
+/** operate's deliverable-gate-passed comes from rely's gate result, never from its coded state (build-claims.ts). */
+export const GATE_OVERRIDES: Record<string, { checkId: string; fromDecision: string }> = {
+  operate: { checkId: "deliverable-gate-passed", fromDecision: "rely" },
+};
+
+export const includedProjects = (input: AggregateInput) => input.projects.filter((p) => p.tag === "sample");
+export const notFailed = (p: Project) => !p.collectionFailed;
+
+/** Projects whose decision string says PASS while a required check is not a published pass. */
+export function inconsistentDecisions(input: AggregateInput, rules: Map<string, string[]>): string[] {
+  const ids = [...rules.keys()];
+  const pass = new Set(input.published.filter((s) => s.published === "pass").map((s) => `${s.projectN}|${s.checkId}`));
+  const bad: string[] = [];
+  for (const p of includedProjects(input)) {
+    const ds = p.decisions;
+    if (ds === undefined) continue;
+    if (ds.length !== ids.length || /[^PBI]/.test(ds)) {
+      bad.push(`project ${p.n}: decision string`);
+      continue;
+    }
+    ids.forEach((d, k) => {
+      if (ds[k] !== "P") return;
+      const o = GATE_OVERRIDES[d];
+      for (const c of rules.get(d)!) {
+        const ok = o?.checkId === c ? ds[ids.indexOf(o.fromDecision)] === "P" : pass.has(`${p.n}|${c}`);
+        if (!ok) bad.push(`project ${p.n}: ${d} PASS without ${c}`);
+      }
+    });
+  }
+  return bad;
+}
+
+export interface Counts {
+  c: number;
+  n: number;
+}
+
+/** Launches whose gate result for each decision is PASS, over one partition (optionally a subset). */
+export function decisionShares(input: AggregateInput, partition: Partition, decisionIds: string[], subset?: (p: Project) => boolean) {
+  const ps = includedProjects(input).filter((p) => inPartition(p, partition) && (!subset || subset(p)));
+  return decisionIds.map((decisionId, k) => ({ decisionId, c: ps.filter((p) => p.decisions?.[k] === "P").length, n: ps.length }));
+}
+
+/** Included launches (optionally a subset) with at least one published state `state` among `checkIds`. */
+export function anyState(input: AggregateInput, checkIds: string[], state: CountState, subset?: (p: Project) => boolean): Counts {
+  const ps = includedProjects(input).filter((p) => !subset || subset(p));
+  const ns = new Set(ps.map((p) => p.n));
+  const want = new Set(checkIds);
+  const hit = new Set(input.published.filter((s) => ns.has(s.projectN) && want.has(s.checkId) && s.published === state).map((s) => s.projectN));
+  return { c: hit.size, n: ps.length };
 }
