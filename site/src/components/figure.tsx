@@ -71,3 +71,47 @@ export function Figure({ id, number, figure, howWeKnow, chart, children }: { id:
     </figure>
   )
 }
+
+const lastParen = (label: string) => {
+  const m = / \(([^()]+)\)$/.exec(label)
+  return m ? [label.slice(0, m.index), m[1]!] as const : [label, ''] as const
+}
+
+/**
+ * Check-level shares by group (cohort or source) as one table: a row per check and state, a column per group,
+ * from rows "chk|<checkId>|<state>|<group>" labelled "<title> (<state>) (<group>)". Explicit states stay words.
+ */
+export function GroupTable({ figure }: { figure: FigureData }) {
+  const titles = new Map(release?.methods.codebook.map(e => [e.checkId, e.shortTitle]))
+  const columns = [...new Map(figure.rows.map(r => [r.id.split('|')[3]!, lastParen(r.label)[1]])).entries()]
+  const lines = new Map<string, { head: string; cells: Map<string, FigureData['rows'][number]> }>()
+  for (const r of figure.rows) {
+    const [, check, state, group] = r.id.split('|')
+    const key = `${check}|${state}`
+    if (!lines.has(key)) lines.set(key, { head: `${titles.get(check!) ?? check} (${lastParen(lastParen(r.label)[0])[1]})`, cells: new Map() })
+    lines.get(key)!.cells.set(group!, r)
+  }
+  return (
+    <details className="table-view">
+      <summary>Table view: {figure.title.toLowerCase()}</summary>
+      <div className="table-scroll">
+        <table className="data">
+          <caption>{figure.title}: {figure.measure}.</caption>
+          <thead><tr><th scope="col">Check</th>{columns.map(([id, label]) => <th key={id} scope="col">{label}</th>)}</tr></thead>
+          <tbody>{[...lines].map(([key, line]) => (
+            <tr key={key}>
+              <th scope="row">{line.head}</th>
+              {columns.map(([id]) => {
+                const r = line.cells.get(id)
+                if (!r) return <td key={id} />
+                return r.state === 'released'
+                  ? <td key={id} className="num">{stateCell(r)} ({r.pct}%)</td>
+                  : <td key={id} data-state-text>{stateCell(r)}</td>
+              })}
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </details>
+  )
+}

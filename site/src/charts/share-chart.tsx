@@ -50,7 +50,7 @@ function BarLine({ r, barY, neutral, compact, series }: { r: Row; barY: number; 
   const [lo, hi] = r.ci!
   // Direct label: right of the whisker if it fits, else left of it over the bar, else at the start.
   const room = (series?.length ?? 0) * 7
-  const label = x(hi) + 6 + room <= PLOT ? { x: x(hi) + 6, anchor: 'start' } : x(lo) - 6 - room >= 0 ? { x: x(lo) - 6, anchor: 'end' } : { x: 8, anchor: 'start' }
+  const label: { x: number; anchor: 'start' | 'end' } = x(hi) + 6 + room <= PLOT ? { x: x(hi) + 6, anchor: 'start' } : x(lo) - 6 - room >= 0 ? { x: x(lo) - 6, anchor: 'end' } : { x: 8, anchor: 'start' }
   return (
     <g data-row-state="released">
       <title>{rowSentence(r)}</title>
