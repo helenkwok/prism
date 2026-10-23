@@ -51,25 +51,41 @@ for (const [addr, prefix] of [
   ["fe80::", 10],
   ["ff00::", 8],
   ["2001:db8::", 32],
+  ["2001::", 32], // Teredo: the client address is obfuscated, and Teredo is never a project's own site
+  ["100::", 64], // discard-only
 ] as const) {
   BLOCKED.addSubnet(addr, prefix, "ipv6");
 }
 
+/** The eight 16-bit groups of a valid IPv6 address (`::` expanded, a trailing dotted IPv4 folded in). */
+function ipv6Groups(address: string): number[] {
+  let s = address.toLowerCase();
+  const v4 = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(s);
+  if (v4) {
+    const [a, b, c, d] = v4.slice(1).map(Number);
+    s = s.slice(0, v4.index) + ((a << 8) | b).toString(16) + ":" + ((c << 8) | d).toString(16);
+  }
+  const [head, tail] = s.split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail ? tail.split(":") : [];
+  const parts = tail === undefined ? h : [...h, ...Array(8 - h.length - t.length).fill("0"), ...t];
+  return parts.map((p) => parseInt(p, 16));
+}
+
+const v4Of = (hi: number, lo: number) => `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+
 /** True when the address is loopback, private, link-local, unique-local, multicast or metadata. */
 export function isBlockedAddress(address: string): boolean {
-  const a = String(address).replace(/^\[|\]$/g, "");
+  const a = String(address).replace(/^\[|\]$/g, "").replace(/%.*$/, "");
   if (net.isIPv4(a)) return BLOCKED.check(a, "ipv4");
   if (net.isIPv6(a)) {
-    const lower = a.toLowerCase();
-    // IPv4-mapped (::ffff:a.b.c.d or ::ffff:hhhh:hhhh) and NAT64 (64:ff9b::/96): judge the embedded v4.
-    const dotted = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
-    if (dotted) return BLOCKED.check(dotted[1], "ipv4");
-    const hex = /^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
-    if (hex) {
-      const hi = parseInt(hex[1], 16);
-      const lo = parseInt(hex[2], 16);
-      return BLOCKED.check(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`, "ipv4");
-    }
+    const g = ipv6Groups(a);
+    const firstFiveZero = g.slice(0, 5).every((x) => x === 0);
+    // Encodings that carry an IPv4 address: judge the embedded IPv4.
+    if (firstFiveZero && g[5] === 0xffff) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // IPv4-mapped ::ffff:0:0/96
+    if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0)) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // NAT64 64:ff9b::/96
+    if (firstFiveZero && g[5] === 0 && !(g[6] === 0 && g[7] <= 1)) return BLOCKED.check(v4Of(g[6], g[7]), "ipv4"); // IPv4-compatible ::/96 (:: and ::1 fall through, blocked below)
+    if (g[0] === 0x2002) return BLOCKED.check(v4Of(g[1], g[2]), "ipv4"); // 6to4 2002::/16
     return BLOCKED.check(a, "ipv6");
   }
   return true; // not an address at all: refuse
