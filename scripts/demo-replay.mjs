@@ -46,7 +46,39 @@ export function ownHostError(view, ownHost) {
   return null;
 }
 
-/** The ordered replay: each collected page in collection order, then the report. */
+/**
+ * Runs in the page (never in Node): find the quote by exact string equality in
+ * the page's concatenated text nodes (no normalisation, the builder's
+ * exact-text rule), wrap the first match in <mark>, scroll it into view.
+ * The quote arrives only as a JSON-encoded string literal argument.
+ */
+function markQuote(q) {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let text = "";
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    nodes.push([n, text.length]);
+    text += n.data;
+  }
+  const at = q === "" ? -1 : text.indexOf(q);
+  if (at === -1) return "prism-mark:missing";
+  const locate = (pos, isEnd) => {
+    for (const [n, start] of nodes) if (isEnd ? pos <= start + n.data.length : pos < start + n.data.length) return [n, pos - start];
+  };
+  const range = document.createRange();
+  range.setStart(...locate(at, false));
+  range.setEnd(...locate(at + q.length, true));
+  const mark = document.createElement("mark");
+  mark.setAttribute("data-prism-quote", "");
+  mark.appendChild(range.extractContents());
+  range.insertNode(mark);
+  mark.scrollIntoView({ block: "center", behavior: "smooth" });
+  return "prism-mark:found";
+}
+
+export const markScript = (quote) => `(${markQuote.toString()})(${JSON.stringify(String(quote))})`;
+
+/** The ordered replay: each collected page in collection order with its cited quotes marked, then the report. */
 export function buildSteps(view, { ownHost, reportUrl }) {
   const err = ownHostError(view, ownHost);
   if (err) throw new Error(`not an own project: ${err}`);
@@ -54,6 +86,14 @@ export function buildSteps(view, { ownHost, reportUrl }) {
   const steps = [];
   view.collection.urls.forEach((url, i) => {
     steps.push(i === 0 ? { kind: "page", cmd: BROWSER, args: ["open", url, "--split", "right"] } : { kind: "page", cmd: BROWSER, args: ["action", "--", "open", url] });
+    const seen = new Set();
+    for (const c of view.checks ?? []) {
+      for (const q of c.quotes ?? []) {
+        if (q.url !== url || seen.has(q.spanId)) continue;
+        seen.add(q.spanId);
+        steps.push({ kind: "mark", cmd: BROWSER, args: ["action", "--", "eval", markScript(q.text)], quote: q.text });
+      }
+    }
   });
   steps.push({ kind: "page", cmd: BROWSER, args: ["action", "--", "open", reportUrl] });
   return steps;
@@ -77,6 +117,12 @@ export async function run(steps, { runner = spawnRunner, dryRun = false, pauseMs
     if (dryRun) continue;
     if (s.kind === "page" && i > 0 && pauseMs > 0) await sleep(pauseMs);
     const r = await runner(s.cmd, s.args);
+    if (s.kind === "mark") {
+      // Reported, never guessed: anything but an explicit "found" is a note, and the replay goes on.
+      if (r.status !== 0) log(`REPLAY note=mark-failed step=${n} status=${r.status}`);
+      else if (!String(r.stdout ?? "").includes("prism-mark:found")) log(`REPLAY note=quote-not-found step=${n}`);
+      continue;
+    }
     if (r.status !== 0) {
       log(`REPLAY error step=${n} status=${r.status}${r.error ? ` error=${JSON.stringify(r.error)}` : ""}`);
       return 1;
