@@ -3,7 +3,10 @@
 
 import type { Kysely } from "kysely";
 
+import type { DeidentifiedView } from "./deidentify.ts";
 import type { ReportView } from "./view.ts";
+
+type AnyView = ReportView | DeidentifiedView;
 
 export async function ensureReportViewSchema(db: Kysely<any>): Promise<void> {
   await db.schema
@@ -18,19 +21,19 @@ export async function ensureReportViewSchema(db: Kysely<any>): Promise<void> {
     .execute();
 }
 
-export async function upsertReportView(db: Kysely<any>, v: ReportView): Promise<void> {
+export async function upsertReportView(db: Kysely<any>, v: AnyView): Promise<void> {
   await db
     .replaceInto("app_report_view")
     .values({ project_ref: v.projectRef, view: v.view, json: JSON.stringify(v), fixture: v.fixture ? 1 : 0, generated_at: v.generatedAt })
     .execute();
 }
 
-export async function readReportView(db: Kysely<any>, projectRef: string, view: ReportView["view"]): Promise<ReportView | null> {
+export async function readReportView(db: Kysely<any>, projectRef: string, view: AnyView["view"]): Promise<AnyView | null> {
   const row = await db.selectFrom("app_report_view").select("json").where("project_ref", "=", projectRef).where("view", "=", view).executeTakeFirst();
   return row ? JSON.parse(row.json) : null;
 }
 
-export async function listReportViews(db: Kysely<any>, view: ReportView["view"]): Promise<ReportView[]> {
+export async function listReportViews(db: Kysely<any>, view: AnyView["view"]): Promise<AnyView[]> {
   const rows = await db.selectFrom("app_report_view").select("json").where("view", "=", view).orderBy("project_ref").execute();
   return rows.map((r) => JSON.parse(r.json));
 }
