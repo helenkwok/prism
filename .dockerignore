@@ -10,11 +10,12 @@
 !package.json
 !package-lock.json
 !requirements-gate.txt
-!vite.config.ts
+!rsbuild.config.ts
 !tsconfig.json
 !src
 !src/**
 !scripts
 !scripts/check-data-dir.mjs
+!scripts/serve.mjs
 !vendor
 !vendor/**

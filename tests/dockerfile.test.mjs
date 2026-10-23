@@ -57,6 +57,21 @@ test("the build stage copies only the allow-listed source paths", () => {
   assert.match(buildStage, /RUN\s+npm run build/);
 });
 
+test("the image builds with Rsbuild and runs scripts/serve.mjs over dist/", () => {
+  const buildStage = dockerfile.slice(dockerfile.indexOf(fromLines[0]), dockerfile.indexOf(fromLines[1]));
+  const runtimeStage = dockerfile.slice(dockerfile.indexOf(fromLines[1]));
+  assert.match(buildStage, /COPY\s+rsbuild\.config\.ts\b/);
+  assert.match(buildStage, /RUN\s+npm prune --omit=dev/);
+  assert.match(runtimeStage, /COPY\s+--from=build\s+\/app\/dist\s+\.\/dist/);
+  assert.match(runtimeStage, /COPY\s+--from=build\s+\/app\/node_modules\s+\.\/node_modules/);
+  assert.match(runtimeStage, /COPY\s+--from=build\s+\/app\/package\.json\s+\.\/package\.json/);
+  assert.match(runtimeStage, /COPY\s+scripts\/serve\.mjs\s+\.\/scripts\/serve\.mjs/);
+  assert.match(dockerfile, /^CMD \["node", "scripts\/serve\.mjs"\]\s*$/m);
+  assert.doesNotMatch(dockerfile, /\.output|vite\.config/);
+  assert.ok(dockerignoreLines.includes("!rsbuild.config.ts") && dockerignoreLines.includes("!scripts/serve.mjs"));
+  assert.ok(!dockerignore.includes("vite.config"));
+});
+
 test(".dockerignore is deny-all-first, then a named allow-list", () => {
   const codeLines = dockerignoreLines.filter((l) => l.trim() !== "" && !l.trim().startsWith("#"));
   assert.equal(codeLines[0].trim(), "*", "the first non-comment line must be a bare '*'");

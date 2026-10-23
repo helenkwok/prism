@@ -2,8 +2,13 @@
 #
 # Multi-stage image for the walking skeleton (FND-07). Both stages pin the
 # same base image family by tag and digest (research Pitfall 12). The build
-# stage needs no secret: `npm run build` opens no database and reads no
-# BETTER_AUTH_SECRET (src/app/server/auth.ts builds its options lazily).
+# stage needs no secret: `npm run build` (rsbuild build) opens no database and
+# reads no BETTER_AUTH_SECRET (src/app/server/auth.ts builds its options lazily).
+#
+# The server bundle keeps better-sqlite3 and takumi-pdf external (they load a
+# native binding and a WASM file from their own package), so the runtime stage
+# takes the build stage's node_modules after `npm prune --omit=dev`; the native
+# binding compiled or fetched by `npm ci` is reused, not rebuilt.
 #
 # If the better-sqlite3 prebuilt binary cannot be fetched for this platform,
 # add `python3 make g++` to the BUILD stage's apt-get line (research Pitfall
@@ -14,10 +19,11 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.ts tsconfig.json ./
+COPY rsbuild.config.ts tsconfig.json ./
 COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
 COPY src ./src
 RUN npm run build
+RUN npm prune --omit=dev
 
 FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS runtime
 RUN apt-get update \
@@ -32,7 +38,10 @@ RUN python3 -m venv /opt/gate \
  && /opt/gate/bin/pip install --no-cache-dir -r requirements-gate.txt
 
 COPY vendor/ai-output-to-value ./vendor/ai-output-to-value
-COPY --from=build /app/.output ./.output
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY scripts/serve.mjs ./scripts/serve.mjs
 
 RUN mkdir /data && chown node:node /data
 
@@ -43,4 +52,4 @@ ENV PRISM_PYTHON=/opt/gate/bin/python
 
 USER node
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "scripts/serve.mjs"]
