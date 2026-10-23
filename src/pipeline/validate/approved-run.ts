@@ -1,4 +1,4 @@
-// Executes exactly one approved stage; full confirmation awaits spike review.
+// Executes exactly one approved stage; full confirmation requires the paired spike review.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,7 @@ import { GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
 import { runApprovedStage } from "./approved-stages.ts";
+import { runApprovedConfirmation, validateSpikeReview } from "./approved-confirm.ts";
 import { measurePromptSizes } from "./prompt-size.ts";
 import { ollamaClient, formatOllamaSummary, type RoleSpec } from "./providers.ts";
 
@@ -53,10 +54,18 @@ export function validateSecondCoderEnvelopeReport(report: any): boolean {
 }
 
 export async function runApproved(stage: ApprovedStage, options: { splitNemotronThinking?: boolean } = {}) {
-  if (stage === "full-confirm") throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
-  if (!["signoff", "recode", "gold", "second-coder", "spike"].includes(stage)) throw new Error("explicit approved stage required");
+  if (!["signoff", "recode", "gold", "second-coder", "spike", "full-confirm"].includes(stage)) throw new Error("explicit approved stage required");
   const dataDir = resolveDataDir();
   const validation = path.join(dataDir, "validation");
+  let fullSetting: boolean | undefined;
+  if (stage === "full-confirm") {
+    const reviewPath = path.join(validation, "confirmation-spike-review.json");
+    const spikePath = path.join(validation, "confirmation-spike.json");
+    if (!fs.existsSync(reviewPath) || !fs.existsSync(spikePath)) throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
+    const review = JSON.parse(fs.readFileSync(reviewPath, "utf8"));
+    validateSpikeReview(review, fs.readFileSync(spikePath, "utf8"), { model: "nemotron-3-ultra:cloud", reasoning: review.selectedSetting });
+    fullSetting = review.selectedSetting;
+  }
   fs.mkdirSync(validation, { recursive: true, mode: 0o700 });
   const log = (line: string) => {
     fs.appendFileSync(path.join(validation, `approved-${stage}.log`), line + "\n", { mode: 0o600 });
@@ -98,7 +107,7 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: key, budget: opened.budget, concurrency: 1, maxRetries: 1, onUsage, stage });
       role = { provider: "token-factory", model: stage === "signoff" ? SIGNOFF_MODEL : PINNED_MODEL, reasoning: false };
     } else {
-      role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : false };
+      role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : stage === "full-confirm" ? fullSetting! : false };
       client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage,
         splitNemotronThinking,
         onThinkingEnvelope: splitNemotronThinking ? audit => {
@@ -145,7 +154,9 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
       const gateFile = loadGateFile(resolveGatesPath());
       db = getDb();
-      const accounting = await runApprovedStage({ stage, concurrency: stage === "recode" ? 1 : 2, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
+      const accounting = stage === "full-confirm"
+        ? await runApprovedConfirmation({ db, dataDir, client, codebook: loadCodebook(), model: role.model, reasoning: fullSetting!, entries: selected, goldOrder: sortPilotCandidates(entries.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), log })
+        : await runApprovedStage({ stage, concurrency: stage === "recode" ? 1 : 2, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
       if (!accounting.ok) throw new Error(`stage incomplete: ${accounting.reason ?? accounting.failed}`);
     }
     if ("counters" in client) log(formatOllamaSummary(client.counters));
@@ -170,6 +181,6 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const stage = process.argv[2];
-  if (!["signoff", "recode", "gold", "second-coder", "spike"].includes(stage)) throw new Error("explicit approved stage required");
+  if (!["signoff", "recode", "gold", "second-coder", "spike", "full-confirm"].includes(stage)) throw new Error("explicit approved stage required");
   await runApproved(stage as ApprovedStage);
 }
