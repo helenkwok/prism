@@ -55,7 +55,7 @@ async function seedFromFixture(n, p) {
     path.join(dir("manifests"), `${n}.json`),
     JSON.stringify({
       projectN: n,
-      // Manifest snapshot entries in collection order; the url here deliberately differs only in visibility source.
+      // Manifest snapshot entries in collection order, as run.ts writes them.
       snapshots: p.pages.map((pg) => ({ url: pg.url, visibility: pg.rendered ? "rendered" : "provider-extracted" })),
       snapshotHashesInCollectionOrder: hashes,
     }),
@@ -135,7 +135,7 @@ describe("sourceFromStore (plan 07-06)", () => {
     const p = fixtureProject("P01");
     const src = await sourceFromStore(db, dataDir, codebook, 1, meta(p));
     const sid = ids[1].s001;
-    assert.deepEqual(src.cites["output-reproducible"], [sid]);
+    assert.deepEqual(src.cites["output-reproducible"], p.cites["output-reproducible"].map((s) => ids[1][s]));
     assert.equal(src.spans[sid].text, p.spans.s001.text);
     assert.equal(src.spans[sid].url, p.spans.s001.url);
     assert.equal(src.spans[sid].snapshotHash, src.pages[0].snapshotHash);
