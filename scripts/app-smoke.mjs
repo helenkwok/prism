@@ -183,6 +183,69 @@ async function accessChecks(base, accounts) {
   check("ACCESS admin GET /api/auth/admin/list-users returns 200", adminList.status === 200, `status ${adminList.status}`);
   const company = (listed.users ?? []).find((u) => u.email === accounts.company.email);
   check("ACCESS company role unchanged after the refused set-role calls", company?.role === "company", `role ${company?.role}`);
+  return sessions;
+}
+
+const CORPUS = "tests/fixtures/report/synthetic-corpus.json";
+/** The report title the app shows: the product name from the launch title (view.ts productName). */
+const productName = (t) => t.replace(/^\s*Show HN:\s*/i, "").split(/ – | - |:/)[0].trim();
+
+/** Write the synthetic corpus (identifiable + de-identified views, access rows) into the server's database. */
+function materialize(dataDir, env) {
+  const keyDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-smoke-key-"));
+  const keyFile = path.join(keyDir, "pseudonym.key");
+  fs.writeFileSync(keyFile, randomBytes(24).toString("hex"), { mode: 0o600 });
+  const run = spawnSync(
+    process.execPath,
+    ["scripts/materialize-views.mjs", "--fixture", CORPUS, "--db", path.join(dataDir, "prism.sqlite"), "--js-gate", "--deidentify", "--key-file", keyFile],
+    { env, encoding: "utf8" },
+  );
+  fs.rmSync(keyDir, { recursive: true, force: true });
+  check("LIST synthetic corpus materialised with access rows", run.status === 0 && run.stdout.includes("DEID scan hits=0"), (run.stderr || run.stdout).trim().slice(-300));
+}
+
+async function page(base, cookie, p = "/") {
+  const res = await fetch(`${base}${p}`, { headers: cookie ? { cookie } : {}, redirect: "manual" });
+  return { status: res.status, body: await res.text(), headers: res.headers };
+}
+
+// APP-01 / 07-UI-SPEC project list: each role's GET / shows exactly the rows it may open.
+async function listChecks(base, accounts, sessions) {
+  const corpus = JSON.parse(fs.readFileSync(CORPUS, "utf8"));
+  const name = Object.fromEntries(corpus.projects.map((p) => [p.projectId, productName(p.title)]));
+  const fullTitle = Object.fromEntries(corpus.projects.map((p) => [p.projectId, p.title]));
+  for (const key of ["companyA", "companyB"]) {
+    const s = await signIn(base, accounts[key].email, accounts[key].password);
+    check(`LIST ${key} sign-in returns 200`, s.status === 200, `status ${s.status}`);
+    sessions[key] = s.cookie;
+  }
+
+  const judge = await page(base, sessions.judge);
+  check("LIST judge GET / returns 200", judge.status === 200, `status ${judge.status}`);
+  check("LIST judge sees the Identifiable records section", judge.body.includes("Identifiable records"));
+  check("LIST judge sees the De-identified records section", judge.body.includes("De-identified records"));
+  check("LIST judge sees the own and opt-in titles", judge.body.includes(name.P01) && judge.body.includes(name.P05));
+  const deidIds = corpus.projects.map((p) => p.projectId).filter((id) => !["P01", "P05"].includes(id));
+  const leaked = deidIds.filter((id) => judge.body.includes(name[id]) || judge.body.includes(fullTitle[id]));
+  check("LIST judge never sees a de-identified project's title", leaked.length === 0, `leaked ${leaked.join(",")}`);
+  const pseudonyms = [...judge.body.matchAll(/href="\/j\/([0-9A-Z]{5})"/g)].map((m) => m[1]);
+  check("LIST judge sees 8 de-identified rows by pseudonym", new Set(pseudonyms).size === 8, `got ${new Set(pseudonyms).size}`);
+  check("LIST judge sees no hold", !/hold/i.test(judge.body));
+  check("LIST fixture notice shows above the list", judge.body.includes("Synthetic test data."));
+
+  const a = await page(base, sessions.companyA);
+  check("LIST company A sees only its own row", a.body.includes(name.P01) && !a.body.includes(name.P05) && !a.body.includes(name.P02));
+  const b = await page(base, sessions.companyB);
+  check("LIST company B sees only its own row", b.body.includes(name.P05) && !b.body.includes(name.P01));
+  check("LIST company nav has no Method audit or Run a project", !a.body.includes(">Method audit<") && !a.body.includes(">Run a project<"));
+  const none = await page(base, sessions.company);
+  check("LIST company with no grant sees the empty state", none.body.includes("No project is linked to this account yet."));
+
+  const admin = await page(base, sessions.admin);
+  const allTitles = corpus.projects.every((p) => admin.body.includes(name[p.projectId]));
+  check("LIST admin sees every project with the access column", allTitles && admin.body.includes("sponsor hold") && admin.body.includes("de-identified only"));
+  check("LIST admin nav shows Run a project and Method audit", admin.body.includes(">Run a project<") && admin.body.includes(">Method audit<"));
+  check("LIST judge nav shows Method audit, not Run a project", judge.body.includes(">Method audit<") && !judge.body.includes(">Run a project<"));
 }
 
 /** A password file must grant no group or other access; one trailing newline is dropped. */
@@ -248,20 +311,23 @@ try {
     };
     // The seed script is the only account path: random credentials, passed on
     // stdin (never argv) and never printed.
-    const accounts = { admin: randomCreds(), judge: randomCreds(), company: randomCreds() };
+    const accounts = { admin: randomCreds(), judge: randomCreds(), company: randomCreds(), companyA: randomCreds(), companyB: randomCreds() };
     creds = accounts.admin;
     let seeded = true;
-    for (const role of ["admin", "judge", "company"]) {
+    // companyA and companyB each hold one grant; company holds none (empty state).
+    const seedArgs = { companyA: ["--role", "company", "--grant", "P01"], companyB: ["--role", "company", "--grant", "P05"] };
+    for (const key of ["admin", "judge", "company", "companyA", "companyB"]) {
       const seed = spawnSync(
         process.execPath,
-        ["src/app/server/seed-account.ts", "--email", accounts[role].email, "--role", role, "--password-stdin"],
-        { env: serverEnv, encoding: "utf8", input: `${accounts[role].password}\n` },
+        ["src/app/server/seed-account.ts", "--email", accounts[key].email, ...(seedArgs[key] ?? ["--role", key]), "--password-stdin"],
+        { env: serverEnv, encoding: "utf8", input: `${accounts[key].password}\n` },
       );
-      accounts[role].id = /id=([^,)]+)/.exec(seed.stdout ?? "")?.[1];
-      const ok = seed.status === 0 && !`${seed.stdout}${seed.stderr}`.includes(accounts[role].password);
-      check(`seed script created the ${role} account`, ok, (seed.stderr ?? "").trim());
+      accounts[key].id = /id=([^,)]+)/.exec(seed.stdout ?? "")?.[1];
+      const ok = seed.status === 0 && !`${seed.stdout}${seed.stderr}`.includes(accounts[key].password);
+      check(`seed script created the ${key} account`, ok, (seed.stderr ?? "").trim());
       seeded &&= ok;
     }
+    materialize(dataDir, serverEnv);
     child = spawn(process.execPath, ["scripts/serve.mjs"], {
       env: serverEnv,
       stdio: ["ignore", "inherit", "inherit"],
@@ -274,7 +340,8 @@ try {
     check("built server answers within 30 seconds", up && !exited);
     if (up && !exited && seeded) {
       await assertions(base, creds);
-      await accessChecks(base, accounts);
+      const sessions = await accessChecks(base, accounts);
+      await listChecks(base, accounts, sessions);
     }
 
     // Boot refusals: a mis-configured server must stop, not serve.

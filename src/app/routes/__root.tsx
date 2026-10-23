@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRoute, useRouterState } from "@tanstack/react-router";
 // Rsbuild path (TanStack Start's Tailwind guide): a side-effect import lets Start
 // discover the generated stylesheet as a route asset and link it in the head.
 import "../styles.css";
+import { AppShell } from "../components/AppShell";
+import { getSessionUser } from "../server/session.ts";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -12,14 +14,30 @@ export const Route = createRootRoute({
       { title: "PRISM" },
     ],
   }),
+  // The signed-in user (or null) for the shell and every route's guard.
+  beforeLoad: async () => ({ user: await getSessionUser() }),
   component: RootComponent,
 });
 
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <Shell>
+        <Outlet />
+      </Shell>
     </RootDocument>
+  );
+}
+
+/** The shell wraps every page except sign-in, for a signed-in user. */
+function Shell({ children }: { children: ReactNode }) {
+  const { user } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (!user || pathname === "/sign-in") return <>{children}</>;
+  return (
+    <AppShell user={user} pathname={pathname}>
+      {children}
+    </AppShell>
   );
 }
 

@@ -4,6 +4,7 @@
 import { getAuth } from "./auth.ts";
 import { ensureAccessSchema } from "./access-store.ts";
 import { ensureSchema, getDb, resolveDataDir } from "./db.ts";
+import { ensureReportViewSchema } from "../../report/store.ts";
 
 function refuse(check: string, err: unknown): never {
   const message = err instanceof Error ? err.message : String(err);
@@ -32,5 +33,11 @@ export default async function boot(): Promise<void> {
     await ensureAccessSchema(getDb());
   } catch (err) {
     refuse("access tables", err);
+  }
+  try {
+    // The project list reads this table even before any view is materialised.
+    await ensureReportViewSchema(getDb());
+  } catch (err) {
+    refuse("report view table", err);
   }
 }

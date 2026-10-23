@@ -37,3 +37,33 @@ export async function listReportViews(db: Kysely<any>, view: AnyView["view"]): P
   const rows = await db.selectFrom("app_report_view").select("json").where("view", "=", view).orderBy("project_ref").execute();
   return rows.map((r) => JSON.parse(r.json));
 }
+
+/** What the project list shows for one stored view, read from its JSON (no gate run at request time). */
+export interface ReportSummary {
+  /** Project id (identifiable) or pseudonym (de-identified). */
+  projectRef: string;
+  view: AnyView["view"];
+  /** Identifiable views only. */
+  title: string | null;
+  /** Decisions whose gate status is PASS, of 5. */
+  passCount: number;
+  generatedAt: string;
+  collectedAt: string;
+  fixture: boolean;
+}
+
+export async function listReportSummaries(db: Kysely<any>): Promise<ReportSummary[]> {
+  const rows = await db.selectFrom("app_report_view").select("json").orderBy("project_ref").orderBy("view").execute();
+  return rows.map((r) => {
+    const v: AnyView = JSON.parse(r.json);
+    return {
+      projectRef: v.projectRef,
+      view: v.view,
+      title: v.view === "identifiable" ? v.title : null,
+      passCount: v.decisions.filter((d) => d.status === "PASS").length,
+      generatedAt: v.generatedAt,
+      collectedAt: v.collection.collectedAt,
+      fixture: v.fixture,
+    };
+  });
+}
