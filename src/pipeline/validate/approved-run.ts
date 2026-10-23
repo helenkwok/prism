@@ -11,6 +11,8 @@ import { readKey } from "../run.ts";
 import { A9_ITEMS, a9Section, assertA9Signed } from "../signoff/a9.ts";
 import { assertA8Signed } from "../signoff/a8.ts";
 import { SIGNOFF_MODEL, signOff } from "../signoff/signoff.ts";
+import { GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
+import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
 import { runApprovedStage } from "./approved-stages.ts";
 import { measurePromptSizes } from "./prompt-size.ts";
@@ -105,7 +107,8 @@ export async function runApproved(stage: ApprovedStage) {
       const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), "utf8"));
       const subsets = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-subsets.json"), "utf8"));
       const secondIds = new Set(subsets.secondModel.map(String));
-      const selected = stage === "second-coder" ? entries.filter((e: { hn_id: string }) => secondIds.has(String(e.hn_id))) : entries;
+      let selected = stage === "second-coder" ? entries.filter((e: { hn_id: string }) => secondIds.has(String(e.hn_id))) : entries;
+      if (stage === "gold" || stage === "second-coder") selected = sortPilotCandidates(selected.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), stage === "gold" ? GOLD_SEED : SECOND_MODEL_SEED);
       if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
       const gateFile = loadGateFile(resolveGatesPath());
       db = getDb();
