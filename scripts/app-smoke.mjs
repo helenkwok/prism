@@ -294,6 +294,39 @@ async function listChecks(base, accounts, sessions) {
   check("LIST judge nav shows Method audit, not Run a project", judge.body.includes(">Method audit<") && !judge.body.includes(">Run a project<"));
 }
 
+// Rate-limit keying (07-08a follow-up). Sign-ins for an unknown account: each one
+// counts towards the limiter and answers 401 until the client's bucket is full.
+async function signInAttempt(base, extraHeaders = {}) {
+  const res = await fetch(`${base}/api/auth/sign-in/email`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: base, ...extraHeaders },
+    body: JSON.stringify({ email: `nobody-${randomBytes(4).toString("hex")}@smoke.example`, password: randomBytes(12).toString("hex") }),
+  });
+  await res.arrayBuffer();
+  return { status: res.status, retryAfter: Number(res.headers.get("x-retry-after")) };
+}
+
+/** Direct clients: a spoofed x-forwarded-for picks no bucket, and the limit is still 3 per 10 s. */
+async function rateChecks(base) {
+  const results = [];
+  for (const ip of ["192.0.2.1", "192.0.2.2", "192.0.2.3", "192.0.2.4"]) results.push(await signInAttempt(base, { "x-forwarded-for": ip }));
+  const statuses = results.map((r) => r.status).join(",");
+  console.log(`INFO RATE direct client statuses with spoofed x-forwarded-for: ${statuses}`);
+  check("RATE spoofed x-forwarded-for from a direct client is ignored (4th attempt 429)", results[3].status === 429, statuses);
+  check("RATE limit unchanged: 3 sign-ins pass the limiter, the 4th answers 429 within a 10 s window", results.slice(0, 3).every((r) => r.status === 401) && results[3].status === 429 && results[3].retryAfter > 0 && results[3].retryAfter <= 10, `${statuses} retry-after ${results[3].retryAfter}`);
+}
+
+/** Behind a trusted proxy (the smoke itself, from 127.0.0.1): each forwarded client gets its own bucket. */
+async function proxyRateChecks(base) {
+  const a = [];
+  for (let i = 0; i < 4; i += 1) a.push(await signInAttempt(base, { "x-real-ip": "198.51.100.10" }));
+  const b = await signInAttempt(base, { "x-real-ip": "198.51.100.20" });
+  const statuses = `${a.map((r) => r.status).join(",")} then B ${b.status}`;
+  console.log(`INFO RATE proxy client A then B: ${statuses}`);
+  check("RATE client A reaches the limit (4th attempt 429)", a[3].status === 429 && a.slice(0, 3).every((r) => r.status === 401), statuses);
+  check("RATE client B is not limited by client A's bucket", b.status === 401, statuses);
+}
+
 /** A password file must grant no group or other access; one trailing newline is dropped. */
 function readPasswordFile(file) {
   const mode = fs.statSync(file).mode;
@@ -389,7 +422,30 @@ try {
       const sessions = await accessChecks(base, accounts);
       await listChecks(base, accounts, sessions);
       await stateChecks(base, sessions);
+      // Last: these fill 127.0.0.1's sign-in bucket.
+      await rateChecks(base);
     }
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill("SIGTERM");
+      await new Promise((r) => child.once("exit", r));
+    }
+
+    // The same build behind a trusted proxy: the smoke plays the proxy from 127.0.0.1.
+    const proxyPort = await freePort();
+    const proxyBase = `http://127.0.0.1:${proxyPort}`;
+    child = spawn(process.execPath, ["scripts/serve.mjs"], {
+      env: {
+        ...serverEnv,
+        PORT: String(proxyPort),
+        BETTER_AUTH_URL: proxyBase,
+        TRUSTED_ORIGINS: proxyBase,
+        PRISM_TRUSTED_PROXY_HEADER: "x-real-ip",
+        PRISM_TRUSTED_PROXY_IPS: "127.0.0.1",
+      },
+      stdio: ["ignore", "inherit", "inherit"],
+    });
+    if (await waitFor(proxyBase, 30_000)) await proxyRateChecks(proxyBase);
+    else check("proxy-mode server answers within 30 seconds", false);
 
     // Boot refusals: a mis-configured server must stop, not serve.
     await bootRefusal(
