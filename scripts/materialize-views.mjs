@@ -30,7 +30,7 @@ import { Kysely, SqliteDialect } from "kysely";
 import { ensureAccessSchema, upsertProjectAccess } from "../src/app/server/access-store.ts";
 import { loadCodebook } from "../src/pipeline/coding/codebook-prompt.ts";
 import { runGate } from "../src/pipeline/gate/run-gate.ts";
-import { buildDocumentFrequency, deidentifyView, dictionaryOf } from "../src/report/deidentify.ts";
+import { buildDocumentFrequency, deidentifyView, dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
 import { ensureReportViewSchema, upsertReportView } from "../src/report/store.ts";
 import { buildReportView, gateCheckOrder, loadGapText, sourceFromFixture } from "../src/report/view.ts";
 
@@ -101,6 +101,12 @@ if (key) {
     deids.push({ view, dictionary });
     console.log(`DEID project=${view.projectRef} masked_terms=${counts.maskedTerms} df_masked=${counts.dfMasked} ngram_breaks=${counts.ngramBreaks}`);
   }
+  if (new Set(deids.map((d) => d.view.projectRef)).size !== deids.length) refuse("pseudonym-collision");
+  const hits = scanDeidentified(deids);
+  // Hits name pseudonyms and term indexes only (T-07-23).
+  for (const h of hits) console.log(`DEID hit project=${h.pseudonym} term_of=${h.termOf} term=${h.termIndex}`);
+  if (hits.length > 0) refuse("identifier-scan");
+  console.log(`DEID scan hits=0 views=${deids.length}`);
 }
 
 let db;

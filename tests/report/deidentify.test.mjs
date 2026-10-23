@@ -96,6 +96,14 @@ describe("de-identified view shape", () => {
     assert.equal(c.cut, 1);
   });
 
+  test("a 6-word run of common words found in no other project is broken", () => {
+    const c = { maskedTerms: 0, dfMasked: 0, ngramBreaks: 0, cut: 0, redacted: 0 };
+    const out = maskText("docs tool tested release hosted platform", "PX", { projectRef: "PX", terms: [] }, df, c);
+    assert.equal(c.dfMasked, 0, "every word is common across the corpus");
+    assert.equal(c.ngramBreaks, 1);
+    assert.equal(out.split(" ").filter((w) => w === "▇▇").length, 1);
+  });
+
   test("title, hnId, URLs, hostnames, snapshot hashes and collection.urls are absent", () => {
     for (const [id, { view }] of Object.entries(deid)) {
       const s = JSON.stringify(view);

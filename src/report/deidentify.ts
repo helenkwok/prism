@@ -282,3 +282,34 @@ export function deidentifyView(
     counts,
   };
 }
+
+/** A scan hit: in view `pseudonym`, term `termIndex` of `termOf`'s dictionary (-1 = a URL). Never the term text. */
+export interface ScanHit {
+  pseudonym: string;
+  termOf: string;
+  termIndex: number;
+}
+
+function strings(x: unknown, out: string[] = []): string[] {
+  if (typeof x === "string") out.push(x.normalize("NFC"));
+  else if (Array.isArray(x)) for (const v of x) strings(v, out);
+  else if (x && typeof x === "object") for (const v of Object.values(x)) strings(v, out);
+  return out;
+}
+
+/**
+ * The hard gate (§6.6): every string of every de-identified view is searched,
+ * whole-word and case-insensitive, for its own project's dictionary, every other
+ * sampled project's dictionary, and any URL. One hit refuses the export.
+ */
+export function scanDeidentified(entries: { view: DeidentifiedView; dictionary: Dictionary }[]): ScanHit[] {
+  const dicts = entries.map((e) => ({ termOf: e.view.projectRef, res: e.dictionary.terms.map((t) => termRe(t.text, "iu")) }));
+  const url = new RegExp(URL_RE.source, "i");
+  const hits: ScanHit[] = [];
+  for (const { view } of entries) {
+    const text = strings(view).join("\n");
+    if (url.test(text)) hits.push({ pseudonym: view.projectRef, termOf: view.projectRef, termIndex: -1 });
+    for (const d of dicts) d.res.forEach((re, i) => re.test(text) && hits.push({ pseudonym: view.projectRef, termOf: d.termOf, termIndex: i }));
+  }
+  return hits;
+}
