@@ -11,12 +11,13 @@ import { applyQuoteOrUnknownFilter } from "../coding/filter.ts";
 import { buildChatBody, isQuotaResponse, QuotaStop } from "../coding/nebius-client.ts";
 import { codeProjectWithRetry, type RetryContract } from "../coding/retry.ts";
 import { uniqueProjectSpans } from "../coding/span-packing.ts";
+import { readRepairIndex, recordRepairMetadata } from "../coding/repair-index.ts";
 import { confirmMessages, confirmWithModel, inputDigest, projectSpans, readPositives, spansDigest, type Positive } from "../confirm/confirm.ts";
 import { runGate } from "../gate/run-gate.ts";
 import { buildCodingMessages, chunkSpans, CODING_MAX_TOKENS, mergeChunkCodings } from "../run.ts";
 import { assertA9Signed } from "../signoff/a9.ts";
 import { ensurePipelineSchema, recordProjectResult, recordSecondCoding } from "../store/results.ts";
-import { a7Signed, labelProject, writeExcludedA3 } from "./gold.ts";
+import { a7Signed, ensureGoldSchema, labelProject, writeExcludedA3 } from "./gold.ts";
 import { ARTCRAFT_HN_ID } from "../select/draw-sample.ts";
 import type { RoleSpec } from "./providers.ts";
 
@@ -28,7 +29,7 @@ export type ApprovedStageOptions = {
   gateFile?: GateFile; log?: (line: string) => void; repoRoot?: string;
   concurrency?: 1 | 2;
 };
-export type StageAccounting = { stage: string; total: number; accounted: number; success: number; failed: number; stopped: number; excludedA3: number; reason: string | null; ok: boolean; completedExperiment?: boolean; successfulDecisions?: number; failureCounts?: Record<string, number> };
+export type StageAccounting = { stage: string; total: number; accounted: number; success: number; failed: number; stopped: number; excludedA3: number; reason: string | null; ok: boolean; completedExperiment?: boolean; successfulDecisions?: number; failureCounts?: Record<string, number>; labelled?: number; noGold?: number; goldGate?: { projects: number; failed: number; rate: number; threshold: number; passed: boolean } };
 
 /** Only these cited spans are admitted to either condition; sample is stable across resumes. */
 export function spikeSample(positives: Positive[], count = 30): Positive[] {
@@ -46,13 +47,14 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
   const cacheDir = o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache");
   const perChunk = [];
   let attempts = 0;
-  const diagnosticsPath = path.join(o.dataDir, "validation", "coding-invalid-replies.jsonl");
-  const badCitationRequests = new Set<string>(fs.existsSync(diagnosticsPath) ? fs.readFileSync(diagnosticsPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)).filter(row => row.validationStage === "span_resolve").map(row => row.requestDigest) : []);
+  const badCitationRequests = new Set(Object.values(readRepairIndex(o.dataDir)).filter(row => row.lastValidationStage === "span_resolve").map(row => row.baseDigest));
   for (const chunk of chunkSpans(spans)) {
     const result = await codeProjectWithRetry({ client: o.client, cfg: {}, contract: o.contract, spanIds: chunk.map(s => s.id), callOnce: async (_c, _cfg, schema, ids) => {
       const makeBody = (requestSchema: unknown) => buildChatBody({ model: o.role.model, messages: buildCodingMessages(ids, o.codebook, requestSchema, chunk), mode: "json_schema", schema: { name: "gate_checks", schema: requestSchema, strict: true }, thinking: o.role.reasoning === true, ...(typeof o.role.reasoning === "string" ? { reasoningEffort: o.role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
       let body = makeBody(schema);
       const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
+      const baseCache = readCached<string>(cacheDir, stageCacheKey(String(e.hn_id), `approved-${o.stage}-chunk`, { digest: baseDigest, provider: o.role.provider }));
+      if (baseCache.hit && isSchemaValid(baseCache.value, chunk.map(s => s.id), o.contract.zodSchema).valid) return baseCache.value;
       if (badCitationRequests.has(baseDigest)) body = makeBody(citationSchema(schema, chunk.map(s => s.id)));
       const digest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
       const { value } = await withStageCache(cacheDir, String(e.hn_id), `approved-${o.stage}-chunk`, { digest, provider: o.role.provider }, async () => {
@@ -66,6 +68,8 @@ async function codingProject(o: ApprovedStageOptions, e: ApprovedStageOptions["e
           if (validation.stage === "span_resolve") badCitationRequests.add(baseDigest);
           const dir = path.join(o.dataDir, "validation"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
           fs.appendFileSync(path.join(dir, "coding-invalid-replies.jsonl"), JSON.stringify({ stage: o.stage, projectN: e.n, requestDigest: digest, validationStage: validation.stage, finishReason: res.json?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+          if (validation.stage === "ok") throw new Error("invalid coding validation stage");
+          recordRepairMetadata(o.dataDir, { baseDigest, lastValidationStage: validation.stage, stage: o.stage, model: o.role.model });
         }
         return content;
       }, content => isSchemaValid(content, chunk.map(s => s.id), o.contract.zodSchema).valid);
@@ -107,6 +111,7 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
   const log = o.log ?? console.log;
   const out: StageAccounting = { stage: o.stage, total: o.entries.length, accounted: 0, success: 0, failed: 0, stopped: 0, excludedA3: 0, reason: null, ok: false };
   await ensurePipelineSchema(o.db);
+  if (o.stage === "gold") await ensureGoldSchema(o.db);
   try {
     if (o.stage === "spike") {
       const eligible = o.entries.filter(e => String(e.hn_id) !== ARTCRAFT_HN_ID);
@@ -164,13 +169,22 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
     } else {
       let next = 0;
       let stop = false;
+      let batchEnd = o.entries.length;
+      if (o.stage === "gold") {
+        out.labelled = 0; out.noGold = 0;
+        let eligible = 0;
+        for (let i = 0; i < o.entries.length; i++) {
+          if (String(o.entries[i].hn_id) !== ARTCRAFT_HN_ID) eligible++;
+          if (eligible === 20) { batchEnd = i + 1; break; }
+        }
+      }
       // An in-flight project may finish its reserved request, but cannot start another after a stop.
       const client: Client = { ...o.client, request: (p, init) => {
         if (stop) { const error = new Error("stage scheduling stopped"); error.name = "StageStoppedError"; throw error; }
         return o.client.request(p, init);
       } };
       const execute = async () => {
-        while (!stop && next < o.entries.length) {
+        while (!stop && next < batchEnd) {
           const e = o.entries[next++];
           try {
             if (o.stage === "gold") {
@@ -179,7 +193,9 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
                 out.excludedA3++;
               } else {
                 const outcome = await labelProject({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir ?? path.join(o.dataDir, "pipeline", "cache"), projectN: e.n, hnId: String(e.hn_id), codebook: o.codebook, codebookVersion: o.codebook.codebookVersion, contract: o.contract, role: o.role, client });
+                if (outcome.outcome === "no-gold") { out.noGold!++; out.failed++; out.accounted++; log(`ACCOUNTING: ${JSON.stringify({ ...out, projectN: e.n, outcome: "no-gold", complete: false })}`); continue; }
                 if (outcome.outcome !== "labelled") throw new Error(`project ${e.n}: ${outcome.outcome}`);
+                out.labelled!++;
               }
             } else await codingProject({ ...o, client }, e);
             out.success++; out.accounted++;
@@ -192,6 +208,15 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
         }
       };
       await Promise.all(Array.from({ length: concurrency }, execute));
+      if (o.stage === "gold" && !stop && (out.labelled ?? 0) + (out.noGold ?? 0) === 20) {
+        out.goldGate = { projects: 20, failed: out.noGold ?? 0, rate: (out.noGold ?? 0) / 20, threshold: 0.1, passed: (out.noGold ?? 0) <= 2 };
+        log(`GOLD_GATE: ${JSON.stringify(out.goldGate)}`);
+        if (!out.goldGate.passed) { stop = true; out.reason = "gold-first-20-failure-rate"; }
+      }
+      if (!stop && next < o.entries.length) {
+        batchEnd = o.entries.length;
+        await Promise.all(Array.from({ length: concurrency }, execute));
+      }
       out.stopped = out.total - out.accounted;
     }
   } catch (error) {
@@ -204,9 +229,12 @@ export async function runApprovedStage(o: ApprovedStageOptions): Promise<StageAc
     out.successfulDecisions = out.success;
     out.ok = out.completedExperiment && out.success > 0;
     if (out.completedExperiment && out.success === 0) out.reason = "no-valid-decisions";
+  } else if (o.stage === "gold") {
+    out.ok = out.accounted === out.total && out.stopped === 0 && (out.labelled ?? 0) > 0 && out.goldGate?.passed !== false;
+    if (out.accounted === out.total && !out.labelled) out.reason = "no-gold-labels";
   } else out.ok = out.success === out.total && out.failed === 0 && out.stopped === 0;
   if (o.client.dollarBudget) log(o.client.dollarBudget.budgetLine());
-  log(`ACCOUNTING: ${JSON.stringify({ ...out, complete: o.stage === "spike" ? out.completedExperiment : out.success === out.total, ...(o.stage === "spike" ? { allDecisionsValid: out.failed === 0 && out.success === 60 } : {}) })}`);
+  log(`ACCOUNTING: ${JSON.stringify({ ...out, complete: o.stage === "spike" ? out.completedExperiment : o.stage === "gold" ? out.accounted === out.total : out.success === out.total, ...(o.stage === "spike" ? { allDecisionsValid: out.failed === 0 && out.success === 60 } : o.stage === "gold" ? { allDecisionsValid: out.failed === 0 && (out.labelled ?? 0) > 0 } : {}) })}`);
   if (o.stage === "spike") log(`CONFIRMATION: ${JSON.stringify({ stage: "spike", completed: out.success, valid: out.success, failed: out.failed, total: out.total, completedExperiment: out.completedExperiment, failureCounts: out.failureCounts, stopBeforeFull: true })}`);
   return out;
 }

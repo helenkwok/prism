@@ -12,7 +12,7 @@ import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildContract, loadGateFile, resolveGatesPath } from "../../src/pipeline/coding/contract.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
 import { ensurePipelineSchema } from "../../src/pipeline/store/results.ts";
-import { ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
+import { a7Section, A7_ITEMS, ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
 import { ARTCRAFT_HN_ID } from "../../src/pipeline/select/draw-sample.ts";
 
 const codebook = loadCodebook("codebook.md");
@@ -70,6 +70,7 @@ test("fabricated citations trigger a constrained repair and resume without repea
   const run = () => runApprovedStage({ ...f, stage: "second-coder", client, log: () => {} });
   assert.equal((await run()).ok, true);
   assert.equal(calls, 3);
+  fs.appendFileSync(path.join(f.dataDir, "validation", "coding-invalid-replies.jsonl"), "unparseable raw audit fixture\n");
   assert.equal((await run()).ok, true);
   assert.equal(calls, 3);
   await f.db.destroy();
@@ -180,5 +181,61 @@ test("all malformed spike conditions complete the experiment but cannot report s
   const client = { request: async () => { calls++; return confirmationReply("invalid"); } };
   const out = await runApprovedStage({ ...f, client, log: () => {} });
   assert.equal(calls, 180); assert.equal(out.accounted, 60); assert.equal(out.failed, 60); assert.equal(out.success, 0); assert.equal(out.completedExperiment, true); assert.equal(out.ok, false);
+  await f.db.destroy();
+});
+
+function goldFixture(count = 21) {
+  const f = fixture();
+  const protocol = fs.readFileSync("protocol/PROTOCOL.md", "utf8");
+  const docDigest = crypto.createHash("sha256").update(a7Section(protocol)).digest("hex");
+  fs.appendFileSync(path.join(f.dataDir, "decisions", "signoff.jsonl"), "\n" + A7_ITEMS.map(item => JSON.stringify({ item, decision: "approved", docDigest })).join("\n"));
+  f.entries = [{ n: 0, hn_id: ARTCRAFT_HN_ID }];
+  for (let n = 1; n <= count; n++) {
+    f.entries.push({ n, hn_id: String(n) });
+    fs.writeFileSync(path.join(f.dataDir, "pipeline", "manifests", `${n}.json`), JSON.stringify({ hnId: String(n), snapshotHashesInCollectionOrder: [`g${n}`], snapshots: [{ url: `https://example.test/${n}` }] }));
+    fs.writeFileSync(path.join(f.dataDir, "pipeline", "snapshots", `g${n}.json`), JSON.stringify({ redactedText: `PROJECT ${n} offers a reproducible command.` }));
+  }
+  return { ...f, stage: "gold", concurrency: 2, role: { provider: "ollama", model: "glm-5.3-flash", reasoning: "low" } };
+}
+const goldReply = valid => ({ ok: true, status: 200, json: { choices: [{ message: { content: valid ? JSON.stringify({ checks: Object.fromEntries(contract.checkIds.map(id => [id, { proposedState: "unknown", spanIds: [] }])) }) : "malformed" }, finish_reason: "stop" }] } });
+
+test("gold stops after three failures in the first 20 eligible projects, excluding A3", async () => {
+  const f = goldFixture(); const projects = new Set(); const lines = [];
+  const client = { request: async (_p, { body }) => {
+    const n = Number(/PROJECT (\d+)/.exec(body.messages[1].content)[1]); projects.add(n);
+    assert.ok(n <= 20); return goldReply(n > 3);
+  } };
+  const out = await runApprovedStage({ ...f, client, log: line => lines.push(line) });
+  assert.equal(projects.size, 20, JSON.stringify(out)); assert.equal(out.accounted, 21); assert.equal(out.excludedA3, 1);
+  assert.equal(out.labelled, 17); assert.equal(out.noGold, 3); assert.equal(out.stopped, 1); assert.equal(out.ok, false);
+  const gates = lines.filter(line => line.startsWith("GOLD_GATE:")); assert.equal(gates.length, 1);
+  assert.deepEqual(JSON.parse(gates[0].slice("GOLD_GATE: ".length)), { projects: 20, failed: 3, rate: 0.15, threshold: 0.1, passed: false });
+  await f.db.destroy();
+});
+
+test("gold permits exactly two failures but awaits the complete first 20 before project 21", async () => {
+  const f = goldFixture(); const held = Promise.withResolvers(); const release = Promise.withResolvers();
+  const projects = new Set(); let passedGate = false; let returned = false; const lines = [];
+  const client = { request: async (_p, { body }) => {
+    const n = Number(/PROJECT (\d+)/.exec(body.messages[1].content)[1]); projects.add(n);
+    if (n === 20) { held.resolve(); await release.promise; }
+    if (n === 21) assert.equal(passedGate, true);
+    return goldReply(n > 2);
+  } };
+  const running = runApprovedStage({ ...f, client, log: line => { lines.push(line); if (line.startsWith("GOLD_GATE:")) passedGate = JSON.parse(line.slice("GOLD_GATE: ".length)).passed; } }).then(out => { returned = true; return out; });
+  await held.promise; await new Promise(resolve => setImmediate(resolve));
+  assert.equal(returned, false); assert.equal(projects.has(21), false); assert.equal(passedGate, false);
+  release.resolve(); const out = await running;
+  assert.equal(out.ok, true); assert.equal(out.accounted, 22); assert.equal(out.noGold, 2); assert.equal(out.labelled, 19); assert.equal(out.excludedA3, 1);
+  assert.equal(projects.size, 21); assert.equal(out.goldGate.passed, true); assert.equal(out.goldGate.rate, 0.1);
+  const accounting = JSON.parse(lines.at(-1).slice("ACCOUNTING: ".length)); assert.equal(accounting.complete, true); assert.equal(accounting.allDecisionsValid, false);
+  await f.db.destroy();
+});
+
+test("A3 exclusions cannot turn entirely failed gold outcomes into success", async () => {
+  const f = goldFixture(2); const lines = [];
+  const out = await runApprovedStage({ ...f, client: { request: async () => goldReply(false) }, log: line => lines.push(line) });
+  assert.equal(out.accounted, 3); assert.equal(out.labelled, 0); assert.equal(out.noGold, 2); assert.equal(out.excludedA3, 1); assert.equal(out.ok, false); assert.equal(out.reason, "no-gold-labels");
+  assert.equal(lines.some(line => line.startsWith("GOLD_GATE:")), false);
   await f.db.destroy();
 });

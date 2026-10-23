@@ -21,6 +21,7 @@ import {
   a7Signed,
   A7_ITEMS,
   ensureGoldSchema,
+  GOLD_ATTEMPT_REVISION,
   labelProject,
   runGoldCli,
 } from "../../src/pipeline/validate/gold.ts";
@@ -145,6 +146,67 @@ describe("ollamaClient adapter", () => {
 });
 
 describe("labelProject", () => {
+  test("format failures get trusted feedback and resume the repaired cache without rebuying", async () => {
+    const dataDir = tempDir("prism-gold-format-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
+    writeProjectTree(dataDir, 8, ["Fixture command is reproducible."]);
+    const captured = []; const client = { request: async (_p, { body }) => {
+      captured.push(body);
+      return { ok: true, status: 200, json: { choices: [{ message: { content: captured.length === 1 ? "```invalid" : captured.length === 2 ? '{"checks":{}}' : keyedUnknownReply() } }] } };
+    } };
+    const options = { dataDir, cacheDir, projectN: 8, hnId: "1008", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    assert.equal((await labelProject({ ...options, db })).outcome, "labelled");
+    assert.equal(captured.length, 3);
+    assert.ok(!captured[0].messages[0].content.includes("Format correction"));
+    assert.match(captured[1].messages[0].content, /no prose, markdown fences/);
+    assert.match(captured[2].messages[0].content, /all 24 ids/);
+    assert.ok(contract.checkIds.every(id => captured[2].messages[0].content.includes(id)));
+    const index = JSON.parse(fs.readFileSync(path.join(dataDir, "validation", "coding-repair-index.json"), "utf8"));
+    assert.ok(Object.values(index).every(row => !Object.hasOwn(row, "content") && row.lastValidationStage === "zod"));
+    fs.appendFileSync(path.join(dataDir, "validation", "coding-invalid-replies.jsonl"), "unparseable raw audit fixture\n");
+    const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    assert.equal((await labelProject({ ...options, db: freshDb })).outcome, "labelled"); assert.equal(captured.length, 3);
+    await db.destroy(); await freshDb.destroy();
+  });
+  test("previous exhausted outcomes are retained before one revised attempt succeeds", async () => {
+    const dataDir = tempDir("prism-gold-revision-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
+    writeProjectTree(dataDir, 9, ["Fixture text."]);
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    let calls = 0; let valid = false;
+    const client = { request: async () => { calls++; return { ok: true, status: 200, json: { choices: [{ message: { content: valid ? keyedUnknownReply() : "invalid" } }] } }; } };
+    const options = { db, dataDir, cacheDir, projectN: 9, hnId: "1009", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const exhausted = await labelProject(options); assert.equal(exhausted.outcome, "no-gold"); assert.equal(calls, 3);
+    assert.equal((await labelProject(options)).outcome, "no-gold"); assert.equal(calls, 3);
+    await db.updateTable("pipeline_gold_outcomes").set({ attempt_revision: null }).execute(); valid = true;
+    assert.equal((await labelProject(options)).outcome, "labelled"); assert.equal(calls, 4);
+    const history = fs.readFileSync(path.join(dataDir, "validation", "gold-attempt-history.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+    assert.equal(history.length, 1); assert.equal(history[0].previousOutcome.outcome, "no-gold"); assert.equal(history[0].previousOutcome.attempt_revision, null); assert.equal(history[0].retryRevision, GOLD_ATTEMPT_REVISION);
+    const current = await db.selectFrom("pipeline_gold_outcomes").selectAll().executeTakeFirst();
+    assert.equal(current.outcome, "labelled"); assert.equal(current.attempt_revision, GOLD_ATTEMPT_REVISION);
+    assert.equal((await db.selectFrom("pipeline_gold_labels").selectAll().execute()).length, 24);
+    await db.destroy();
+  });
+  test("a valid base cache wins over historical diagnostics and budget stops never create exhausted outcomes", async () => {
+    const dataDir = tempDir("prism-gold-base-cache-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
+    writeProjectTree(dataDir, 10, ["Fixture text."]);
+    let calls = 0; let firstBody;
+    const client = { request: async (_p, { body }) => { calls++; firstBody = body; return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } }; } };
+    const options = { dataDir, cacheDir, projectN: 10, hnId: "1010", codebook, codebookVersion: "v1.0", contract, role: ROLE_CONFIG.gold, client };
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    await labelProject({ ...options, db }); assert.equal(calls, 1);
+    const dir = path.join(dataDir, "validation"); fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "coding-invalid-replies.jsonl"), JSON.stringify({ stage: "gold", baseDigest: crypto.createHash("sha256").update(JSON.stringify(firstBody)).digest("hex"), validationStage: "zod" }) + "\n");
+    const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    assert.equal((await labelProject({ ...options, db: freshDb })).outcome, "labelled"); assert.equal(calls, 1);
+    for (const name of ["BudgetExceededError", "QuotaStop"]) {
+      const stopDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+      const stoppedClient = { request: async () => { const error = new Error("approved stop"); error.name = name; throw error; } };
+      await assert.rejects(labelProject({ ...options, db: stopDb, cacheDir: path.join(dataDir, `uncached-${name}`), client: stoppedClient }), { name });
+      assert.equal((await stopDb.selectFrom("pipeline_gold_outcomes").selectAll().execute()).length, 0);
+      await stopDb.destroy();
+    }
+    await db.destroy(); await freshDb.destroy();
+  });
   test("invalid citations trigger constrained schema once and resume from valid repair cache", async () => {
     const dataDir = tempDir("prism-gold-citations-");
     const cacheDir = path.join(dataDir, "pipeline", "cache");
@@ -169,6 +231,7 @@ describe("labelProject", () => {
     const diagnostic = JSON.parse(fs.readFileSync(path.join(dataDir, "validation", "coding-invalid-replies.jsonl"), "utf8").trim());
     assert.equal(diagnostic.stage, "gold"); assert.equal(diagnostic.validationStage, "span_resolve");
     assert.equal(diagnostic.baseDigest, diagnostic.requestDigest);
+    fs.appendFileSync(path.join(dataDir, "validation", "coding-invalid-replies.jsonl"), "unparseable raw audit fixture\n");
     const freshDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
     assert.equal((await labelProject({ ...options, db: freshDb })).outcome, "labelled");
     assert.equal(captured.length, 2);

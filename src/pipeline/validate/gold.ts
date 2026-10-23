@@ -8,7 +8,7 @@ import path from "node:path";
 import type { Kysely } from "kysely";
 import pLimit from "p-limit";
 
-import { withStageCache } from "../cache/stage-cache.ts";
+import { readCached, stageCacheKey, withStageCache } from "../cache/stage-cache.ts";
 import type { Codebook } from "../coding/codebook-prompt.ts";
 import { applyQuoteOrUnknownFilter } from "../coding/filter.ts";
 import { buildChatBody, isQuotaResponse, QuotaStop } from "../coding/nebius-client.ts";
@@ -19,9 +19,11 @@ import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { buildCodingMessages, chunkSpans, CODING_MAX_TOKENS, mergeChunkCodings } from "../run.ts";
 import { buildContract, citationSchema, isSchemaValid } from "../coding/contract.ts";
 import { uniqueProjectSpans } from "../coding/span-packing.ts";
+import { readRepairIndex, recordRepairMetadata } from "../coding/repair-index.ts";
 import { assertIndependent, ROLE_CONFIG, roleClient, type RoleSpec } from "./providers.ts";
 
 const DEFAULT_CONCURRENCY = 4;
+export const GOLD_ATTEMPT_REVISION = "format-feedback-v1";
 
 export async function ensureGoldSchema(db: Kysely<any>): Promise<void> {
   await db.schema
@@ -58,6 +60,7 @@ export async function ensureGoldSchema(db: Kysely<any>): Promise<void> {
     .addColumn("outcome", "text")
     .addColumn("reason", "text")
     .addColumn("decided_at", "text")
+    .addColumn("attempt_revision", "text")
     .addPrimaryKeyConstraint("pipeline_gold_outcomes_pk", [
       "project_n",
       "codebook_version",
@@ -65,6 +68,14 @@ export async function ensureGoldSchema(db: Kysely<any>): Promise<void> {
       "input_digest",
     ])
     .execute();
+  const outcomes = (await db.introspection.getTables()).find(t => t.name === "pipeline_gold_outcomes");
+  if (!outcomes?.columns.some(c => c.name === "attempt_revision")) {
+    try { await db.schema.alterTable("pipeline_gold_outcomes").addColumn("attempt_revision", "text").execute(); }
+    catch (error) {
+      const current = (await db.introspection.getTables()).find(t => t.name === "pipeline_gold_outcomes");
+      if (!current?.columns.some(c => c.name === "attempt_revision")) throw error;
+    }
+  }
 }
 
 function labellerId(role: RoleSpec): string {
@@ -86,12 +97,13 @@ function makeGoldCallOnce(
   projectN: number,
 ): CallOnce {
   const diagnosticsPath = path.join(dataDir, "validation", "coding-invalid-replies.jsonl");
-  const badCitationRequests = new Set<string>(fs.existsSync(diagnosticsPath) ? fs.readFileSync(diagnosticsPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)).filter(row => row.validationStage === "span_resolve").map(row => row.baseDigest ?? row.requestDigest) : []);
+  const failures = new Map(Object.values(readRepairIndex(dataDir)).filter(row => row.stage === "gold").map(row => [row.baseDigest, row.lastValidationStage]));
+  const attempts = new Map<string, number>();
   return async (_client, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
-    const makeBody = (schema: unknown) => buildChatBody({
+    const makeBody = (schema: unknown, feedback?: string) => buildChatBody({
       model: role.model,
-      messages: buildCodingMessages(checkIds, codebook, schema, spans),
+      messages: buildCodingMessages(checkIds, codebook, schema, spans).map((message, i) => i === 0 && feedback ? { ...message, content: `${message.content}\n\nFormat correction (${GOLD_ATTEMPT_REVISION}): ${feedback}` } : message),
       mode: "json_schema",
       schema: { name: "gate_checks", schema, strict: true },
       thinking: false,
@@ -100,7 +112,13 @@ function makeGoldCallOnce(
     });
     let body = makeBody(jsonSchema);
     const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
-    if (badCitationRequests.has(baseDigest)) body = makeBody(citationSchema(jsonSchema, spanIds));
+    const baseCache = readCached<string>(cacheDir, stageCacheKey(hnId, "gold-valid-chunk", { provider: role.provider, model: role.model, reasoning: role.reasoning, requestHash: baseDigest }));
+    if (baseCache.hit && isSchemaValid(baseCache.value, spanIds, buildContract(checkIds).zodSchema).valid) return baseCache.value;
+    const failure = failures.get(baseDigest);
+    // Cloud schemas are advisory; local validation is strict and retry feedback is trusted text.
+    if (failure === "json_parse") body = makeBody(jsonSchema, "Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check.");
+    if (failure === "zod") body = makeBody(jsonSchema, `Return exactly the required checks object keyed by all ${checkIds.length} ids: ${checkIds.join(", ")}. Each check contains only proposedState (pass, fail, unknown or claimed) and spanIds (an array of strings, empty when unsupported). Do not add, rename or omit keys. Match the supplied schema exactly; no prose or fences.`);
+    if (failure === "span_resolve") body = makeBody(citationSchema(jsonSchema, spanIds), `Your previous citations did not resolve. Cite only these exact span ids: ${JSON.stringify(spanIds)}. Never invent, alias or shorten an id. Use an empty spanIds array when no listed span supports the state. Return every required check.`);
     const requestHash = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const { value } = await withStageCache(
       cacheDir,
@@ -114,10 +132,14 @@ function makeGoldCallOnce(
         const content = (res.json as any)?.choices?.[0]?.message?.content;
         if (typeof content !== "string") throw new Error("gold response missing content");
         const validation = isSchemaValid(content, spanIds, buildContract(checkIds).zodSchema);
+        const attempt = (attempts.get(baseDigest) ?? 0) + 1; attempts.set(baseDigest, attempt);
+        process.stdout.write(`GOLD_VALIDATION: ${JSON.stringify({ projectN, validationStage: validation.stage, attempt, count: 1 })}\n`);
         if (!validation.valid) {
-          if (validation.stage === "span_resolve") badCitationRequests.add(baseDigest);
+          if (validation.stage === "ok") throw new Error("invalid gold validation stage");
+          failures.set(baseDigest, validation.stage);
           fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true, mode: 0o700 });
-          fs.appendFileSync(diagnosticsPath, JSON.stringify({ stage: "gold", projectN, baseDigest, requestDigest: requestHash, validationStage: validation.stage, finishReason: (res.json as any)?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+          fs.appendFileSync(diagnosticsPath, JSON.stringify({ stage: "gold", projectN, attemptRevision: GOLD_ATTEMPT_REVISION, baseDigest, requestDigest: requestHash, validationStage: validation.stage, finishReason: (res.json as any)?.choices?.[0]?.finish_reason ?? null, content, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+          recordRepairMetadata(dataDir, { baseDigest, lastValidationStage: validation.stage, model: role.model, stage: "gold" });
         }
         return content;
       },
@@ -135,6 +157,7 @@ export type GoldOutcome = {
   outcome: "labelled" | "no-gold" | "excluded-a3";
   reason: string | null;
   decided_at: string;
+  attempt_revision?: string | null;
 };
 
 export async function labelProject({
@@ -174,7 +197,12 @@ export async function labelProject({
     .where("labeller_id", "=", lid)
     .where("input_digest", "=", digest)
     .executeTakeFirst();
-  if (existing) return existing as GoldOutcome;
+  if (existing && (existing.outcome !== "no-gold" || existing.attempt_revision === GOLD_ATTEMPT_REVISION)) return existing as GoldOutcome;
+  if (existing) {
+    const historyPath = path.join(dataDir, "validation", "gold-attempt-history.jsonl");
+    fs.mkdirSync(path.dirname(historyPath), { recursive: true, mode: 0o700 });
+    fs.appendFileSync(historyPath, JSON.stringify({ previousOutcome: existing, retryRevision: GOLD_ATTEMPT_REVISION, retainedAt: new Date().toISOString() }) + "\n", { mode: 0o600 });
+  }
 
   const spansById = new Map(spans.map((s) => [s.id, s.text]));
   const chunks = chunkSpans(uniqueProjectSpans(spans));
@@ -198,10 +226,12 @@ export async function labelProject({
         outcome: "no-gold",
         reason: "retry-exhausted",
         decided_at: decidedAt,
+        attempt_revision: GOLD_ATTEMPT_REVISION,
       };
       await db
         .insertInto("pipeline_gold_outcomes")
         .values(outcome)
+        .onConflict(oc => oc.columns(["project_n", "codebook_version", "labeller_id", "input_digest"]).doUpdateSet({ outcome: outcome.outcome, reason: outcome.reason, decided_at: decidedAt, attempt_revision: GOLD_ATTEMPT_REVISION }))
         .execute();
       return outcome;
     }
@@ -248,7 +278,9 @@ export async function labelProject({
         outcome: "labelled",
         reason: null,
         decided_at: decidedAt,
+        attempt_revision: GOLD_ATTEMPT_REVISION,
       })
+      .onConflict(oc => oc.columns(["project_n", "codebook_version", "labeller_id", "input_digest"]).doUpdateSet({ outcome: "labelled", reason: null, decided_at: decidedAt, attempt_revision: GOLD_ATTEMPT_REVISION }))
       .execute();
   });
 
@@ -260,6 +292,7 @@ export async function labelProject({
     outcome: "labelled",
     reason: null,
     decided_at: decidedAt,
+    attempt_revision: GOLD_ATTEMPT_REVISION,
   };
 }
 
@@ -564,7 +597,7 @@ export async function runGoldCli(deps: GoldCliDeps = {}): Promise<GoldCliResult>
           const spans = projectSpans(dataDir, entry.n);
           const digest = spansDigest(spans);
           const existing = await findOutcome(db, entry.n, codebook.codebookVersion, role, digest);
-          if (existing) {
+          if (existing && (existing.outcome !== "no-gold" || existing.attempt_revision === GOLD_ATTEMPT_REVISION)) {
             return existing.outcome === "no-gold" ? "no-gold" : "labelled";
           }
 
