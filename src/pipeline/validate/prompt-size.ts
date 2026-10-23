@@ -7,6 +7,7 @@ import { buildContract, loadGateFile, resolveGatesPath } from "../coding/contrac
 import { DEFAULT_TOKEN_CAP, estimateMessagesTokens } from "../coding/spend-guards.ts";
 import { projectSpans } from "../confirm/confirm.ts";
 import { buildCodingMessages, chunkSpans } from "../run.ts";
+import { uniqueProjectSpans } from "../coding/span-packing.ts";
 
 export function summarizePromptSizes(tokens: number[], cap = DEFAULT_TOKEN_CAP) {
   const sorted = [...tokens].sort((a, b) => a - b);
@@ -22,9 +23,9 @@ export function measurePromptSizes({ projectsPath, dataDir = resolveDataDir() }:
   for (const project of projects) {
     const spans = projectSpans(dataDir, project.n);
     if (spans.some(s => s.text.length > 1500)) throw new Error("PROMPT_SIZE: resegmentation required");
-    for (const chunk of chunkSpans(spans)) sizes.push(estimateMessagesTokens(buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, chunk)));
+    for (const chunk of chunkSpans(uniqueProjectSpans(spans))) sizes.push(estimateMessagesTokens(buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, chunk)));
   }
-  return { ...summarizePromptSizes(sizes), projects: projects.length, shape: "production-coding-chunks", measuredAt: new Date().toISOString() };
+  return { ...summarizePromptSizes(sizes), projects: projects.length, shape: "production-coding-chunks", deduplication: "exact-text-once-per-project", chunkChars: 40_000, measuredAt: new Date().toISOString() };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

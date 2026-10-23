@@ -366,6 +366,8 @@ Adopted on Helen's 2026-10-21 decision D-67 (whole-page spans from the free coll
 
 Changed rule: the free own-site collector preserves block line breaks (does not flatten all whitespace). The segmenter hard-caps every span at 1,500 characters, preferring sentence boundaries, then the last whitespace before the cap, else a hard split at 1,500. All 300 projects are re-segmented from stored redacted snapshot text; prior content-addressed snapshot files are retained. Coding and confirmation after this addendum use only the re-segmented spans.
 
+Helen approved on 2026-10-23: send exact-duplicate span text once per project for coding, gold and second coding, retaining the first occurrence's citation id. Preserve all original snapshot text, span ids and source metadata in storage; this changes request packing only. Keep the existing 40,000-character chunk size. Confirmation requests contain only the spans cited for the individual positive, never all project spans; repeated cited text may be sent once without changing the decision's complete citation record.
+
 Reason: whole-page spans (max hundreds of thousands of characters) made confirmer prompts hit rate limits and spend money; fixed spans are a precondition for any further counting run.
 
 ### A9.2 Spending guards (20k token cap, per-run dollar budget, BUDGET lines)
@@ -377,6 +379,8 @@ Reason: the Ultra confirmation overspend must be structurally impossible on the 
 ### A9.3 Host defaults (Ollama bulk; Token Factory only with budget flag)
 
 Changed rule: bulk gold, confirmation, and second-coder roles default to Ollama Cloud, billed per token against the Pro plan's $60/month included credit (correction 2026-10-23). Ollama calls use the same request cap and run budget, documented model prices, and concurrency 1–2 within the service's three-request limit. Token Factory client construction for bulk coding or confirmation requires an explicit `--budget` (or equivalent env) flag; without it the client refuses. Token Factory remains available for capped showcase and the hard-capped primary recode named in the phase plan. No paid call proceeds without an approved budget.
+
+Helen approved on 2026-10-23: primary recode of 300 uses Token Factory `deepseek-ai/DeepSeek-V4-Flash-0731`, capped at $3.50. Gold uses Ollama `glm-5.3-flash`, capped at $4.50. The seeded 100-project second coder uses Ollama `nemotron-3-super` in place of Super-VL; substitution reason: cost, capped at $0.75, with model and reason recorded in decision metadata. This is a text-only substitution, not a claim of vision-model equivalence. A paired 30-positive confirmer spike compares Ollama `nemotron-3-ultra` with thinking on versus low, capped at $0.50 total; judge decisions by reading their cited spans, then report before full confirmation. Full confirmation uses the winning setting with a $5.00 cap. The combined Ollama hard cap across these roles is $10.75. Stop and report at each cap; never reset a budget on resume. Stable codebook prefixes and returned cache-token usage are measured on each host; guards assume uncached rates until a discount is supported by measured usage and published pricing.
 
 Reason: both hosts incur usage charges; model and host selection cannot bypass spending controls.
 

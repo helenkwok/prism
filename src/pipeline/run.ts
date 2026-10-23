@@ -42,6 +42,7 @@ import {
   type FetchImpl as NebiusFetchImpl,
 } from "./coding/nebius-client.ts";
 import { requireTfBudget, DollarBudget } from "./coding/spend-guards.ts";
+import { uniqueProjectSpans } from "./coding/span-packing.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
@@ -433,7 +434,7 @@ async function processProject(
   // 5. code — skip the live model call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
-  const chunks = chunkSpans(segmented.spans as { id: string; text: string }[]);
+  const chunks = chunkSpans(uniqueProjectSpans(segmented.spans as { id: string; text: string }[]));
   const codeWith = (model: string, stage: string) => {
     const codingRequestHash = crypto
       .createHash("sha256")
