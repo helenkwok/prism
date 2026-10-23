@@ -512,6 +512,8 @@ function parseArgs(argv: string[]) {
 }
 
 async function main() {
+  const { assertA9Signed } = await import("../signoff/a9.ts");
+  assertA9Signed();
   const { readKey } = await import("../run.ts");
   const args = parseArgs(process.argv.slice(2));
   const dataDir = resolveDataDir();

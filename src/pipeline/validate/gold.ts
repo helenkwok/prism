@@ -500,6 +500,8 @@ export async function runGoldCli(deps: GoldCliDeps = {}): Promise<GoldCliResult>
   const role = deps.role ?? ROLE_CONFIG.gold;
   let client = deps.client;
   if (!client) {
+    const { assertA9Signed } = await import("../signoff/a9.ts");
+    assertA9Signed({ protocolPath, signoffPath });
     const nebiusKey = readKey("NEBIUS_API_KEY", "nebius.key");
     client = roleClient("gold", { nebiusKey, roleSpec: role });
   }

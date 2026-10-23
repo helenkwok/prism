@@ -27,6 +27,7 @@ import { redactText } from "./evidence/redact.ts";
 import { renderTextAsync, type RenderImplAsync } from "./evidence/render.ts";
 import { findSiteRepos } from "./evidence/site-repos.ts";
 import { assertA8Signed } from "./signoff/a8.ts";
+import { assertA9Signed } from "./signoff/a9.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
 import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
@@ -40,7 +41,7 @@ import {
   isQuotaResponse,
   type FetchImpl as NebiusFetchImpl,
 } from "./coding/nebius-client.ts";
-import { requireTfBudget } from "./coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget } from "./coding/spend-guards.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
@@ -84,7 +85,7 @@ interface Overrides {
    */
   useTavily?: boolean;
   /** D-67: Token Factory dollar cap; required for live TF (CLI --budget / PRISM_TF_BUDGET). */
-  tfBudget?: number;
+  tfBudget?: number | DollarBudget;
 }
 
 /** One browser at a time across concurrent projects (D-55 / Pitfall 3). */
@@ -630,6 +631,13 @@ export async function runPipeline({
   overrides?: Overrides;
 }): Promise<RunAccounting> {
   const resolvedDataDir = dataDir ?? resolveDataDir();
+  if (!overrides.nebiusFetchImpl) assertA9Signed();
+  // One budget object is shared by every project/client in this run.
+  if (overrides.tfBudget != null && !(overrides.tfBudget instanceof DollarBudget)) {
+    overrides = { ...overrides, tfBudget: new DollarBudget(overrides.tfBudget) };
+  } else if (!overrides.nebiusFetchImpl && overrides.tfBudget == null) {
+    overrides = { ...overrides, tfBudget: new DollarBudget(requireTfBudget()) };
+  }
   const resolvedSliceProjectsPath = sliceProjectsPath ?? path.join(resolvedDataDir, "pipeline", "slice-projects.json");
   const allProjects: SliceEntryLike[] = JSON.parse(fs.readFileSync(resolvedSliceProjectsPath, "utf8"));
   const projects = projectFilter === undefined ? allProjects : allProjects.filter((p) => p.n === projectFilter);
@@ -856,6 +864,8 @@ if (invokedDirectly) {
     if (!useTavily) {
       assertA8Signed();
     }
+    // D-67: post-fix coding/confirm counts require A9 (span fix + guards + hosts + archive).
+    assertA9Signed();
 
     const accounting = await runPipeline({
       apiKeys: { tavily: tavily ?? "", nebius: nebius!, github: github! },

@@ -14,6 +14,7 @@ import path from "node:path";
 import { resolveDataDir } from "../../app/server/db.ts";
 import { buildChatBody, createClient, PINNED_BASE_URL, PINNED_MODEL, SECOND_CODER_MODEL } from "../coding/nebius-client.ts";
 import { CONFIRMER_MODEL } from "../confirm/confirm.ts";
+import { requireTfBudget } from "../coding/spend-guards.ts";
 
 export const SIGNOFF_MODEL = "Qwen/Qwen3.5-397B-A17B";
 
@@ -69,11 +70,11 @@ async function main() {
   if (!docPath || all("--item").length === 0) throw new Error("usage: signoff.ts --doc <md> [--context <file>]... --item <name>...");
   const doc = fs.readFileSync(docPath, "utf8");
   const context = all("--context").map((p) => fs.readFileSync(p, "utf8")).join("\n\n");
-  // Sign-off is not D-67 bulk coding/confirm; budget gate applies to those paths.
+  // Sign-off is paid too; it shares the request cap and requires an explicit budget.
   const client = createClient({
     baseUrl: PINNED_BASE_URL,
     apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
-    skipBudgetGate: true,
+    budget: requireTfBudget(),
   });
   const dir = path.join(resolveDataDir(), "decisions");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });

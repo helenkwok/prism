@@ -357,3 +357,31 @@ Reason: the 142 are the only honest Tavily proof for this sample; discarding the
 Changed rule: for each of the 142 archived projects, a per-project comparison of Tavily vs free-collector pages, spans, and check states is written under `validation/` and reported as exploratory. It never feeds `publishedStates`, gate statistics, or any published figure.
 
 Reason: the cross-check shows what the free collector adds or misses without contaminating the pre-registered statistics.
+
+## Addendum 2026-10-21 (A9)
+
+Adopted on Helen's 2026-10-21 decision D-67 (whole-page spans from the free collector caused confirmer overspend). Through the A6 sign-off role. No post-fix coded, gold, or confirmation result counts until this addendum is signed digest-bound.
+
+### A9.1 Span fix (collector, 1500-char cap, resegment)
+
+Changed rule: the free own-site collector preserves block line breaks (does not flatten all whitespace). The segmenter hard-caps every span at 1,500 characters, preferring sentence boundaries, then the last whitespace before the cap, else a hard split at 1,500. All 300 projects are re-segmented from stored redacted snapshot text; prior content-addressed snapshot files are retained. Coding and confirmation after this addendum use only the re-segmented spans.
+
+Reason: whole-page spans (max hundreds of thousands of characters) made confirmer prompts hit rate limits and spend money; fixed spans are a precondition for any further counting run.
+
+### A9.2 Spending guards (20k token cap, per-run dollar budget, BUDGET lines)
+
+Changed rule: every paid chat call, including Ollama Cloud, estimates prompt tokens before HTTP and refuses above a default 20,000-token cap, recording `too-large` without sending. Each bulk run has an explicit dollar budget shared across its requests; the run reserves the input estimate plus maximum output cost before sending, stops before exceeding the budget, and prints `BUDGET` lines with estimated, spent, and cap. Oversized items never reach the network.
+
+Reason: the Ultra confirmation overspend must be structurally impossible on the next paid path.
+
+### A9.3 Host defaults (Ollama bulk; Token Factory only with budget flag)
+
+Changed rule: bulk gold, confirmation, and second-coder roles default to Ollama Cloud, billed per token against the Pro plan's $60/month included credit (correction 2026-10-23). Ollama calls use the same request cap and run budget, documented model prices, and concurrency 1–2 within the service's three-request limit. Token Factory client construction for bulk coding or confirmation requires an explicit `--budget` (or equivalent env) flag; without it the client refuses. Token Factory remains available for capped showcase and the hard-capped primary recode named in the phase plan. No paid call proceeds without an approved budget.
+
+Reason: both hosts incur usage charges; model and host selection cannot bypass spending controls.
+
+### A9.4 Whole-page-spans archive is exploratory only
+
+Changed rule: positives, confirmations, and gold labels produced on defective whole-page spans are archived read-only at `~/.prism-data/backups/2026-10-21-whole-page-spans/` (sqlite, COUNTS.json, SHA256SUMS). That archive is exploratory and not for publication: it must never feed `publishedStates`, agreement, gate statistics, or any published figure. Fresh gold and confirmation run only on re-segmented spans after this addendum.
+
+Reason: the defect set is proof of the failure mode, not a cohort statistic.
