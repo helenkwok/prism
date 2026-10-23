@@ -139,7 +139,23 @@ test("apply makes no update when a TCP 443 rule from 0.0.0.0/0 exists", () => {
   noOcid(r);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(updateCalls(t.read()), 0);
-  assert.match(r.stdout, /^OCI_INGRESS already-open rules=2 port22=present port443=present$/m);
+  assert.match(r.stdout, /^OCI_INGRESS already-open before=2 after=2 saved_rules_present=true port22=present port443=present$/m);
+  const c = t.run("check");
+  noOcid(c);
+  assert.equal(c.status, 0, c.stderr);
+  assert.match(c.stdout, /^OCI_INGRESS already-open before=2 after=2 saved_rules_present=true port22=present port443=present$/m);
+  assert.equal(updateCalls(t.read()), 0);
+});
+
+test("check fails when the list changed after an already-open apply", () => {
+  const t = setup([RULE_22, RULE_443]);
+  assert.equal(t.run("apply").status, 0);
+  const s = t.read();
+  s.rules = [RULE_22, RULE_443, RULE_ICMP];
+  fs.writeFileSync(path.join(t.dir, "state.json"), JSON.stringify(s));
+  const c = t.run("check");
+  assert.notEqual(c.status, 0);
+  assert.match(c.stdout, /^OCI_INGRESS already-open before=2 after=3 /m);
 });
 
 test("check is read-only and prints the OCI_INGRESS fields from the saved state", () => {

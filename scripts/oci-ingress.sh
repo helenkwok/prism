@@ -28,7 +28,7 @@ if [ "$MODE" = apply ]; then
   chmod 700 "$SD"
 else
   SD=$(ls -d "$STATE_ROOT"/*-oci-ingress 2>/dev/null | sort | tail -1 || true)
-  [ -n "$SD" ] && [ -f "$SD/before.json" ] || { echo "OCI_INGRESS no-saved-state"; exit 1; }
+  [ -n "$SD" ] && [ -f "$SD/before.json" ] && [ -f "$SD/apply-result" ] || { echo "OCI_INGRESS no-saved-state"; exit 1; }
 fi
 ERR="$SD/oci-stderr.log"
 
@@ -63,8 +63,6 @@ switch (op) {
   case "seclist": { const ids = stdin().data["security-list-ids"] || []; if (ids.length !== 1) { process.stderr.write(`expected 1 security list on the subnet, found ${ids.length}\n`); process.exit(1); } out(ids[0]); break; }
   case "ingress": out(JSON.stringify(camel(stdin().data["ingress-security-rules"] || []))); break;
   case "has443": out(read(args[0]).some((r) => covers(r, 443, "0.0.0.0/0")) ? "yes" : "no"); break;
-  case "count": out(String(read(args[0]).length)); break;
-  case "port22": out(read(args[0]).some((r) => covers(r, 22)) ? "present" : "missing"); break;
   case "add443": {
     const rules = read(args[0]);
     rules.push({ description: "PRISM HTTPS (Caddy, plan 07-12b)", isStateless: false, protocol: "6", source: "0.0.0.0/0",
@@ -72,13 +70,13 @@ switch (op) {
     out(JSON.stringify(rules)); break;
   }
   case "same": out(JSON.stringify(read(args[0]).map(key)) === JSON.stringify(read(args[1]).map(key)) ? "yes" : "no"); break;
-  case "report": { // report <before> <after>: prints the fields, exits 1 unless all hold
-    const b = read(args[0]), a = read(args[1]);
+  case "report": { // report <before> <after> <added 1|0>: prints the fields, exits 1 unless all hold
+    const b = read(args[0]), a = read(args[1]), added = Number(args[2]);
     const ak = new Set(a.map(key));
     const saved = b.every((r) => ak.has(key(r)));
     const p22 = a.some((r) => covers(r, 22)), p443 = a.some((r) => covers(r, 443, "0.0.0.0/0"));
-    out(`OCI_INGRESS before=${b.length} after=${a.length} saved_rules_present=${saved} port22=${p22 ? "present" : "missing"} port443=${p443 ? "present" : "missing"}`);
-    process.exit(a.length === b.length + 1 && saved && p22 && p443 ? 0 : 1);
+    out(`OCI_INGRESS ${added ? "" : "already-open "}before=${b.length} after=${a.length} saved_rules_present=${saved} port22=${p22 ? "present" : "missing"} port443=${p443 ? "present" : "missing"}`);
+    process.exit(a.length === b.length + added && saved && p22 && p443 ? 0 : 1);
   }
   default: process.stderr.write("unknown op " + op + "\n"); process.exit(2);
 }' "$@"
@@ -99,14 +97,19 @@ read_ingress() { ocij network security-list get --security-list-id "$SECLIST" | 
 
 if [ "$MODE" = check ]; then
   read_ingress "$SD/current.json"
-  j report "$SD/before.json" "$SD/current.json"
+  # apply-result says whether apply added the rule (+1 expected) or found it already open (unchanged expected)
+  if [ "$(cat "$SD/apply-result")" = added ]; then n=1; else n=0; fi
+  j report "$SD/before.json" "$SD/current.json" "$n"
   exit $?
 fi
 
 read_ingress "$SD/now.json"
 if [ "$(j has443 "$SD/now.json")" = yes ]; then
-  echo "OCI_INGRESS already-open rules=$(j count "$SD/now.json") port22=$(j port22 "$SD/now.json") port443=present"
-  exit 0
+  # Nothing to add. Keep the list as the baseline so check can prove it stays unchanged.
+  mv "$SD/now.json" "$SD/before.json"
+  echo already-open > "$SD/apply-result"
+  j report "$SD/before.json" "$SD/before.json" 0
+  exit $?
 fi
 
 mv "$SD/now.json" "$SD/before.json"
@@ -126,4 +129,5 @@ restore() {
 ocij network security-list update --security-list-id "$SECLIST" \
   --ingress-security-rules "file://$SD/desired.json" --force > /dev/null || restore
 read_ingress "$SD/after.json" || restore
-j report "$SD/before.json" "$SD/after.json" || restore
+j report "$SD/before.json" "$SD/after.json" 1 || restore
+echo added > "$SD/apply-result"
