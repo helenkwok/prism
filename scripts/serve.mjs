@@ -100,7 +100,21 @@ async function main() {
   // check exits the process before it listens.
   const { default: entry } = await import(pathToFileURL(path.join(root, "dist", "server", "index.js")).href);
 
+  // D-78 measurement hook (plan 07-11), off unless MEASURE_CPU=1: this process's
+  // CPU (all threads, so scrypt's libuv pool counts) from request start until the
+  // response has finished, streamed SSR included. Only meaningful for one request
+  // at a time.
+  const measure = process.env.MEASURE_CPU === "1";
+
   const server = http.createServer(async (req, res) => {
+    if (measure) {
+      const c0 = process.cpuUsage();
+      res.once("finish", () => {
+        const c = process.cpuUsage(c0);
+        const path = (req.url ?? "/").split("?")[0];
+        console.log(`MEASURE request method=${req.method} path=${path} status=${res.statusCode} cpu_ms=${((c.user + c.system) / 1000).toFixed(2)}`);
+      });
+    }
     try {
       const url = new URL(req.url ?? "/", "http://localhost");
       const file = (req.method === "GET" || req.method === "HEAD") && staticFile(url.pathname);
