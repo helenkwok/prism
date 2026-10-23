@@ -2,6 +2,7 @@
 // decisions, then the checks. Every piece of the app's own evaluative text
 // carries data-evaluative (the wording test reads those); raw gate statuses
 // live only in data-gate-status. Stored text is rendered as React text only.
+import type { DeidentifiedView } from "../../../report/deidentify.ts";
 import type { CheckView, DecisionView, GateStatus, PublishedValue, ReportView } from "../../../report/view.ts";
 import { cn } from "../../../lib/utils";
 import { Notice } from "../Notice";
@@ -87,12 +88,16 @@ export function tallyLine(d: DecisionView): string {
   return `Required checks: ${d.requiredChecks.length}. ${terms.join(", ")}.`;
 }
 
-export function ScopeDisclaimer({ collectedAt }: { collectedAt: string }) {
+export const DEID_FIGCAPTION = "Source page and snapshot withheld in de-identified records.";
+export const MASKING_LEGEND =
+  "[product] product name · [domain] web address · [repo] code repository · [url] link · ▇▇ a word that could identify the project · … quote shortened to 40 words · [email redacted], [phone redacted], [handle redacted] personal details removed when the page was collected.";
+
+export function ScopeDisclaimer({ collectedAt, masked = false }: { collectedAt: string; masked?: boolean }) {
   return (
     <div data-scope-disclaimer="" data-evaluative="" className="mt-8 max-w-[75ch] rounded-lg border border-foreground bg-muted p-4">
-      Private record for the judges and the company concerned. Do not publish. It describes only what this project's own
-      website and repositories publicly evidenced when they were collected on {day(collectedAt)}. No other sources were
-      used. Not publicly evidenced does not mean not done. This is not a certification or a legal assessment.
+      {masked
+        ? `De-identified record for the judges. Do not publish. It describes what one sampled project's own website and repositories publicly evidenced when they were collected on ${day(collectedAt)}. Names, web addresses and distinctive wording are masked. Not publicly evidenced does not mean not done.`
+        : `Private record for the judges and the company concerned. Do not publish. It describes only what this project's own website and repositories publicly evidenced when they were collected on ${day(collectedAt)}. No other sources were used. Not publicly evidenced does not mean not done. This is not a certification or a legal assessment.`}
     </div>
   );
 }
@@ -146,7 +151,12 @@ export function snapshotHref(projectRef: string, hash: string, checkId: string, 
   return `/p/${encodeURIComponent(projectRef)}/snapshot/${hash}?check=${encodeURIComponent(checkId)}#span-${spanId}`;
 }
 
-export function QuoteCard({ q, projectRef, checkId }: { q: CheckView["quotes"][number]; projectRef: string; checkId: string }) {
+type AnyCheck = CheckView | DeidentifiedView["checks"][number];
+type AnyQuote =CheckView["quotes"][number] | DeidentifiedView["checks"][number]["quotes"][number];
+
+export function QuoteCard({ q, projectRef, checkId }: { q: AnyQuote; projectRef: string; checkId: string }) {
+  // A de-identified quote carries no url or snapshot hash: its caption says so and links nowhere.
+  const src = "url" in q ? q : null;
   return (
     <figure data-quote-card="" data-span={q.spanId} className="border-l-4 border-border bg-card pl-4">
       <blockquote className="max-w-[75ch]">
@@ -159,27 +169,33 @@ export function QuoteCard({ q, projectRef, checkId }: { q: CheckView["quotes"][n
           </span>
         </Notice>
       ) : null}
-      <figcaption className="mt-2 flex flex-col gap-1 text-[0.8125rem]">
-        {q.url ? (
-          <span data-quote-url="" title={q.url} className="block max-w-full truncate font-mono">
-            {q.url}
+      {src ? (
+        <figcaption className="mt-2 flex flex-col gap-1 text-[0.8125rem]">
+          {src.url ? (
+            <span data-quote-url="" title={src.url} className="block max-w-full truncate font-mono">
+              {src.url}
+            </span>
+          ) : null}
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            {src.snapshotHash ? (
+              <a href={snapshotHref(projectRef, src.snapshotHash, checkId, q.spanId)} className="inline-flex items-center gap-1">
+                <span className="icon-[lucide--archive] size-4" aria-hidden="true" />
+                Open archived snapshot
+              </a>
+            ) : null}
+            {src.url ? (
+              <a href={src.url} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1">
+                <span className="icon-[lucide--external-link] size-4" aria-hidden="true" />
+                Live page
+              </a>
+            ) : null}
           </span>
-        ) : null}
-        <span className="flex flex-wrap gap-x-4 gap-y-1">
-          {q.snapshotHash ? (
-            <a href={snapshotHref(projectRef, q.snapshotHash, checkId, q.spanId)} className="inline-flex items-center gap-1">
-              <span className="icon-[lucide--archive] size-4" aria-hidden="true" />
-              Open archived snapshot
-            </a>
-          ) : null}
-          {q.url ? (
-            <a href={q.url} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1">
-              <span className="icon-[lucide--external-link] size-4" aria-hidden="true" />
-              Live page
-            </a>
-          ) : null}
-        </span>
-      </figcaption>
+        </figcaption>
+      ) : (
+        <figcaption data-withheld="" className="mt-2 text-[0.8125rem] text-muted-foreground">
+          {DEID_FIGCAPTION}
+        </figcaption>
+      )}
     </figure>
   );
 }
@@ -211,7 +227,7 @@ const roleLine = (r: { role: string; modelId: string | null; host: string | null
   r.modelId ? `${r.role} (${r.modelId}, ${r.host ?? "host not recorded"})` : r.role;
 
 /** 07-UI-SPEC "Basis lines". A confirmed check without its own record names the run's confirmation role. */
-export function basisLine(c: CheckView, howMade: ReportView["howMade"]): string | null {
+export function basisLine(c: AnyCheck,howMade: ReportView["howMade"]): string | null {
   switch (c.basis) {
     case "confirmed": {
       const rec = c.confirmations.findLast((r) => r.decision === "confirmed");
@@ -267,7 +283,7 @@ function ConfirmationRecords({ rows }: { rows: CheckView["confirmations"] }) {
   );
 }
 
-export function CheckCard({ c, projectRef, howMade }: { c: CheckView; projectRef: string; howMade: ReportView["howMade"] }) {
+export function CheckCard({ c, projectRef, howMade }: { c: AnyCheck; projectRef: string; howMade: ReportView["howMade"] }) {
   const s = STATE[stateKey(c.published)];
   const basis = basisLine(c, howMade);
   return (
@@ -314,16 +330,27 @@ export function CheckCard({ c, projectRef, howMade }: { c: CheckView; projectRef
   );
 }
 
-export function ReportBody({ view }: { view: ReportView }) {
+/** Identifiable (/p) or de-identified (/j): one anatomy; the masked mode changes only the disclaimer, legend and quote captions. */
+export function ReportBody({ view }: { view: ReportView | DeidentifiedView }) {
+  const masked = view.view === "deidentified";
   const col = view.collection;
   const gate7 = view.gateSha.replace(/^js:/, "").slice(0, 7);
   return (
     <>
-      <ScopeDisclaimer collectedAt={col.collectedAt} />
+      <ScopeDisclaimer collectedAt={col.collectedAt} masked={masked} />
       <p className="mt-4 text-[0.8125rem] text-muted-foreground tabular-nums">
         Codebook <span className="font-mono">{view.codebookVersion}</span> · Gate <span className="font-mono">{gate7}</span> ·
         Collected {day(col.collectedAt)} · {col.pages} pages
       </p>
+      {masked ? (
+        <details data-masking-legend="" className="mt-4 max-w-[75ch] text-[0.8125rem]">
+          <summary>How this record is masked</summary>
+          {/* Placeholders styled as in the quotes, so the legend shows what a redaction looks like. */}
+          <p className="mt-2">
+            <QuoteText text={MASKING_LEGEND} />
+          </p>
+        </details>
+      ) : null}
       {!col.renderAvailable || col.notRendered > 0 ? (
         <Notice variant="info" className="mt-4">
           <span data-not-rendered="" data-evaluative="">
@@ -344,7 +371,7 @@ export function ReportBody({ view }: { view: ReportView }) {
       <section aria-labelledby="checks" className="mt-12">
         {view.decisions.map((d, i) => {
           const [first, ...rest] = view.checks.filter((c) => c.decision === d.decisionId);
-          const card = (c: CheckView) => <CheckCard key={c.checkId} c={c} projectRef={view.projectRef} howMade={view.howMade} />;
+          const card = (c: AnyCheck) => <CheckCard key={c.checkId} c={c} projectRef={view.projectRef} howMade={view.howMade} />;
           return (
             <div key={d.decisionId} data-check-group="" className={i > 0 ? "mt-8" : undefined}>
               {/* data-keep: in print a heading stays with its first card (Chromium ignores break-after: avoid here). */}

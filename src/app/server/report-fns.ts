@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { AccessError, requireProjectAccess } from "./access.ts";
+import type { DeidentifiedView } from "../../report/deidentify.ts";
 import type { ReportView } from "../../report/view.ts";
 
 const projectIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
@@ -24,6 +25,25 @@ export const getIdentifiableReport = createServerFn({ method: "GET" })
     const view = await readReportView(getDb(), data.projectId, "identifiable");
     if (!view || view.view !== "identifiable") return forbidden();
     return view as ReportView;
+  });
+
+/** Pseudonyms are 5 Crockford base32 characters (deidentify.ts pseudonymOf). */
+const pseudonymSchema = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{5}$/);
+
+/**
+ * D-81 / APP-03: a judge's (or admin's) de-identified record, addressed by
+ * pseudonym only. A missing row is the same 403 as a refused one.
+ */
+export const getDeidentifiedReport = createServerFn({ method: "GET" })
+  // A malformed pseudonym becomes one no row can carry, so it is the same 403 as an unknown one (not a 500).
+  .validator((d: { pseudonym: string }) => ({ pseudonym: pseudonymSchema.safeParse(d?.pseudonym).success ? d.pseudonym : "-" }))
+  .handler(async ({ data }) => {
+    await requireProjectAccess("deidentified", data.pseudonym);
+    const { getDb } = await import("./db.ts");
+    const { readReportView } = await import("../../report/store.ts");
+    const view = await readReportView(getDb(), data.pseudonym, "deidentified");
+    if (!view || view.view !== "deidentified") return forbidden();
+    return view as DeidentifiedView;
   });
 
 /**

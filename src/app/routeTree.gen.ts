@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
+import { Route as JPseudonymRouteImport } from './routes/j.$pseudonym'
 import { Route as PProjectIdRouteImport } from './routes/p.$projectId'
 import { Route as ReviewProjectNRouteImport } from './routes/review.$projectN'
 import { Route as RunIndexRouteImport } from './routes/run.index'
@@ -38,6 +39,11 @@ const SignInRoute = SignInRouteImport.update({
 const ApiReportDotpdfRoute = ApiReportDotpdfRouteImport.update({
   id: '/api/report.pdf',
   path: '/api/report.pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JPseudonymRoute = JPseudonymRouteImport.update({
+  id: '/j/$pseudonym',
+  path: '/j/$pseudonym',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PProjectIdRoute = PProjectIdRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/j/$pseudonym': typeof JPseudonymRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/run/$jobId': typeof RunJobIdRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/j/$pseudonym': typeof JPseudonymRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/run/$jobId': typeof RunJobIdRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
+  '/j/$pseudonym': typeof JPseudonymRoute
   '/p/$projectId': typeof PProjectIdRoute
   '/review/$projectN': typeof ReviewProjectNRoute
   '/run/$jobId': typeof RunJobIdRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/j/$pseudonym'
     | '/p/$projectId'
     | '/review/$projectN'
     | '/run/$jobId'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/j/$pseudonym'
     | '/p/$projectId'
     | '/review/$projectN'
     | '/run/$jobId'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
+    | '/j/$pseudonym'
     | '/p/$projectId'
     | '/review/$projectN'
     | '/run/$jobId'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignInRoute: typeof SignInRoute
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
+  JPseudonymRoute: typeof JPseudonymRoute
   PProjectIdRoute: typeof PProjectIdRoute
   ReviewProjectNRoute: typeof ReviewProjectNRoute
   RunJobIdRoute: typeof RunJobIdRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/api/report.pdf'
       fullPath: '/api/report.pdf'
       preLoaderRoute: typeof ApiReportDotpdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/j/$pseudonym': {
+      id: '/j/$pseudonym'
+      path: '/j/$pseudonym'
+      fullPath: '/j/$pseudonym'
+      preLoaderRoute: typeof JPseudonymRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/$projectId': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SignInRoute: SignInRoute,
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
+  JPseudonymRoute: JPseudonymRoute,
   PProjectIdRoute: PProjectIdRoute,
   ReviewProjectNRoute: ReviewProjectNRoute,
   RunJobIdRoute: RunJobIdRoute,
