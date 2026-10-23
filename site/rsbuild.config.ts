@@ -9,7 +9,10 @@ import { releaseDir } from './scripts/release-dir.mjs'
 const release = releaseDir()
 const alias: Record<string, string> = release
   ? { '@public-data': release }
-  : { '@public-data/release.json$': resolve(import.meta.dirname, 'src/no-release.json') }
+  : {
+      '@public-data/release.json$': resolve(import.meta.dirname, 'src/no-release.json'),
+      '@public-data/manifest.json$': resolve(import.meta.dirname, 'src/no-release.json'),
+    }
 
 // Every route is prerendered to static HTML; nothing runs on a server at run time (D-68).
 export default defineConfig({

@@ -11,6 +11,7 @@
     "build": "rsbuild build && node scripts/csp.mjs",
     "typecheck": "tsc --noEmit",
     "check": "node scripts/check.mjs",
+    "pdf": "node scripts/render-pdf.mjs",
     "csp": "node scripts/csp.mjs",
     "deploy": "node scripts/deploy.mjs"
   },

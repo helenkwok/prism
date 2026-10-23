@@ -1,11 +1,21 @@
 // Reads the release through @public-data only, checks the keys the pages use, and fails the build with the
 // UI-SPEC error message on any problem. No page renders partial data.
 import raw from '@public-data/release.json'
+import rawManifest from '@public-data/manifest.json'
 
 export type RowState = 'released' | 'lt10' | 'suppressed' | 'withheld' | 'absent' | 'not-estimable'
 export interface Row { id: string; label: string; state: RowState; c?: number; n?: number; pct?: number; ci?: [number, number]; reason?: string; note?: string }
 export interface Figure { id: string; title: string; measure: string; rows: Row[] }
 export interface Statement { id: string; kind: string; text: string }
+/** A PRISMA box: a plain count, or a row that may carry an explicit state. */
+export interface PrismaBox { id: string; label: string; count?: number; row?: Row }
+export interface Manifest {
+  version: string
+  audit: { tuples: number; suppressed: number; primary: number; complementary: number; pass: boolean }
+  processFigures: { id: string; reason: string; addendum: string }[]
+  lint: { statements: number; findings: number; errors: number }
+  scan: { files: number; hits: number }
+}
 interface Agent { modelId: string; host: string }
 export interface Hypothesis {
   row?: Row
@@ -24,11 +34,19 @@ export interface Release {
     labeller: Agent
     confirmer: Agent
     agreement: Record<string, { ac1: number | null; ac1CI: [number, number] | null; precision: Row }>
-    confirmation: { total: { changed: number; proposed: number; pct: number }; rejected: Row; downgraded: Row }
+    confirmation: { total: { changed: number; proposed: number; pct: number }; rejected: Row; downgraded: Row; perCheck?: Record<string, Row> }
     personEdits: { count: number; total: number }
   }
-  methods: { codebook: { checkId: string; shortTitle: string; decisionId: string }[] }
-  hypotheses: { h1: Hypothesis; h2: Hypothesis; h3: Hypothesis }
+  methods: {
+    frame?: string
+    window?: string
+    roles: { role: string; kind: string; modelId: string; host: string; manifest: Record<string, string | number> }[]
+    disclosure: { floor: number; minValues: number }
+    ledgerVersion: string
+    codebook: { checkId: string; shortTitle: string; decisionId: string; relations?: { standard: string; clause: string; relation: string }[] }[]
+  }
+  hypotheses: { alpha?: number; h1: Hypothesis; h2: Hypothesis; h3: Hypothesis }
+  prisma?: { boxes: PrismaBox[]; exclusions: PrismaBox[] }
   sensitivity: { excluded: number; rows: Record<string, Row> }
   validation?: {
     screeningAudit: { errors: number; audited: number; pct: number; ci: [number, number]; bar: number }
@@ -90,12 +108,38 @@ export function parseRelease(input: unknown): Release | null {
     const c = obj(v.collectionRecall, 'validation.collectionRecall')
     for (const k of ['supportedFound', 'supported', 'recall', 'rawFound', 'raw', 'rawRecall']) num(c[k], `validation.collectionRecall.${k}`)
   }
-  arr(obj(r.methods, 'methods').codebook, 'methods.codebook').forEach((e, i) => { const x = obj(e, `methods.codebook[${i}]`); str(x.checkId, `methods.codebook[${i}].checkId`); str(x.shortTitle, `methods.codebook[${i}].shortTitle`) })
+  const m = obj(r.methods, 'methods')
+  str(m.ledgerVersion, 'methods.ledgerVersion')
+  const d = obj(m.disclosure, 'methods.disclosure'); num(d.floor, 'methods.disclosure.floor'); num(d.minValues, 'methods.disclosure.minValues')
+  arr(m.roles, 'methods.roles').forEach((e, i) => { const x = obj(e, `methods.roles[${i}]`); for (const k of ['role', 'modelId', 'host']) str(x[k], `methods.roles[${i}].${k}`); obj(x.manifest, `methods.roles[${i}].manifest`) })
+  if (r.prisma !== undefined) {
+    const p = obj(r.prisma, 'prisma')
+    for (const k of ['boxes', 'exclusions']) arr(p[k], `prisma.${k}`).forEach((e, i) => {
+      const b = obj(e, `prisma.${k}[${i}]`); str(b.label, `prisma.${k}[${i}].label`)
+      if (b.row !== undefined) checkRow(b.row, `prisma.${k}[${i}].row`); else num(b.count, `prisma.${k}[${i}].count`)
+    })
+  }
+  arr(m.codebook, 'methods.codebook').forEach((e, i) => { const x = obj(e, `methods.codebook[${i}]`); str(x.checkId, `methods.codebook[${i}].checkId`); str(x.shortTitle, `methods.codebook[${i}].shortTitle`) })
   arr(r.statements, 'statements').forEach((s, i) => { const x = obj(s, `statements[${i}]`); str(x.id, `statements[${i}].id`); str(x.kind, `statements[${i}].kind`); str(x.text, `statements[${i}].text`) })
   return r as unknown as Release
 }
 
 export const release = parseRelease(raw)
+
+/** The release's manifest (disclosure audit, process figures, lint and scan), or null with no release. */
+export function parseManifest(input: unknown): Manifest | null {
+  try { return manifestOf(input) } catch (e) { throw new Error((e as Error).message.replace('release.json: manifest', 'manifest.json:')) }
+}
+function manifestOf(input: unknown): Manifest | null {
+  const m = obj(input, 'manifest the file')
+  if (m.kind === 'none') return null
+  const where = (k: string) => `manifest ${k}`
+  str(m.version, where('version'))
+  const a = obj(m.audit, where('audit')); for (const k of ['tuples', 'suppressed', 'primary', 'complementary']) num(a[k], where(`audit.${k}`))
+  arr(m.processFigures, where('processFigures')).forEach((e, i) => { const x = obj(e, where(`processFigures[${i}]`)); for (const k of ['id', 'reason', 'addendum']) str(x[k], where(`processFigures[${i}].${k}`)) })
+  return m as unknown as Manifest
+}
+export const manifest = release ? parseManifest(rawManifest) : null
 
 /** A statement's text by id, or undefined. */
 export const statementText = (id: string) => release?.statements.find(s => s.id === id)?.text
