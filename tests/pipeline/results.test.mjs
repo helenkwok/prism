@@ -31,6 +31,18 @@ function freshDb() {
   return new Kysely({ dialect: new SqliteDialect({ database: sqlite }) });
 }
 
+test("coding replay preserves missing-data metadata in the result transaction", async () => {
+  const db = freshDb();
+  await ensurePipelineSchema(db);
+  const input = { projectN: 1, hnId: "fixture", modelId: "fixture", promptHash: "fixture", codebookVersion: "v1.0", gateSha: "fixture", snapshotHashesInCollectionOrder: [], codingAttempts: 1, codingAllUnknown: false, checkStates: [], claims: [], missingData: 1 };
+  await recordProjectResult(db, input);
+  await recordProjectResult(db, { ...input, codingAttempts: 2 });
+  const row = await db.selectFrom("pipeline_project_results").selectAll().where("project_n", "=", 1).executeTakeFirst();
+  assert.equal(row.missing_data, 1);
+  assert.equal(row.coding_attempts, 2);
+  await db.destroy();
+});
+
 function checkStatesFor(filteredStateByCheckId) {
   return gateFile.checkIds.map((checkId) => ({
     checkId,

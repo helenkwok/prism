@@ -15,7 +15,10 @@ import {
   assertRequestAllowed,
   DEFAULT_TOKEN_CAP,
   DollarBudget,
-  estimateCostUsd,
+  measuredCostUsd,
+  tokenCount, cachedTokenCount, outputTokenLimit, reservationInputTokens, prefixDigest,
+  type UsageObserver,
+  ReservationExceededError,
   TooLargeError,
   type BudgetSnapshot,
 } from "./spend-guards.ts";
@@ -133,6 +136,7 @@ export function createClient({
   budget,
   skipBudgetGate = false,
   tokenCap = DEFAULT_TOKEN_CAP,
+  onUsage, stage,
 }: {
   baseUrl: string;
   apiKey: string;
@@ -142,6 +146,8 @@ export function createClient({
   budget?: number | DollarBudget;
   skipBudgetGate?: boolean;
   tokenCap?: number;
+  onUsage?: UsageObserver;
+  stage?: string;
 }) {
   if (!baseUrl) throw new NebiusError(0, "baseUrl is required");
   if (!apiKey) throw new NebiusError(0, "apiKey is required (set NEBIUS_API_KEY in the private env file)");
@@ -161,17 +167,21 @@ export function createClient({
     return limit(async () => {
       const isMultipart = body instanceof FormData || body instanceof Blob;
       let projectedUsd = 0;
+      let requestModel = "";
       // D-67: estimate + refuse before any HTTP for chat/completions with messages.
       if (!isMultipart && body && typeof body === "object" && Array.isArray((body as any).messages)) {
         const messages = (body as any).messages as { content?: string }[];
         const model = String((body as any).model ?? "");
+        requestModel = model || "deepseek-ai/DeepSeek-V4-Flash-0731";
+        body = { ...body, max_tokens: outputTokenLimit((body as any).max_tokens) };
         try {
           ({ projectedUsd } = assertRequestAllowed({
             messages,
             model: model || "deepseek-ai/DeepSeek-V4-Flash-0731",
             budget: dollarBudget,
             cap: tokenCap,
-            completionTokens: Number((body as any).max_tokens) || 4096,
+            completionTokens: (body as any).max_tokens,
+            reservationTokens: reservationInputTokens(body),
           }));
         } catch (e) {
           if (e instanceof TooLargeError) {
@@ -221,25 +231,27 @@ export function createClient({
           await sleep(jitteredDelayMs(attempt));
           continue;
         }
-        const text = await res.text();
+        let text: string;
+        try { text = await res.text(); } catch (error) { dollarBudget?.settle(projectedUsd); throw error; }
         let json: unknown = null;
         try {
           json = text ? JSON.parse(text) : null;
         } catch {
           json = null;
         }
-        let actualUsd = projectedUsd;
-        if (dollarBudget && json && typeof json === "object" && (json as any).usage) {
-          const u = (json as any).usage;
-          const model = String((body as any)?.model ?? "deepseek-ai/DeepSeek-V4-Flash-0731");
-          try {
-            if (Number.isFinite(u.prompt_tokens) && Number.isFinite(u.completion_tokens) && u.prompt_tokens >= 0 && u.completion_tokens >= 0)
-              actualUsd = estimateCostUsd(model, u.prompt_tokens, u.completion_tokens);
-          } catch {
-            // unknown model price — leave spent unchanged
-          }
-        }
+        const usage = (json as any)?.usage;
+        const inputTokens = tokenCount(usage?.prompt_tokens);
+        const outputTokens = tokenCount(usage?.completion_tokens);
+        const cachedInputTokens = cachedTokenCount(usage?.prompt_tokens_details?.cached_tokens, inputTokens);
+        const measured = inputTokens !== null && outputTokens !== null;
+        const actualUsd = measured && requestModel
+          ? measuredCostUsd(requestModel, inputTokens, outputTokens, cachedInputTokens) : projectedUsd;
         dollarBudget?.settle(projectedUsd, actualUsd);
+        if (requestModel) onUsage?.({ provider: "token-factory", stage: stage ?? null, model: requestModel,
+          inputTokens, outputTokens, cachedInputTokens, prefixDigest: prefixDigest((body as any).messages),
+          chargedUsd: actualUsd, measured, status: res.status, attempt, latencyMs });
+        if (dollarBudget && actualUsd > projectedUsd + 1e-12)
+          throw new ReservationExceededError(dollarBudget.snapshot());
         return {
           status: res.status,
           ok: res.ok,

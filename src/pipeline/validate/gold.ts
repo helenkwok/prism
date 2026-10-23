@@ -17,6 +17,8 @@ import { projectSpans, spansDigest } from "../confirm/confirm.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED } from "../select/draw-sample.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { buildCodingMessages, chunkSpans, CODING_MAX_TOKENS, mergeChunkCodings } from "../run.ts";
+import { buildContract, isSchemaValid } from "../coding/contract.ts";
+import { uniqueProjectSpans } from "../coding/span-packing.ts";
 import { assertIndependent, ROLE_CONFIG, roleClient, type RoleSpec } from "./providers.ts";
 
 const DEFAULT_CONCURRENCY = 4;
@@ -97,7 +99,7 @@ function makeGoldCallOnce(
     const { value } = await withStageCache(
       cacheDir,
       hnId,
-      "gold",
+      "gold-valid-chunk",
       { provider: role.provider, model: role.model, reasoning: role.reasoning, requestHash },
       async () => {
         const res = await client.request("/chat/completions", { method: "POST", body });
@@ -107,6 +109,7 @@ function makeGoldCallOnce(
         if (typeof content !== "string") throw new Error("gold response missing content");
         return content;
       },
+      (content) => isSchemaValid(content, spanIds, buildContract(checkIds).zodSchema).valid,
     );
     return value;
   };
@@ -162,7 +165,7 @@ export async function labelProject({
   if (existing) return existing as GoldOutcome;
 
   const spansById = new Map(spans.map((s) => [s.id, s.text]));
-  const chunks = chunkSpans(spans);
+  const chunks = chunkSpans(uniqueProjectSpans(spans));
   const callOnce = makeGoldCallOnce(codebook, spansById, role, client, cacheDir, hnId);
   const perChunk = [];
   for (const chunk of chunks) {
@@ -384,7 +387,7 @@ async function writeNoSpansLabels({
   };
 }
 
-async function writeExcludedA3({
+export async function writeExcludedA3({
   db,
   projectN,
   codebookVersion,
@@ -408,7 +411,7 @@ async function writeExcludedA3({
     reason: "artcraft",
     decided_at: decidedAt,
   };
-  await db.insertInto("pipeline_gold_outcomes").values(outcome).execute();
+  await db.insertInto("pipeline_gold_outcomes").values(outcome).onConflict((oc) => oc.doNothing()).execute();
   return outcome;
 }
 

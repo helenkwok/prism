@@ -1,0 +1,139 @@
+// Executes exactly one approved stage; full confirmation awaits spike review.
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { resolveDataDir, getDb } from "../../app/server/db.ts";
+import { loadCodebook } from "../coding/codebook-prompt.ts";
+import { buildContract, loadGateFile, resolveGatesPath } from "../coding/contract.ts";
+import { createClient, PINNED_BASE_URL, PINNED_MODEL } from "../coding/nebius-client.ts";
+import { estimateCostUsd, type UsageObservation } from "../coding/spend-guards.ts";
+import { readKey } from "../run.ts";
+import { A9_ITEMS, a9Section, assertA9Signed } from "../signoff/a9.ts";
+import { assertA8Signed } from "../signoff/a8.ts";
+import { SIGNOFF_MODEL, signOff } from "../signoff/signoff.ts";
+import { openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
+import { runApprovedStage } from "./approved-stages.ts";
+import { measurePromptSizes } from "./prompt-size.ts";
+import { ollamaClient, formatOllamaSummary, type RoleSpec } from "./providers.ts";
+
+export function summarizeCacheUsage(observations: UsageObservation[]) {
+  const groups = new Map<string, UsageObservation[]>();
+  for (const row of observations) {
+    const key = `${row.provider}:${row.model}:${row.prefixDigest}`;
+    const group = groups.get(key) ?? []; group.push(row); groups.set(key, group);
+  }
+  return [...groups.values()].map(rows => ({
+    provider: rows[0].provider, model: rows[0].model, prefixDigest: rows[0].prefixDigest,
+    requests: rows.length, repeatedPrefixRequests: Math.max(0, rows.length - 1),
+    inputTokens: rows.reduce((n, r) => n + (r.inputTokens ?? 0), 0),
+    outputTokens: rows.reduce((n, r) => n + (r.outputTokens ?? 0), 0),
+    cacheMetadataRequests: rows.filter(r => r.cachedInputTokens !== null).length,
+    cachedInputTokens: rows.some(r => r.cachedInputTokens !== null) ? rows.reduce((n, r) => n + (r.cachedInputTokens ?? 0), 0) : null,
+    firstCachedTokens: rows[0].cachedInputTokens,
+    laterCacheHitRequests: rows.slice(1).filter(r => (r.cachedInputTokens ?? 0) > 0).length,
+    listPriceUsd: rows.reduce((n, r) => n + (r.measured ? estimateCostUsd(r.model, r.inputTokens!, r.outputTokens!) : r.chargedUsd), 0),
+    chargedUsd: rows.reduce((n, r) => n + r.chargedUsd, 0),
+    billingBasis: rows[0].provider === "ollama" ? "published cache rates only on returned cache counts; full rate otherwise" : "uncached rate; cached-input price not verified",
+  }));
+}
+
+export async function runApproved(stage: ApprovedStage) {
+  if (stage === "full-confirm") throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
+  const dataDir = resolveDataDir();
+  const validation = path.join(dataDir, "validation");
+  fs.mkdirSync(validation, { recursive: true, mode: 0o700 });
+  const log = (line: string) => {
+    fs.appendFileSync(path.join(validation, `approved-${stage}.log`), line + "\n", { mode: 0o600 });
+    console.log(line);
+  };
+  const protocol = fs.readFileSync("protocol/PROTOCOL.md", "utf8");
+  const protocolPath = path.resolve("protocol/PROTOCOL.md");
+  const signoffPath = path.join(dataDir, "decisions", "signoff.jsonl");
+  if (stage !== "signoff") {
+    assertA8Signed({ protocolPath, signoffPath });
+    assertA9Signed({ protocolPath, signoffPath });
+    const preflight = measurePromptSizes({ dataDir });
+    log(`PROMPT_SIZE: ${JSON.stringify(preflight)}`);
+    if (preflight.projects !== 300 || preflight.refused || !preflight.n) throw new Error("prompt preflight refused");
+    fs.writeFileSync(path.join(validation, "prompt-size-pre-recode.json"), JSON.stringify(preflight, null, 2) + "\n", { mode: 0o600 });
+  }
+  const opened = openApprovedBudget(dataDir, stage);
+  const usageFile = path.join(validation, "approved-usage.jsonl");
+  let observations = 0;
+  const onUsage = (row: UsageObservation) => {
+    fs.appendFileSync(usageFile, JSON.stringify({ ...row, at: new Date().toISOString() }) + "\n", { mode: 0o600 });
+    observations++;
+    if (observations % 20 === 0) log(opened.budget.budgetLine());
+  };
+  let db: ReturnType<typeof getDb> | undefined;
+  try {
+    log(opened.budget.budgetLine());
+    let client;
+    let role: RoleSpec;
+    if (stage === "recode" || stage === "signoff") {
+      const key = readKey("NEBIUS_API_KEY", "nebius.key", {});
+      if (!key) throw new Error("primary-host credential unavailable");
+      client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: key, budget: opened.budget, concurrency: 1, maxRetries: 1, onUsage, stage });
+      role = { provider: "token-factory", model: stage === "signoff" ? SIGNOFF_MODEL : PINNED_MODEL, reasoning: false };
+    } else {
+      role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : false };
+      client = ollamaClient({ budget: opened.budget, concurrency: 1, maxRetries: 1, onUsage, stage });
+    }
+    if (stage === "signoff") {
+      const proposal = a9Section(protocol);
+      if (!proposal) throw new Error("A9 proposal missing");
+      const context = protocol.slice(0, protocol.indexOf(proposal));
+      const records = fs.existsSync(signoffPath) ? fs.readFileSync(signoffPath, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
+      const { createHash } = await import("node:crypto");
+      const digest = createHash("sha256").update(proposal).digest("hex");
+      fs.mkdirSync(path.dirname(signoffPath), { recursive: true, mode: 0o700 });
+      let success = 0;
+      for (const item of A9_ITEMS) {
+        const existing = records.filter(r => r.item === item && r.docDigest === digest);
+        if (existing.some(r => r.decision === "rejected")) throw new Error("A9 has an existing rejection for this digest");
+        if (!existing.some(r => r.decision === "approved")) {
+          const record = { doc: "A9", ...(await signOff(client, proposal, context, item)) };
+          fs.appendFileSync(signoffPath, JSON.stringify(record) + "\n", { mode: 0o600 });
+          log(`SIGNOFF: ${JSON.stringify({ item, decision: record.decision, digest: record.docDigest })}`);
+          if (record.decision !== "approved") throw new Error("A9 signoff rejected; review the private decision record");
+        }
+        success++;
+      }
+      assertA9Signed({ protocolPath, signoffPath });
+      log(`ACCOUNTING: ${JSON.stringify({ stage, total: A9_ITEMS.length, success, ok: success === A9_ITEMS.length, complete: true })}`);
+    } else {
+      const entries = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), "utf8"));
+      const subsets = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-subsets.json"), "utf8"));
+      const secondIds = new Set(subsets.secondModel.map(String));
+      const selected = stage === "second-coder" ? entries.filter((e: { hn_id: string }) => secondIds.has(String(e.hn_id))) : entries;
+      if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
+      const gateFile = loadGateFile(resolveGatesPath());
+      db = getDb();
+      const accounting = await runApprovedStage({ stage, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
+      if (!accounting.ok) throw new Error(`stage incomplete: ${accounting.reason ?? accounting.failed}`);
+    }
+    if ("counters" in client) log(formatOllamaSummary(client.counters));
+  } catch (error) {
+    log(`STOP: ${JSON.stringify({ stage, error: (error as Error).name, reason: (error as Error).message })}`);
+    log(`ACCOUNTING: ${JSON.stringify({ stage, ok: false, complete: false, reason: (error as Error).message })}`);
+    process.exitCode = 1;
+  } finally {
+    try {
+    log(opened.budget.budgetLine());
+    log(`HOST_BUDGET: ${JSON.stringify({ host: opened.host, ...opened.parent.snapshot() })}`);
+    const rows: UsageObservation[] = fs.existsSync(usageFile) ? fs.readFileSync(usageFile, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
+    const summary = summarizeCacheUsage(rows);
+    fs.writeFileSync(path.join(validation, "cache-pricing.json"), JSON.stringify(summary, null, 2) + "\n", { mode: 0o600 });
+    for (const row of summary) log(`CACHE: ${JSON.stringify(row)}`);
+    } finally {
+      opened.release();
+      if (db) await db.destroy();
+    }
+  }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const stage = process.argv[2];
+  if (!["signoff", "recode", "gold", "second-coder", "spike"].includes(stage)) throw new Error("explicit approved stage required");
+  await runApproved(stage as ApprovedStage);
+}

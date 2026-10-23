@@ -31,6 +31,8 @@ export interface ProjectResultInput {
   snapshotHashesInCollectionOrder: string[];
   codingAttempts: number;
   codingAllUnknown: boolean;
+  /** Retained atomically when replaying coding over already-collected evidence. */
+  missingData?: number | null;
   checkStates: CheckStateRecord[];
   claims: ClaimRecord[];
 }
@@ -130,6 +132,7 @@ export async function recordProjectResult(db: Kysely<any>, input: ProjectResultI
         snapshot_hashes_json: JSON.stringify(input.snapshotHashesInCollectionOrder),
         coding_attempts: input.codingAttempts,
         coding_all_unknown: input.codingAllUnknown ? 1 : 0,
+        ...(input.missingData !== undefined ? { missing_data: input.missingData } : {}),
         completed_at: new Date().toISOString(),
       })
       .execute();

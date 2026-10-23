@@ -6,8 +6,9 @@ import {
   PINNED_MODEL,
   SECOND_CODER_MODEL,
   type FetchImpl,
+  QuotaStop,
 } from "../coding/nebius-client.ts";
-import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, assertRequestAllowed, estimateCostUsd } from "../coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, assertRequestAllowed, measuredCostUsd, tokenCount, cachedTokenCount, outputTokenLimit, reservationInputTokens, prefixDigest, ReservationExceededError, type UsageObserver } from "../coding/spend-guards.ts";
 import { CONFIRMER_MODEL } from "../confirm/confirm.ts";
 import { SCREENER_MODEL } from "../select/screen-model.ts";
 
@@ -85,6 +86,7 @@ export function ollamaClient({
   counters = createOllamaCounters(),
   budget = 5,
   tokenCap = DEFAULT_TOKEN_CAP,
+  onUsage, stage,
 }: {
   baseUrl?: string;
   fetchImpl?: FetchImpl;
@@ -93,6 +95,8 @@ export function ollamaClient({
   counters?: OllamaUsageCounters;
   budget?: number | DollarBudget;
   tokenCap?: number;
+  onUsage?: UsageObserver;
+  stage?: string;
 } = {}) {
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 2) throw new Error("Ollama concurrency must be 1–2");
   const dollarBudget = budget instanceof DollarBudget ? budget : new DollarBudget(budget);
@@ -119,6 +123,7 @@ export function ollamaClient({
     { method = "POST", body }: { method?: string; body?: any } = {},
   ): Promise<{ ok: boolean; status: number; json: unknown; text: string }> {
     if (!body?.model || !body?.messages) throw new Error("ollamaClient: body.model and body.messages required");
+    const maxTokens = outputTokenLimit(body.max_tokens);
     const rf = body.response_format;
     const format =
       rf?.type === "json_schema" ? rf.json_schema?.schema : rf?.type === "json_object" ? "json" : undefined;
@@ -134,39 +139,47 @@ export function ollamaClient({
       ...(think !== undefined ? { think } : {}),
       options: {
         ...(body.temperature !== undefined ? { temperature: body.temperature } : {}),
-        ...(body.max_tokens !== undefined ? { num_predict: body.max_tokens } : {}),
+        num_predict: maxTokens,
       },
     };
     await acquire();
     try {
       for (let attempt = 1; ; attempt += 1) {
-        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap: tokenCap, completionTokens: body.max_tokens ?? 4096 });
+        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap: tokenCap, completionTokens: maxTokens, reservationTokens: reservationInputTokens(ollamaBody) });
         dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
+        const started = Date.now();
         let res: Response;
         try { res = await fetchImpl(`${baseUrl}/api/chat`, {
           method,
           headers: { "content-type": "application/json" },
           body: JSON.stringify(ollamaBody),
         }); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
-        const text = await res.text();
+        let text: string;
+        try { text = await res.text(); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
         let parsed: any = null;
         try {
           parsed = text ? JSON.parse(text) : null;
         } catch {
           parsed = null;
         }
-        const prompt = parsed?.prompt_eval_count;
-        const completion = parsed?.eval_count;
-        const actual = Number.isFinite(prompt) && Number.isFinite(completion) && prompt >= 0 && completion >= 0
-          ? estimateCostUsd(body.model, prompt, completion) : projectedUsd;
+        const prompt = tokenCount(parsed?.prompt_eval_count);
+        const completion = tokenCount(parsed?.eval_count);
+        const cached = cachedTokenCount(parsed?.prompt_eval_cached_count, prompt);
+        const measured = prompt !== null && completion !== null;
+        const actual = measured ? measuredCostUsd(body.model, prompt, completion, cached) : projectedUsd;
         dollarBudget.settle(projectedUsd, actual);
-        const blob = `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
+        onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
+          inputTokens: prompt, outputTokens: completion, cachedInputTokens: cached,
+          prefixDigest: prefixDigest(body.messages), chargedUsd: actual, measured,
+          status: res.status, attempt, latencyMs: Date.now() - started });
+        if (actual > projectedUsd + 1e-12) throw new ReservationExceededError(dollarBudget.snapshot());
+        const blob = res.ok ? "" : `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
         const concurrent = res.status === 429 || /too many concurrent/.test(blob);
         const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage/.test(blob);
-        if (usageCap) {
+        if (usageCap || res.status === 402 || res.status === 403) {
           counters.limit_hits += 1;
-          throw new Error(`OLLAMA usage-cap: stop and report (${formatOllamaSummary(counters)})`);
+          throw new QuotaStop(res.status, `OLLAMA usage-cap: stop and report (${formatOllamaSummary(counters)})`);
         }
         if (concurrent && attempt <= maxRetries) {
           counters.retries += 1;
@@ -174,13 +187,17 @@ export function ollamaClient({
           await sleep(400 * attempt);
           continue;
         }
+        if (concurrent) throw new QuotaStop(res.status, `OLLAMA concurrency limit: stop and report (${formatOllamaSummary(counters)})`);
         const content = parsed?.message?.content ?? "";
         const finish = parsed?.done_reason ?? (parsed?.done ? "stop" : undefined);
         return {
           ok: res.ok,
           status: res.status,
           text,
-          json: { choices: [{ message: { content }, finish_reason: finish }] },
+          json: { choices: [{ message: { content }, finish_reason: finish }],
+            usage: { prompt_tokens: prompt, completion_tokens: completion,
+              prompt_tokens_details: { cached_tokens: cached } },
+            prompt_eval_count: prompt, eval_count: completion, prompt_eval_cached_count: cached },
         };
       }
     } finally {
@@ -195,8 +212,9 @@ export function roleClient(
   {
     nebiusKey,
     fetchImpl,
-    roleSpec,
-  }: { nebiusKey?: string; fetchImpl?: FetchImpl; roleSpec?: RoleSpec } = {},
+    roleSpec, budget, counters, concurrency, onUsage, stage,
+  }: { nebiusKey?: string; fetchImpl?: FetchImpl; roleSpec?: RoleSpec; budget?: number | DollarBudget;
+    counters?: OllamaUsageCounters; concurrency?: number; onUsage?: UsageObserver; stage?: string } = {},
 ) {
   const spec = roleSpec ?? ROLE_CONFIG[role];
   if (!spec) throw new Error(`unknown role: ${role}`);
@@ -209,8 +227,9 @@ export function roleClient(
       baseUrl: PINNED_BASE_URL,
       apiKey: nebiusKey,
       fetchImpl,
-      budget: requireTfBudget(),
+      budget: budget ?? requireTfBudget(),
+      onUsage, stage, concurrency,
     });
   }
-  return ollamaClient({ fetchImpl });
+  return ollamaClient({ fetchImpl, budget, counters, concurrency, onUsage, stage });
 }

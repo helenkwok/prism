@@ -283,8 +283,8 @@ describe("labelProject", () => {
     });
     assert.equal(outcome.outcome, "no-gold");
     assert.equal(outcome.reason, "retry-exhausted");
-    // callOnce is stage-cached by requestHash, so three retry attempts share one network call
-    assert.equal(calls, 1);
+    // Invalid replies must never enter the successful-chunk cache.
+    assert.equal(calls, 3);
     assert.equal((await db.selectFrom("pipeline_gold_labels").selectAll().execute()).length, 0);
   });
 });

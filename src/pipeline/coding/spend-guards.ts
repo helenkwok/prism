@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 // D-67 spending guards: per-request token cap + per-run $ budget + TF budget flag.
 // No Token Factory HTTP until estimate ≤ cap and an explicit budget is set.
 
@@ -53,6 +55,61 @@ export function estimateCostUsd(
   return promptTokens * p.prompt + completionTokens * p.completion;
 }
 
+const CACHED_PRICES: Record<string, number> = {
+  "glm-5.3-flash": .03 / 1e6,
+  "nemotron-3-super": .015 / 1e6,
+  "nemotron-3-ultra": .10 / 1e6,
+};
+
+/** Discount only measured cache hits with a verified published rate. */
+export function measuredCostUsd(model: string, input: number, output: number, cached: number | null): number {
+  const rate = CACHED_PRICES[model.replace(/:cloud$/, "")];
+  const hits = rate !== undefined && cached !== null ? cached : 0;
+  return estimateCostUsd(model, input - hits, output) + hits * (rate ?? 0);
+}
+
+export function tokenCount(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+export function cachedTokenCount(value: unknown, input: number | null): number | null {
+  const count = tokenCount(value);
+  return count !== null && input !== null && count <= input ? count : null;
+}
+
+export function outputTokenLimit(value: unknown): number {
+  if (value === undefined) return 4096;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0)
+    throw new Error("max_tokens must be a positive integer");
+  return value;
+}
+
+/** Byte-bound reservation includes schema and a conservative template allowance. */
+export function reservationInputTokens(body: unknown): number {
+  return Buffer.byteLength(JSON.stringify(body), "utf8") + 1024;
+}
+
+export type UsageObservation = {
+  provider: "ollama" | "token-factory";
+  stage: string | null;
+  model: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cachedInputTokens: number | null;
+  prefixDigest: string | null;
+  chargedUsd: number;
+  measured: boolean;
+  status: number;
+  attempt: number;
+  latencyMs: number;
+};
+export type UsageObserver = (observation: UsageObservation) => void;
+
+export function prefixDigest(messages: { role?: string; content?: string }[]): string | null {
+  const prefix = messages.filter(m => m.role === "system").map(m => m.content ?? "").join("\n");
+  return prefix ? createHash("sha256").update(prefix).digest("hex") : null;
+}
+
 export type BudgetSnapshot = { estimated: number; spent: number; cap: number };
 
 export function formatBudgetLine(s: BudgetSnapshot): string {
@@ -60,38 +117,51 @@ export function formatBudgetLine(s: BudgetSnapshot): string {
 }
 
 /** Per-run dollar budget (mirrors CreditBudget shape). */
+export type BudgetState = BudgetSnapshot & { reserved: number };
+
 export class DollarBudget {
   cap: number;
   estimated = 0;
-  spent = 0;
+  spent: number;
   reserved = 0;
-  constructor(cap: number) {
+  readonly parent?: DollarBudget;
+  private readonly onChange?: (state: BudgetState) => void;
+  constructor(cap: number, options: { parent?: DollarBudget; initialSpent?: number; onChange?: (state: BudgetState) => void } = {}) {
     if (!Number.isFinite(cap) || !(cap > 0)) throw new Error("DollarBudget: cap must be finite and > 0");
     this.cap = cap;
+    this.spent = options.initialSpent ?? 0;
+    this.validate(this.spent);
+    this.parent = options.parent;
+    this.onChange = options.onChange;
   }
-  snapshot(): BudgetSnapshot {
-    return { estimated: this.estimated, spent: this.spent, cap: this.cap };
+  private validate(usd: number): void {
+    if (!Number.isFinite(usd) || usd < 0) throw new Error("DollarBudget: amount must be finite and nonnegative");
   }
-  budgetLine(): string {
-    return formatBudgetLine(this.snapshot());
-  }
-  /** True when adding `projected` spend still fits under the cap. */
+  private changed(): void { this.onChange?.({ ...this.snapshot(), reserved: this.reserved }); }
+  snapshot(): BudgetSnapshot { return { estimated: this.estimated, spent: this.spent, cap: this.cap }; }
+  budgetLine(): string { return formatBudgetLine(this.snapshot()); }
   allows(projected: number): boolean {
-    return this.spent + this.reserved + projected <= this.cap + 1e-12;
+    this.validate(projected);
+    return this.spent + this.reserved + projected <= this.cap + 1e-12 && (this.parent?.allows(projected) ?? true);
   }
   reserve(usd: number): void {
-    if (!this.allows(usd)) throw new BudgetExceededError(this.snapshot());
+    if (!this.allows(usd)) throw new BudgetExceededError(this.parent && !this.parent.allows(usd) ? this.parent.snapshot() : this.snapshot());
+    this.parent?.reserve(usd);
     this.reserved += usd;
+    this.changed();
   }
   settle(reserved: number, actual = reserved): void {
+    this.validate(reserved); this.validate(actual);
     this.reserved = Math.max(0, this.reserved - reserved);
-    this.recordSpent(actual);
+    this.spent += actual;
+    this.parent?.settle(reserved, actual);
+    this.changed();
   }
   addEstimated(usd: number): void {
-    this.estimated += usd;
+    this.validate(usd); this.estimated += usd; this.parent?.addEstimated(usd);
   }
   recordSpent(usd: number): void {
-    this.spent += usd;
+    this.validate(usd); this.spent += usd; this.parent?.recordSpent(usd); this.changed();
   }
 }
 
@@ -112,6 +182,14 @@ export class BudgetExceededError extends Error {
     super(`budget exceeded: ${formatBudgetLine(snapshot)}`);
     this.name = "BudgetExceededError";
     this.snapshot = snapshot;
+  }
+}
+
+/** Metering beyond the reserved bound requires a stop even below the run cap. */
+export class ReservationExceededError extends BudgetExceededError {
+  constructor(snapshot: BudgetSnapshot) {
+    super(snapshot);
+    this.message = `usage exceeded reserved allowance: ${formatBudgetLine(snapshot)}`;
   }
 }
 
@@ -169,16 +247,18 @@ export function assertRequestAllowed({
   budget,
   cap = DEFAULT_TOKEN_CAP,
   completionTokens = 4096,
+  reservationTokens,
 }: {
   messages: { content?: string }[];
   model: string;
   budget?: DollarBudget;
   cap?: number;
   completionTokens?: number;
+  reservationTokens?: number;
 }): { promptTokens: number; projectedUsd: number } {
   const promptTokens = estimateMessagesTokens(messages);
   if (promptTokens > cap) throw new TooLargeError(promptTokens, cap);
-  const projectedUsd = estimateCostUsd(model, promptTokens, completionTokens);
+  const projectedUsd = estimateCostUsd(model, reservationTokens ?? promptTokens, completionTokens);
   if (budget) {
     budget.addEstimated(projectedUsd);
     if (!budget.allows(projectedUsd)) throw new BudgetExceededError(budget.snapshot());
