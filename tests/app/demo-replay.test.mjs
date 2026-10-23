@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, test } from "node:test";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 import { buildSteps, replayLine, run } from "../../scripts/demo-replay.mjs";
@@ -71,6 +72,57 @@ describe("demo replay (SUB-01)", () => {
     const { runner } = recorder();
     await run(buildSteps(view, { ownHost: OWN, reportUrl: REPORT }), { runner, pauseMs: 0, log: () => {} });
     assert.equal(dirDigest(fixtureDir), before);
+  });
+
+  test("marking: one eval step per cited quote right after its page's open step, in check order", () => {
+    const steps = buildSteps(view, { ownHost: OWN, reportUrl: REPORT });
+    const [u1, u2, u3] = view.collection.urls;
+    const q = (url) => view.checks.flatMap((c) => c.quotes).filter((x) => x.url === url).map((x) => x.text);
+    assert.deepEqual(q(u1).length, 1);
+    assert.deepEqual(q(u2).length, 1);
+    assert.deepEqual(
+      steps.map((s) => (s.args.includes("eval") ? `eval:${s.quote}` : `open:${s.args.at(-1) === "right" ? s.args[1] : s.args.at(-1)}`)),
+      [`open:${u1}`, `eval:${q(u1)[0]}`, `open:${u2}`, `eval:${q(u2)[0]}`, `open:${u3}`, `open:${REPORT}`],
+    );
+    for (const s of steps.filter((x) => x.args.includes("eval"))) assert.deepEqual(s.args.slice(0, 3), ["action", "--", "eval"]);
+  });
+
+  test("hostile quote: it appears in the eval argument only as a JSON string literal, and the script stays inert", () => {
+    const hostile = 'He said "stop" \\ then </script><script>globalThis.pwned=1</script> `${globalThis.pwned=2}`  end';
+    const mk = (text) => {
+      const v = structuredClone(view);
+      v.checks[0].quotes = [{ spanId: "sx", text, url: v.collection.urls[0], snapshotHash: null, injectionFlagged: true }];
+      for (const c of v.checks.slice(1)) c.quotes = [];
+      return buildSteps(v, { ownHost: OWN, reportUrl: REPORT }).find((s) => s.args.includes("eval")).args.at(-1);
+    };
+    const js = mk(hostile);
+    const literal = JSON.stringify(hostile);
+    assert.equal(js.split(literal).length, 2, "the quote appears exactly once, as its JSON literal");
+    // With the literal taken out, the script is the fixed marker, identical for any quote.
+    assert.equal(js.replace(literal, "Q"), mk("benign").replace(JSON.stringify("benign"), "Q"));
+    // Run it against an empty page: nothing executes from the quote, and it reports "missing".
+    const sandbox = { document: { body: {}, createTreeWalker: () => ({ nextNode: () => null }) }, NodeFilter: { SHOW_TEXT: 4 } };
+    sandbox.globalThis = sandbox;
+    assert.equal(vm.runInNewContext(js, sandbox), "prism-mark:missing");
+    assert.equal(sandbox.pwned, undefined);
+  });
+
+  test("not found: the runner's missing result prints a note and the replay continues", async () => {
+    const steps = buildSteps(view, { ownHost: OWN, reportUrl: REPORT });
+    const calls = [];
+    const logged = [];
+    const runner = (cmd, args) => {
+      calls.push(args);
+      return { status: 0, stdout: args.includes("eval") ? '"prism-mark:missing"\n' : "" };
+    };
+    assert.equal(await run(steps, { runner, pauseMs: 0, log: (l) => logged.push(l) }), 0);
+    assert.equal(calls.length, steps.length);
+    const evalSteps = steps.flatMap((s, i) => (s.args.includes("eval") ? [i + 1] : []));
+    assert.deepEqual(logged.filter((l) => l.startsWith("REPLAY note=")), evalSteps.map((n) => `REPLAY note=quote-not-found step=${n}`));
+
+    const found = [];
+    await run(steps, { runner: (c, a) => ({ status: 0, stdout: a.includes("eval") ? "prism-mark:found" : "" }), pauseMs: 0, log: (l) => found.push(l) });
+    assert.equal(found.filter((l) => l.startsWith("REPLAY note=")).length, 0);
   });
 
   test("refusal: no --own-host, or a page outside it, is not an own project and runs nothing", async () => {
