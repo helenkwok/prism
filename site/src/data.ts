@@ -51,6 +51,7 @@ export interface Release {
   validation?: {
     screeningAudit: { errors: number; audited: number; pct: number; ci: [number, number]; bar: number }
     collectionRecall: { supportedFound: number; supported: number; recall: number; rawFound: number; raw: number; rawRecall: number }
+    visibility?: { row: Row; statementId: string }
   }
   statements: Statement[]
 }
@@ -107,6 +108,7 @@ export function parseRelease(input: unknown): Release | null {
     arr(s.ci, 'validation.screeningAudit.ci').forEach((b, i) => num(b, `validation.screeningAudit.ci[${i}]`))
     const c = obj(v.collectionRecall, 'validation.collectionRecall')
     for (const k of ['supportedFound', 'supported', 'recall', 'rawFound', 'raw', 'rawRecall']) num(c[k], `validation.collectionRecall.${k}`)
+    if (v.visibility !== undefined) checkRow(obj(v.visibility, 'validation.visibility').row, 'validation.visibility.row')
   }
   const m = obj(r.methods, 'methods')
   str(m.ledgerVersion, 'methods.ledgerVersion')

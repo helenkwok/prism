@@ -140,6 +140,11 @@ table.data td.num { text-align: right; white-space: nowrap; }
 
 .findings-list { margin-top: 16px; padding-left: 1.25rem; list-style: disc; }
 .findings-list li + li { margin-top: 8px; }
+ol.findings-list { list-style: decimal; }
+.process-figures > div + div { margin-top: 8px; }
+.process-figures dt { font-weight: 600; }
+.process-figures dt::first-letter { text-transform: uppercase; }
+.process-figures dd { margin: 0; }
 
 .site-footer { max-width: 880px; margin: 64px auto 0; padding: 16px 24px 32px; font-size: 0.8125rem; color: var(--muted-foreground); border-top: 1px solid var(--border); }
 

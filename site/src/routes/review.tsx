@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { release as loaded } from '../data'
 import { Figure, figureNumber, NotReleased } from '../components/figure'
 import { codedStateRows } from '../components/how-we-know'
-import { Abstract } from '../sections'
+import { Abstract, ExploratorySection, Introduction, LimitationsSection, MethodsSection, ValidationSection } from '../sections'
 
 export const Route = createFileRoute('/review')({
   head: () => ({ meta: [{ title: 'PRISM review: what AI launches publicly evidence' }] }),
@@ -23,7 +23,12 @@ function Review() {
       <p className="kicker">PRISM · Release {release.version} · {release.date} · N = {release.n} included launches</p>
       <h1>{H1}</h1>
       <Abstract release={release} />
+      <Introduction release={release} />
+      <MethodsSection release={release} />
       {decisions && <Figure id={`fig-${n}`} number={n} figure={decisions} howWeKnow={codedStateRows(release, decisions.rows)} />}
+      <ValidationSection release={release} />
+      <LimitationsSection release={release} />
+      <ExploratorySection />
     </>
   )
 }
