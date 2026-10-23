@@ -41,5 +41,20 @@ export default async function findings({ page, origin, assert }) {
     checked.push('/findings/claims legend and direct labels')
   }
 
+  // Overview: three hypothesis tiles sharing one How-we-know panel, and the dated, versioned PDF link.
+  await page.goto(origin + '/')
+  if ((await page.locator('[data-hypotheses]').count()) > 0) {
+    const tiles = page.locator('[data-hypotheses] [data-stat-tile]')
+    assert.deepEqual(await tiles.evaluateAll(ts => ts.map(t => t.dataset.statTile)), ['H1', 'H2', 'H3'], 'three stat tiles')
+    assert.equal(await page.locator('[data-hypotheses] aside.how-we-know').count(), 1, 'one shared How we know panel')
+    assert.equal(await page.locator('[data-stat-tile] aside').count(), 0, 'no panel inside a tile')
+    const footer = await page.locator('footer').textContent()
+    const [, version, date] = /Release (\S+) · (\d{4}-\d{2}-\d{2})/.exec(footer) ?? []
+    const pdf = page.locator('a[data-pdf-link]')
+    assert.equal((await pdf.textContent()).trim(), 'Download the review (PDF)', 'PDF link text')
+    assert.equal(await pdf.getAttribute('href'), `prism-review-${version}-${date}.pdf`, 'PDF link names the release version and date')
+    checked.push('/ three stat tiles, one shared How we know panel, PDF link')
+  }
+
   return checked
 }

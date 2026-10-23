@@ -31,13 +31,10 @@ export function figureKeys(r: Release) {
 /** The figure's number, from 1, in the order above. */
 export const figureNumber = (r: Release, key: string) => figureKeys(r).indexOf(key) + 1
 
-/** A statement's text with each `check-id` (or `decision-id`) shown as its short title, marked so the lint can skip it. */
+/** A statement's text with each `check-id` shown as its codebook short title, marked so the lint can skip it. */
 export function StatementText({ text }: { text: string }) {
   // The title sits mid-sentence, so its own closing full stop is dropped.
-  const titles = new Map([
-    ...(release?.figures.decisions?.rows.map(r => [r.id.split('|')[1]!, r.label] as const) ?? []),
-    ...(release?.methods.codebook.map(e => [e.checkId, e.shortTitle.replace(/\.$/, '')] as const) ?? []),
-  ])
+  const titles = new Map(release?.methods.codebook.map(e => [e.checkId, e.shortTitle.replace(/\.$/, '')]))
   return <>{text.split(/(`[^`]+`)/).map((part, i) => {
     const id = /^`([^`]+)`$/.exec(part)?.[1]
     return id ? <span key={i} data-check-id={id}>{titles.get(id) ?? id}</span> : part
