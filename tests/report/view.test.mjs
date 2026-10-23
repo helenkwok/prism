@@ -12,7 +12,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { ensureReportViewSchema, listReportViews, readReportView, upsertReportView } from "../../src/report/store.ts";
-import { buildReportView, CROSSWALK_ORDER, gapTextDigest, loadGapText, sourceFromFixture } from "../../src/report/view.ts";
+import { buildReportView, CROSSWALK_ORDER, gapTextDigest, loadGapText, productName, sourceFromFixture } from "../../src/report/view.ts";
 import { codebook, corpus, corpusPath, gatesPath, jsRunGate, order, root } from "./js-gate.mjs";
 
 const DECISIONS = ["explore", "rely", "operate", "measure-outcome", "scale-renew-stop"];
@@ -190,5 +190,58 @@ describe("ReportView builder (APP-04)", () => {
     for (const e of raw.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) ?? []) assert.ok(e.endsWith(".example"), e);
     const shared = corpus.projects.filter((p) => Object.values(p.spans).some((s) => s.text.includes("We do not use your data to train our models")));
     assert.deepEqual(shared.map((p) => p.projectId), ["P02", "P05", "P07"]);
+  });
+});
+
+// Task 3: Helen's 07-03 answers (07-03-DECISIONS.md): "option-b, P2, hidden, launch title".
+describe("Helen's report-content answers (07-03 Task 3)", () => {
+  const gapFile = path.join(root, "protocol", "gap-text.json");
+  const BANNED = /lack|missing|fail|non-compliant|blocked|compliant|certified|score|\bfirst\b|\bonly\b/i;
+  const STANDARD_TEXT = /\b(ISO|IEC|NIST|RMF|AI Act|OECD|GAICC|Annex|clause|shall)\b/i;
+
+  test("option-b: protocol/gap-text.json drafts exactly the 24 gate checks in evidence language, approval null", () => {
+    const g = JSON.parse(fs.readFileSync(gapFile, "utf8"));
+    assert.deepEqual(Object.keys(g.entries), order);
+    assert.equal(g.approval, null);
+    assert.match(g.digestNote, /actorId, actorKind, decidedAt, digest/);
+    for (const [id, text] of Object.entries(g.entries)) {
+      assert.equal(typeof text, "string", id);
+      assert.ok(text.length > 40, id);
+      assert.ok((text.match(/[.!?](\s|$)/g) ?? []).length <= 2, `${id}: one or two sentences`);
+      assert.doesNotMatch(text, BANNED, id);
+      assert.doesNotMatch(text, STANDARD_TEXT, id);
+      assert.notEqual(text, codebook.checks[id].passRule, id);
+    }
+  });
+
+  test("option-b: gapSource stays passRule while approval is null, and becomes gap-text with a matching approval digest on a temp copy", async () => {
+    const live = loadGapText({ repoRoot: root, codebook });
+    for (const id of order) assert.deepEqual(live(id), { text: codebook.checks[id].passRule, source: "passRule" });
+    const v = await buildReportView(source("P01"), { codebook, gatesPath, runGate: jsRunGate, gapText: live });
+    assert.deepEqual([...new Set(v.checks.map((c) => c.gapSource).filter(Boolean))], ["passRule"]);
+
+    const g = JSON.parse(fs.readFileSync(gapFile, "utf8"));
+    g.approval = { actorId: "test-signoff", actorKind: "person", decidedAt: "2026-10-23T00:00:00Z", digest: gapTextDigest(g.entries) };
+    const dir = path.join(scratch, "approved");
+    fs.mkdirSync(path.join(dir, "protocol"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "protocol", "gap-text.json"), JSON.stringify(g));
+    const approved = loadGapText({ repoRoot: dir, codebook });
+    const va = await buildReportView(source("P01"), { codebook, gatesPath, runGate: jsRunGate, gapText: approved });
+    for (const c of va.checks) {
+      if (c.published === "pass") assert.equal(c.gapText, null);
+      else assert.deepEqual([c.gapText, c.gapSource], [g.entries[c.checkId], "gap-text"], c.checkId);
+    }
+  });
+
+  test("launch title: the report title is the product name from the launch post title", async () => {
+    assert.equal(productName("Show HN: Notewell – meeting notes you can check"), "Notewell");
+    assert.equal(productName("Show HN: Mapleaf - plan routes"), "Mapleaf");
+    assert.equal(productName("Show HN: Quillo: draft replies"), "Quillo");
+    assert.equal(productName("Show HN: Bare Name"), "Bare Name");
+    assert.equal((await build("P07")).title, "Zentrolux");
+    // Q4 chose the launch title, so a company-supplied display_title is not used.
+    const withDisplay = { ...source("P05"), display_title: "Another Name" };
+    const v = await buildReportView(withDisplay, { codebook, gatesPath, runGate: jsRunGate, gapText: passRuleOnly });
+    assert.equal(v.title, "Sortwise");
   });
 });
