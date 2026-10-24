@@ -17,12 +17,16 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
-import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
-import { runPipeline, reportRunAccounting } from "../../src/pipeline/run.ts";
+import { loadGateFile, buildContract, citationSchema } from "../../src/pipeline/coding/contract.ts";
+import { runPipeline, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
+import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
+import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
+import { writeCached, stageCacheKey } from "../../src/pipeline/cache/stage-cache.ts";
+import { ensurePipelineSchema, recordSecondCoding } from "../../src/pipeline/store/results.ts";
 import { A8_ITEMS, a8Section } from "../../src/pipeline/signoff/a8.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
 import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
-import { PINNED_MODEL, SECOND_CODER_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
+import { PINNED_MODEL, SECOND_CODER_MODEL, buildChatBody } from "../../src/pipeline/coding/nebius-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -75,6 +79,121 @@ function fakeGateSpawnImpl(_command, args) {
 }
 
 const gateOverrides = { gateSpawnImpl: fakeGateSpawnImpl, pythonPath: "fake-python", gateScriptPath: "fake-gate.py" };
+
+async function correctionFixture(cacheKind = "approved") {
+  const dataDir = tempDir("prism-correction-data-");
+  const cacheDir = tempDir("prism-correction-cache-");
+  const db = freshDb();
+  await ensurePipelineSchema(db);
+  const project = { n: 1, hn_id: "fixture-correction", title: "Synthetic correction", final_url: "https://fixture.example.test/" };
+  const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+  const text = "# Synthetic project\n\nExplicit evidence for synthetic checks.";
+  const snap = buildSnapshot(project.final_url, "2026-01-01T00:00:00Z", text);
+  const spans = snap.spans.map(s => ({ ...s, id: `p1-${s.id}` }));
+  fs.mkdirSync(path.join(dataDir, "pipeline", "snapshots"), { recursive: true });
+  fs.mkdirSync(path.join(dataDir, "pipeline", "manifests"), { recursive: true });
+  fs.writeFileSync(path.join(dataDir, "pipeline", "snapshots", `${snap.snapshotHash}.json`), JSON.stringify({ ...snap, redactedText: text }));
+  const manifestPath = path.join(dataDir, "pipeline", "manifests", "1.json");
+  const manifest = { projectN: 1, hnId: project.hn_id, snapshots: [{ url: project.final_url, visibility: "fixture" }], snapshotHashesInCollectionOrder: [snap.snapshotHash], retainedMetadata: { untouched: true } };
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  const contract = buildContract(gateFile.checkIds);
+  const codebook = loadCodebook(path.join(root, "codebook.md"));
+  const target = contract.checkIds[0], untouched = contract.checkIds[1];
+  const baseline = contract.checkIds.map(checkId => ({ checkId, proposedState: checkId === untouched ? "pass" : "unknown", spanIds: checkId === untouched ? [spans[0].id] : [] }));
+  const hash = v => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
+  if (cacheKind === "legacy") {
+    const codingRequestHash = hash({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: [buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans)] });
+    writeCached(cacheDir, stageCacheKey(project.hn_id, "code", { spanIds: spans.map(s => s.id), hasSpans: true, codingRequestHash }), { checks: baseline, failedChunks: 0 });
+  } else if (cacheKind !== "missing") {
+    const schema = cacheKind === "repaired" ? citationSchema(contract.jsonSchema, spans.map(s => s.id)) : contract.jsonSchema;
+    const body = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(contract.checkIds, codebook, schema, spans), mode: "json_schema", schema: { name: "gate_checks", schema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+    writeCached(cacheDir, stageCacheKey(project.hn_id, "approved-recode-chunk", { digest: hash(body), provider: "token-factory" }), JSON.stringify({ checks: baseline }));
+  }
+  await recordSecondCoding(db, 1, { modelId: "fixture-second", allUnknown: false, checkStates: baseline.map(c => ({ ...c, filteredState: c.proposedState })) });
+  return { db, dataDir, cacheDir, sliceProjectsPath, manifestPath, manifest, contract, codebook, project, target, untouched, spans };
+}
+
+describe("retained-evidence coding corrections", () => {
+  for (const kind of ["legacy", "approved", "repaired"]) test(`${kind} baseline is reused; selected checks alone change and guided resume buys nothing`, async () => {
+    const f = await correctionFixture(kind);
+    let modelCalls = 0, gatesRun = 0;
+    const failCollection = async () => { throw new Error("collection must never run"); };
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, secondCoderIds: new Set(), onlyChecks: [f.target], guidance: { version: "fixture-v1", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: {
+      ...gateOverrides, gateSpawnImpl: (...args) => { gatesRun++; return fakeGateSpawnImpl(...args); }, ownSiteFetchImpl: failCollection, tavilyFetchImpl: failCollection, githubFetchImpl: failCollection,
+      nebiusFetchImpl: async (_url, init) => {
+        modelCalls++;
+        const body = JSON.parse(init.body);
+        assert.match(body.messages[0].content, /Coding guidance \(fixture-v1\)/);
+        const checks = f.contract.checkIds.map(checkId => ({ checkId, proposedState: checkId === f.target ? "claimed" : "fail", spanIds: [f.spans[0].id] }));
+        return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks }) } }] });
+      } } };
+    try {
+      assert.deepEqual(preflightGuidedCorrections([f.project], f), { projects: 1, chunks: 1 });
+      const secondBefore = await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute();
+      const first = await runPipeline(options);
+      assert.equal(first.ok, true);
+      assert.equal(first.evidenceComputed, 0);
+      assert.equal(modelCalls, 1);
+      const rows = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.equal(rows.find(r => r.check_id === f.target).proposed_state, "claimed");
+      assert.equal(rows.find(r => r.check_id === f.untouched).proposed_state, "pass");
+      assert.equal(rows.filter(r => r.proposed_state === "fail").length, 0);
+      assert.deepEqual(await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute(), secondBefore);
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), { ...f.manifest, codingCorrection: { version: "fixture-v1", checks: [f.target] } });
+      const gatesBefore = gatesRun;
+      const resumed = await runPipeline(options);
+      assert.equal(resumed.ok, true);
+      assert.equal(resumed.codeFromCache, 1);
+      assert.equal(modelCalls, 1);
+      assert.ok(gatesRun > gatesBefore, "claims and gates rerun even with cached coding");
+    } finally { await f.db.destroy(); }
+  });
+
+  test("missing baseline or incompatible snapshot fails before every external call", async () => {
+    for (const invalid of ["missing", "snapshot"]) {
+      const f = await correctionFixture(invalid === "missing" ? "missing" : "approved");
+      if (invalid === "snapshot") fs.writeFileSync(path.join(f.dataDir, "pipeline", "snapshots", `${f.manifest.snapshotHashesInCollectionOrder[0]}.json`), JSON.stringify({ url: "https://fixture.example.test/", redactedText: "Changed fixture" }));
+      let calls = 0;
+      const denied = async () => { calls++; throw new Error("external call forbidden"); };
+      try {
+        await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic." } }, overrides: { nebiusFetchImpl: denied, ownSiteFetchImpl: denied, tavilyFetchImpl: denied, githubFetchImpl: denied } }), /unguided coding cache|integrity mismatch/);
+        assert.equal(calls, 0);
+        assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), f.manifest);
+      } finally { await f.db.destroy(); }
+    }
+  });
+
+  test("invalid guidance and explicit incomplete approval proof fail before HTTP", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, overrides: { nebiusFetchImpl: async () => { calls++; throw new Error("forbidden"); } } };
+    try {
+      await assert.rejects(runPipeline({ ...options, onlyChecks: [f.target] }), /only-checks requires guidance/);
+      await assert.rejects(runPipeline({ ...options, guidance: { version: "fixture", byCheck: { fabricated: "Invalid check" } } }), /invalid coding guidance/);
+      const proofPath = path.join(f.dataDir, "incomplete-proof.json");
+      fs.writeFileSync(proofPath, "{}");
+      await assert.rejects(runPipeline({ ...options, priorApprovalProofPath: proofPath }), /proof|approval|version/i);
+      assert.equal(calls, 0);
+    } finally { await f.db.destroy(); }
+  });
+
+  test("retry-exhausted guided output preserves baseline and is not reused as success", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: "invalid fixture reply" } }] }); } } };
+    try {
+      for (let n = 1; n <= 2; n++) {
+        const result = await runPipeline(options);
+        assert.equal(result.ok, false);
+        assert.equal(result.failed, 1);
+        assert.match(result.outcomes[0].error, /guided coding retry exhausted/);
+        assert.equal(calls, n * 3);
+        assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), f.manifest);
+        assert.equal((await f.db.selectFrom("pipeline_check_states").selectAll().execute()).length, 0);
+      }
+    } finally { await f.db.destroy(); }
+  });
+});
 
 function captureAccounting(accounting) {
   let stdout = "", stderr = "", signal;

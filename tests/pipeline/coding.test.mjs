@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 
 import { buildContract, loadGateFile } from "../../src/pipeline/coding/contract.ts";
 import { allUnknownChecks, codeProjectWithRetry } from "../../src/pipeline/coding/retry.ts";
+import { loadCodebook, checkPromptText } from "../../src/pipeline/coding/codebook-prompt.ts";
+import { buildCodingMessages } from "../../src/pipeline/run.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -17,6 +19,19 @@ const gateFile = loadGateFile(gatesPath);
 const contract = buildContract(gateFile.checkIds);
 
 const SPAN_IDS = ["s001", "s002"];
+
+test("optional guidance changes only the selected checklist text and preserves unguided bytes", () => {
+  const codebook = loadCodebook(path.join(root, "codebook.md"));
+  const spans = [{ id: "s001", text: "Synthetic evidence only." }];
+  const base = buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans);
+  const empty = buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans, { version: "fixture", byCheck: {} });
+  assert.deepEqual(empty, base);
+  const checkId = contract.checkIds[0];
+  const instruction = "Synthetic clarification for the test.";
+  const guided = buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans, { version: "fixture-v1", byCheck: { [checkId]: instruction } });
+  assert.equal(guided[1].content, base[1].content);
+  assert.equal(guided[0].content.replace(`${checkPromptText(codebook, checkId)}\nCoding guidance (fixture-v1): ${instruction}`, checkPromptText(codebook, checkId)), base[0].content);
+});
 
 function validReplyText() {
   const checks = contract.checkIds.map((checkId) => ({ checkId, proposedState: "unknown", spanIds: [] }));
