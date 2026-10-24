@@ -10,7 +10,7 @@ import { Receipt } from "../run/Receipt";
 
 export const day = (iso: string) => iso.slice(0, 10);
 
-const VERDICT: Record<GateStatus, { short: string; full: string; icon: string; marker: string }> = {
+export const VERDICT: Record<GateStatus, { short: string; full: string; icon: string; marker: string }> = {
   PASS: {
     short: "Publicly evidenced",
     full: "Publicly evidenced for this decision.",
@@ -103,28 +103,74 @@ export function ScopeDisclaimer({ collectedAt, masked = false }: { collectedAt: 
   );
 }
 
-export function VerdictRow({ d }: { d: DecisionView }) {
+export const NOTHING_TO_ADD = "Nothing to add for this decision: every required check is publicly evidenced.";
+export const ACTION_HEADING = "What would change it";
+
+/** J1: the gap text of each required check that is not publicly evidenced, in gate order. */
+export function actionItems(d: DecisionView, checks: AnyCheck[]): { checkId: string; label: string; text: string }[] {
+  return d.requiredChecks.flatMap((id) => {
+    const c = checks.find((x) => x.checkId === id);
+    return c && c.published !== "pass" && c.gapText ? [{ checkId: id, label: c.label, text: c.gapText }] : [];
+  });
+}
+
+/**
+ * J1 (judges' review): each decision leads with its verdict and then what would change it;
+ * the checks and quotes behind it follow in a native <details> (closed on screen, printed open).
+ */
+export function VerdictRow({ d, checks, projectRef, howMade }: { d: DecisionView; checks: AnyCheck[]; projectRef: string; howMade: ReportView["howMade"] }) {
   const v = VERDICT[d.status];
+  const actions = actionItems(d, checks);
+  const evidence = checks.filter((c) => c.decision === d.decisionId);
   return (
-    <li data-verdict-row="" data-decision={d.decisionId} data-gate-status={d.status} className="min-h-12 border-b border-border py-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="font-semibold">{d.label}</span>
-        <span className="inline-flex items-center gap-1">
-          <span className={cn(v.icon, "size-4")} aria-hidden="true" />
-          <Badge marker={v.marker} title={v.full}>
-            {v.short}
-          </Badge>
-        </span>
+    <li id={decisionAnchor(d.decisionId)} data-verdict-row="" data-decision={d.decisionId} data-gate-status={d.status} className="min-h-12 border-b border-border py-4">
+      <div data-verdict-head="">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h3 className="font-semibold">{d.label}</h3>
+          <span className="inline-flex items-center gap-1">
+            <span className={cn(v.icon, "size-4")} aria-hidden="true" />
+            <Badge marker={v.marker} title={v.full}>
+              {v.short}
+            </Badge>
+          </span>
+        </div>
+        <p className="mt-1" data-evaluative="">
+          {v.full}
+        </p>
+        <div data-action="" className="mt-3 max-w-[75ch] border-l-4 border-accent-ink pl-4">
+          <p data-evaluative="" className="text-[0.8125rem] font-semibold tracking-[0.04em] uppercase">
+            {ACTION_HEADING}
+          </p>
+          {actions.length === 0 ? (
+            <p data-evaluative="" className="mt-1">
+              {NOTHING_TO_ADD}
+            </p>
+          ) : (
+            <ul className="mt-1 flex flex-col gap-1">
+              {actions.map((a) => (
+                <li key={a.checkId} data-action-item={a.checkId}>
+                  <span className="font-semibold">{`${a.label.replace(/\.$/, "")}:`}</span> <span data-action-gap="">{a.text}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <p className="mt-2 text-[0.8125rem] tabular-nums" data-evaluative="">
+          {tallyLine(d)}
+        </p>
       </div>
-      <p className="mt-1" data-evaluative="">
-        {v.full}
-      </p>
-      <p className="mt-1 text-[0.8125rem] tabular-nums" data-evaluative="">
-        {tallyLine(d)}
-      </p>
-      <p data-print-hide="" className="mt-1 text-[0.8125rem]">
-        <a href={`#${decisionAnchor(d.decisionId)}`}>Show checks</a>
-      </p>
+      {evidence.length ? (
+        <details data-evidence="" className="mt-3">
+          <summary data-print-hide="" className="text-[0.8125rem]">
+            {`Evidence: ${evidence.length} ${evidence.length === 1 ? "check" : "checks"}, with quotes`}
+          </summary>
+          <div data-check-group="" className="mt-4 flex flex-col gap-6">
+            {evidence.map((c) => (
+              <CheckCard key={c.checkId} c={c} projectRef={projectRef} howMade={howMade} />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </li>
   );
 }
@@ -363,40 +409,15 @@ export function ReportBody({ view }: { view: ReportView | DeidentifiedView }) {
         <h2 id="decisions" className="text-[1.25rem] font-semibold">
           Decisions
         </h2>
+        <p className="mt-2 max-w-[75ch] text-[0.8125rem] text-muted-foreground">
+          Each decision shows the verdict, then what would change it. Open the evidence to see the checks and quotes behind it.
+          Chips show how each check maps to a standard: addresses, supports or partial. EU AI Act mappings are informational.
+        </p>
         <ul className="mt-4">
           {view.decisions.map((d) => (
-            <VerdictRow key={d.decisionId} d={d} />
+            <VerdictRow key={d.decisionId} d={d} checks={view.checks} projectRef={view.projectRef} howMade={view.howMade} />
           ))}
         </ul>
-      </section>
-      <section aria-labelledby="checks" className="mt-12">
-        {view.decisions.map((d, i) => {
-          const [first, ...rest] = view.checks.filter((c) => c.decision === d.decisionId);
-          const card = (c: AnyCheck) => <CheckCard key={c.checkId} c={c} projectRef={view.projectRef} howMade={view.howMade} />;
-          return (
-            <div key={d.decisionId} data-check-group="" className={i > 0 ? "mt-8" : undefined}>
-              {/* data-keep: in print a heading stays with its first card (Chromium ignores break-after: avoid here). */}
-              <div data-keep="">
-                {i === 0 ? (
-                  <>
-                    <h2 id="checks" className="text-[1.25rem] font-semibold">
-                      Checks
-                    </h2>
-                    <p className="mt-2 text-[0.8125rem] text-muted-foreground">
-                      Chips show how each check maps to a standard: addresses, supports or partial. EU AI Act mappings are
-                      informational.
-                    </p>
-                  </>
-                ) : null}
-                <h3 id={decisionAnchor(d.decisionId)} className={cn("font-semibold", i === 0 && "mt-8")}>
-                  {d.label}
-                </h3>
-                {first ? <div className="mt-4">{card(first)}</div> : null}
-              </div>
-              {rest.length ? <div className="mt-6 flex flex-col gap-6">{rest.map(card)}</div> : null}
-            </div>
-          );
-        })}
       </section>
       <section aria-labelledby="how-made" className="mt-12">
         <h2 id="how-made" className="text-[1.25rem] font-semibold">

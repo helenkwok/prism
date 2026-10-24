@@ -144,8 +144,7 @@
   }
   [data-check-card],
   [data-quote-card],
-  [data-verdict-row],
-  [data-keep],
+  [data-verdict-head],
   figure,
   table {
     break-inside: avoid;
@@ -153,6 +152,11 @@
   h2,
   h3 {
     break-after: avoid;
+  }
+  /* J1: the evidence under each decision is closed on screen and printed open (Chromium 131+). */
+  details[data-evidence]::details-content {
+    content-visibility: visible;
+    display: block;
   }
 }
 

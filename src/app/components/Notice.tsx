@@ -14,6 +14,8 @@ const VARIANTS: Record<NoticeVariant, { surface: string; icon: string | null; ro
   error: { surface: "bg-card border-destructive text-destructive", icon: "icon-[lucide--circle-alert]", role: "alert" },
 };
 
+/** The visible label on every page that shows synthetic fixture data, never on real projects. */
+export const FIXTURE_LABEL = "Synthetic fixture";
 export const FIXTURE_NOTICE = "Synthetic test data. These records are invented to test the app and are not findings.";
 
 export function Notice({
@@ -44,7 +46,14 @@ export function Notice({
       className={cn("flex items-start gap-2 rounded-lg border p-4 text-base", v.surface, className)}
     >
       {v.icon ? <span className={cn(v.icon, "mt-1 size-4 shrink-0")} aria-hidden="true" /> : null}
-      <div>{children}</div>
+      <div>
+        {variant === "fixture" ? (
+          <strong data-fixture-label="" className="block font-semibold">
+            {FIXTURE_LABEL}
+          </strong>
+        ) : null}
+        {children}
+      </div>
     </div>
   );
 }

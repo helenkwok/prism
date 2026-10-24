@@ -1,5 +1,5 @@
 // APP-03 / D-81: de-identified evidence for judges (plan 07-06), proven on the
-// synthetic corpus and its identifying fixture, Zentrolux (P07). A fixed test
+// synthetic corpus and its identifying fixture, Example Planner (P07). A fixed test
 // key is used; no real pseudonym key is created, read or printed.
 
 import assert from "node:assert/strict";
@@ -61,15 +61,24 @@ function countRows(dbPath, table, where = "1=1") {
   }
 }
 
-describe("identifying fixture: Zentrolux (APP-03 / D-81)", () => {
-  for (const term of ["zentrolux", "zentro", "zentrolux.example", "zentro-labs", "zentrolux-core", "founder.name@", "github.com/zentro"]) {
+// The corpus uses only .example hosts, so the platform-host path (owner/repo
+// from a shared code host) is covered here on a bare view.
+test("a repository on a shared code host adds its owner and repo, not the host", () => {
+  const v = { projectRef: "PX", title: "Example Repo Tool (synthetic)", collection: { urls: ["https://github.com/example-org/example-repo.git"] }, checks: [] };
+  const terms = dictionaryOf(v).terms.map((t) => [t.text, t.placeholder]);
+  assert.deepEqual(terms.filter(([, ph]) => ph === "[repo]").map(([t]) => t).sort(), ["example org", "example-org", "example-repo", "example_org", "example_repo", "exampleorg", "examplerepo", "example repo"].sort());
+  assert.equal(terms.some(([t]) => /github/i.test(t)), false);
+});
+
+describe("identifying fixture: Example Planner (APP-03 / D-81)", () => {
+  for (const term of ["example planner", "example-planner", "example-planner.example", "example-code-host", "example-org", "example-repo", "founder.name@"]) {
     test(`forbidden term "${term}" does not survive in any casing`, () => {
       assert.equal(z().toLowerCase().includes(term), false);
     });
   }
 
   test("no 6-word run of the coined slogan survives", () => {
-    const slogan = "zentrolux turns quarterly vibes into audited lattices".split(" ");
+    const slogan = "example planner (synthetic) turns quarterly vibes into audited lattices".split(" ");
     const flat = quotesOf(deid.P07.view).join(" ").toLowerCase();
     for (let i = 0; i + 6 <= slogan.length; i++) assert.equal(flat.includes(slogan.slice(i, i + 6).join(" ")), false, `run ${i}`);
     for (const w of ["quarterly", "vibes", "lattices"]) assert.equal(flat.includes(w), false, w);
@@ -158,7 +167,7 @@ describe("materialize-views --deidentify", () => {
     assert.equal(lines.length, 10);
     for (const l of lines) {
       assert.match(l, /^DEID project=[0-9ABCDEFGHJKMNPQRSTVWXYZ]{5} masked_terms=\d+ df_masked=\d+ ngram_breaks=\d+$/);
-      assert.equal(/zentrolux/i.test(l) || l.includes(".example"), false, l);
+      assert.equal(/example planner/i.test(l) || l.includes(".example"), false, l);
       for (const p of corpus.projects) assert.equal(l.toLowerCase().includes(productTitle(p.title).toLowerCase()), false, l);
     }
     assert.equal(res.stdout.includes(TEST_KEY) || res.stderr.includes(TEST_KEY), false, "the key is never printed");
@@ -204,11 +213,11 @@ describe("identifier scan (APP-03)", () => {
 
   test("a planted leftover of the project's own name is found, reported by pseudonym and term index only", async () => {
     const e = entries();
-    firstQuote(e.find((x) => x.dictionary.projectRef === "P07").view).text += " Zentrolux";
+    firstQuote(e.find((x) => x.dictionary.projectRef === "P07").view).text += " Example Planner (synthetic)";
     const hits = await scan(e);
     const ps = pseudonymOf(TEST_KEY, "P07");
     assert.ok(hits.some((h) => h.pseudonym === ps && h.termOf === ps && Number.isInteger(h.termIndex)), JSON.stringify(hits));
-    assert.equal(/zentrolux/i.test(JSON.stringify(hits)), false, "hits never carry the term text");
+    assert.equal(/example planner/i.test(JSON.stringify(hits)), false, "hits never carry the term text");
   });
 
   test("another project's domain planted into P01's quote is caught by the cross-project part", async () => {
@@ -282,7 +291,7 @@ describe("shared-text exemption (T-07-66)", () => {
   // "Catalogued" is codebook text (check id assumptions-catalogued, codebook.md) that every
   // view carries and no quote uses: a product named with it must not block the export.
   const WORD = "Catalogued";
-  const P07_TERM = "Zentrolux";
+  const P07_TERM = "Example Planner (synthetic)";
   const mod = () => import("../../src/report/deidentify.ts");
   const entries = (titleFor = {}) =>
     views.map((v) => ({ view: structuredClone(deid[v.projectRef].view), dictionary: dictionaryOf(titleFor[v.projectRef] ? { ...v, title: titleFor[v.projectRef] } : v) }));
@@ -313,7 +322,8 @@ describe("shared-text exemption (T-07-66)", () => {
     for (const x of two) plant(x.view, `${P07_TERM} shipped the same release note`);
     const hits = scanDeidentified(two, publicSharedText());
     const ps = pseudonymOf(TEST_KEY, "P07");
-    assert.equal(hits.filter((h) => h.termOf === ps).length, 2, JSON.stringify(hits));
+    // Both views hit the P07 dictionary (the product name and its host label both match).
+    assert.equal(new Set(hits.filter((h) => h.termOf === ps).map((h) => h.pseudonym)).size, 2, JSON.stringify(hits));
   });
 
   test("a string in every view but one is still scanned; in every view and the public text it is exempt", async () => {

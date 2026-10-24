@@ -11,7 +11,7 @@ import type { Page } from "@playwright/test";
 import { dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
 import type { DeidentifiedView, Dictionary } from "../src/report/deidentify.ts";
 import type { ReportView } from "../src/report/view.ts";
-import { stateFor } from "./helpers.ts";
+import { openEvidence, stateFor } from "./helpers.ts";
 
 const DEID_FIGCAPTION = "Source page and snapshot withheld in de-identified records.";
 
@@ -124,7 +124,7 @@ test.describe("judge", () => {
     expect((await html(page, "/j/not-a-pseudonym")).status).toBe(403);
   });
 
-  test("every de-identified page passes the identifier scan over its rendered HTML (Zentrolux included)", async ({ page }) => {
+  test("every de-identified page passes the identifier scan over its rendered HTML (Example Planner included)", async ({ page }) => {
     const { pseudonymOf, titles, hnIds } = harness();
     expect(pseudonymOf.size).toBe(10);
     for (const id of pseudonymOf.keys()) expect(harness().dictionaries.get(id)?.terms.length, id).toBeGreaterThan(0);
@@ -140,13 +140,14 @@ test.describe("judge", () => {
     const hits = scanHtml(pages);
     // Hits name pseudonyms and term indexes only, never the term.
     expect(hits).toEqual([]);
-    const zentrolux = pages.find((pg) => pg.pseudonym === pseud("P07"))!.html;
-    expect(zentrolux.toLowerCase()).not.toContain("zentro");
+    const planner = pages.find((pg) => pg.pseudonym === pseud("P07"))!.html;
+    expect(planner.toLowerCase()).not.toContain("example planner");
   });
 
   test("the masked render: no URL, host, snapshot or live link; withheld captions; quotes of at most 40 words; visible redactions", async ({ page }) => {
     const res = await page.goto(`/j/${pseud("P07")}`);
     expect(res?.status()).toBe(200);
+    await openEvidence(page);
     const main = page.locator("main");
     await expect(main.locator("[data-quote-url]")).toHaveCount(0);
     await expect(main.locator('a[href*="/snapshot/"], a[target="_blank"], a[href^="http"]')).toHaveCount(0);
@@ -157,7 +158,7 @@ test.describe("judge", () => {
     for (const q of await main.locator("[data-quote-card] blockquote").allTextContents()) {
       expect(q.trim().split(/\s+/).length).toBeLessThanOrEqual(40);
     }
-    // Zentrolux's quotes are masked: every placeholder sits in a visible redaction span.
+    // Example Planner's quotes are masked: every placeholder sits in a visible redaction span.
     const redactions = main.locator("[data-quote-card] blockquote .redaction");
     expect(await redactions.count()).toBeGreaterThan(0);
     await expect(redactions.filter({ hasText: "[product]" }).first()).toBeVisible();
@@ -171,7 +172,7 @@ test.describe("judge", () => {
 test.describe("admin", () => {
   test.use({ storageState: ({}, use) => stateFor("admin").then(use) });
 
-  test("the HTML scan is not vacuous: it finds Zentrolux's identifiers in the identifiable page", async ({ page }) => {
+  test("the HTML scan is not vacuous: it finds Example Planner's identifiers in the identifiable page", async ({ page }) => {
     const r = await html(page, "/p/P07");
     expect(r.status).toBe(200);
     const hits = scanHtml([{ pseudonym: pseud("P07"), html: r.body }]);

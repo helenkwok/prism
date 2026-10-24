@@ -175,7 +175,7 @@ describe("ReportView builder (APP-04)", () => {
     assert.match(res.stdout, /^REPORT rows=10$/m);
   });
 
-  test("synthetic corpus: every host is .example or the invented github.com/zentro-labs", () => {
+  test("synthetic corpus: every host is .example", () => {
     const raw = fs.readFileSync(corpusPath, "utf8");
     assert.equal(corpus.synthetic, true);
     assert.equal(corpus.projects.length, 10);
@@ -183,7 +183,7 @@ describe("ReportView builder (APP-04)", () => {
     assert.ok(urls.length > 10);
     for (const u of urls) {
       const host = new URL(u).hostname;
-      assert.ok(host.endsWith(".example") || u.startsWith("https://github.com/zentro-labs/"), u);
+      assert.ok(host.endsWith(".example"), u);
     }
     const hosts = [...(raw.match(/\b[\w.-]+\.[a-z]{2,}\b/gi) ?? [])].filter((h) => /\.(com|ai|io|net|org|dev|co)$/i.test(h));
     assert.deepEqual([...new Set(hosts)].filter((h) => h !== "github.com"), []);
@@ -234,14 +234,14 @@ describe("Helen's report-content answers (07-03 Task 3)", () => {
   });
 
   test("launch title: the report title is the product name from the launch post title", async () => {
-    assert.equal(productName("Show HN: Notewell – meeting notes you can check"), "Notewell");
-    assert.equal(productName("Show HN: Mapleaf - plan routes"), "Mapleaf");
-    assert.equal(productName("Show HN: Quillo: draft replies"), "Quillo");
+    assert.equal(productName("Show HN: Example Notes (synthetic) – meeting notes you can check"), "Example Notes (synthetic)");
+    assert.equal(productName("Show HN: Example Routes (synthetic) - plan routes"), "Example Routes (synthetic)");
+    assert.equal(productName("Show HN: Example Replies (synthetic): draft replies"), "Example Replies (synthetic)");
     assert.equal(productName("Show HN: Bare Name"), "Bare Name");
-    assert.equal((await build("P07")).title, "Zentrolux");
+    assert.equal((await build("P07")).title, "Example Planner (synthetic)");
     // Q4 chose the launch title, so a company-supplied display_title is not used.
     const withDisplay = { ...source("P05"), display_title: "Another Name" };
     const v = await buildReportView(withDisplay, { codebook, gatesPath, runGate: jsRunGate, gapText: passRuleOnly });
-    assert.equal(v.title, "Sortwise");
+    assert.equal(v.title, "Example Sorter (synthetic)");
   });
 });

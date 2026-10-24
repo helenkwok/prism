@@ -87,3 +87,7 @@ export async function signInByApi(request: APIRequestContext, role: Role, baseUR
   expect(res.status()).toBe(200);
   return res;
 }
+
+/** J1: the evidence under each decision is a closed <details>; open them all, as a reader would. */
+export const openEvidence = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => document.querySelectorAll("details[data-evidence]").forEach((d) => ((d as HTMLDetailsElement).open = true)));

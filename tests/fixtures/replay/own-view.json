@@ -2,7 +2,7 @@
   "version": 1,
   "view": "identifiable",
   "projectRef": "OWN01",
-  "title": "Ownpage",
+  "title": "Example Own Page (synthetic)",
   "fixture": true,
   "generatedAt": "2026-10-23T00:00:00Z",
   "codebookVersion": "v1.0",
@@ -127,7 +127,7 @@
           "spanId": "s001",
           "text": "The full source and a step-by-step setup guide are in our public repository, and the demo needs no sign-up.",
           "url": "https://helen-own.example/",
-          "snapshotHash": "115d2ed4ab3c4147bbac007dc18a4826dd6cbb4d01c2def2a63cfaeeb492e525",
+          "snapshotHash": "0da0c580b3c21b236de8d3c9376d9f291d0b749f5d0d40ee9cb53eebc7a8f73e",
           "injectionFlagged": false
         }
       ],
@@ -186,7 +186,7 @@
           "spanId": "s002",
           "text": "The docs list the inputs the tool assumes, including that uploaded files are plain English text.",
           "url": "https://docs.helen-own.example/",
-          "snapshotHash": "59134ac9c98643498f3015df4577c37fd10cb28c8f2d290e1f906c488e2a39ee",
+          "snapshotHash": "cd248e0f5a55f9161c58176cce6952e8beea9cd7fd069229e8e769ff2648b7bc",
           "injectionFlagged": false
         }
       ],

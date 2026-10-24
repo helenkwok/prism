@@ -2,6 +2,7 @@
 // listProjects (the server filters; this page only renders what it is sent).
 import type { ReactNode } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Explainer } from "../components/Explainer";
 import { FIXTURE_NOTICE, Notice } from "../components/Notice";
 import { listProjects } from "../server/list-fns.ts";
 import type { DeidentifiedRow, IdentifiableRow, ProjectList } from "../server/list-fns.ts";
@@ -148,7 +149,10 @@ function Home() {
   return (
     <>
       {list.fixture ? <Notice variant="fixture" className="mb-8">{FIXTURE_NOTICE}</Notice> : null}
-      <h1 className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.01em]">Your projects</h1>
+      <Explainer canRun={list.role === "admin"} />
+      <h1 id="projects-heading" tabIndex={-1} className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.01em]">
+        Your projects
+      </h1>
       {empty ? (
         <Empty role={list.role} />
       ) : list.role === "judge" && deid ? (

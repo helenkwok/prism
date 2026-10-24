@@ -10,6 +10,7 @@
 // [NAME] until real values exist. Output belongs outside the repository.
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { chromium } from "@playwright/test";
 
@@ -20,7 +21,12 @@ const FONT = `-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-s
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const screenText = (s) => s.replace(/\{\{([A-Z0-9_]+)\}\}/g, "[$1]");
 
-function cardHtml(beat) {
+/** Beats whose frames show synthetic fixture data carry this label on every frame. */
+export const FIXTURE_CAPTION = "Synthetic fixture";
+const badge = (beat) => (beat.fixtureData ? `<div class="fixture">${FIXTURE_CAPTION}</div>` : "");
+const BADGE_CSS = `.fixture{position:absolute;top:40px;left:40px;padding:14px 28px;border:4px solid #ffd166;background:rgba(8,10,14,.9);color:#ffd166;font-size:40px;font-weight:700;border-radius:12px}`;
+
+export function cardHtml(beat) {
   const body =
     beat.method === "card"
       ? `<h1>${esc(screenText(beat.onScreen))}</h1>`
@@ -37,15 +43,17 @@ function cardHtml(beat) {
     .shot{font-size:34px;margin:0;color:#d6dbe3;max-width:1500px;line-height:1.35}
     .meta{font-size:28px;margin:0;color:#9aa4b2}
     .pending{font-size:28px;margin:0;color:#ffd166;max-width:1500px;line-height:1.35}
-  </style></head><body><main>${body}</main></body></html>`;
+    ${BADGE_CSS}
+  </style></head><body>${badge(beat)}<main>${body}</main></body></html>`;
 }
 
-function captionHtml(beat) {
+export function captionHtml(beat) {
   return `<!doctype html><html><head><style>
     html,body{margin:0;width:${W}px;height:${H}px;background:transparent;font-family:${FONT}}
     .strip{position:absolute;left:0;right:0;bottom:0;height:150px;display:flex;align-items:center;justify-content:center;
       background:rgba(8,10,14,.82);color:#fff;font-size:42px;font-weight:600;padding:0 80px;box-sizing:border-box;text-align:center}
-  </style></head><body><div class="strip">${esc(screenText(beat.onScreen))}</div></body></html>`;
+    ${BADGE_CSS}
+  </style></head><body>${badge(beat)}<div class="strip">${esc(screenText(beat.onScreen))}</div></body></html>`;
 }
 
 async function renderCards(scriptPath, outDir) {
@@ -71,9 +79,11 @@ async function renderCards(scriptPath, outDir) {
   }
 }
 
-const { values } = parseArgs({ options: { cards: { type: "string" }, out: { type: "string" } } });
-if (!values.cards || !values.out) {
-  console.error("usage: capture.mjs --cards <script.json> --out <dir>");
-  process.exit(2);
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { values } = parseArgs({ options: { cards: { type: "string" }, out: { type: "string" } } });
+  if (!values.cards || !values.out) {
+    console.error("usage: capture.mjs --cards <script.json> --out <dir>");
+    process.exit(2);
+  }
+  await renderCards(values.cards, values.out);
 }
-await renderCards(values.cards, values.out);
