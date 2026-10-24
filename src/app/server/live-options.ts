@@ -21,6 +21,8 @@ export type CollectorId = keyof typeof COLLECTORS;
 
 export type KeySource = "server" | "user";
 export const PAID_BY: Record<KeySource, string> = { server: "PRISM's key", user: "your key" };
+/** The same, in the stored report, which judges and companies read: the runner's key is not theirs. */
+export const REPORT_PAID_BY: Record<KeySource, string> = { server: "PRISM's key", user: "the runner's own key" };
 
 export const KEY_NOTE = "Used for this run only and never stored.";
 

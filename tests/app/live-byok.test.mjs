@@ -218,7 +218,10 @@ test("OpenRouter is reachable only with a user key, by id; it uses the mapped mo
   assert.ok(s.receipt.ultraEstimateUsd > 0);
   const view = await readReportView(db, "OWN1", "identifiable");
   assert.equal(view.howMade.run.provider, "OpenRouter");
-  assert.equal(view.howMade.run.paidBy, "your key");
+  // Judges and companies read the stored report: the runner's key, not "your key"; the job page keeps "your key".
+  assert.equal(view.howMade.run.paidBy, "the runner's own key");
+  for (const l of view.howMade.run.receipt.lines) assert.equal(l.paidBy, "the runner's own key");
+  assert.ok(!JSON.stringify(view).includes("your key"));
   assert.ok(view.howMade.run.receipt.lines.length >= 3);
   assert.ok(!JSON.stringify(view).includes(USER_KEY));
   assert.ok(ultraOr);

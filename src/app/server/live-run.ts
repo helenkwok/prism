@@ -31,6 +31,7 @@ import {
   MODEL_NAME,
   MODEL_PROVIDERS,
   PAID_BY,
+  REPORT_PAID_BY,
   PROVIDER_NAME,
   STAGE_MODEL,
   type CollectorId,
@@ -349,7 +350,8 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
       concurrency: 1,
     });
     const host = model.host;
-    const runLine = { collector: COLLECTORS[opts.collector], paidBy: PAID_BY[opts.keySource], provider: host };
+    // The report is read by judges and companies, so it names the runner's key, never "your key".
+    const runLine = { collector: COLLECTORS[opts.collector], paidBy: REPORT_PAID_BY[opts.keySource], provider: host };
 
     await emit("screen", "running");
     const screen = await screenCandidate(client, 1, { title, url: job.url }, { thinking: STAGE1_THINKING });
@@ -423,7 +425,7 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
             coding: { role: "coder", modelId: PINNED_MODEL, host },
             confirmation: { role: "confirmer", modelId: conf.CONFIRMER_MODEL, host },
             humanEdits: "none",
-            run: { ...runLine, receipt: await readRunReceipt(db, job.id) },
+            run: { ...runLine, receipt: await readRunReceipt(db, job.id, REPORT_PAID_BY) },
           },
         });
         const view = await buildReportView(source, { codebook, gatesPath, runGate: gate as any, gapText });
@@ -952,12 +954,12 @@ export async function queuePosition(db: Kysely<any>, jobId: number): Promise<num
 }
 
 /** J2: the receipt from the usage rows, by stage in run order, with a total and the all-Ultra estimate. */
-export async function readRunReceipt(db: Kysely<any>, jobId: number): Promise<RunReceipt> {
+export async function readRunReceipt(db: Kysely<any>, jobId: number, paidBy: Record<KeySource, string> = PAID_BY): Promise<RunReceipt> {
   const rows = await db.selectFrom("app_job_usage").selectAll().where("job_id", "=", jobId).execute();
   const by = new Map<string, ReceiptLine>();
   for (const r of rows as any[]) {
     const k = `${r.stage}|${r.model}|${r.provider}|${r.key_source}`;
-    const l = by.get(k) ?? { stage: r.stage, model: MODEL_NAME[r.model] ?? r.model, provider: r.provider, paidBy: PAID_BY[r.key_source as KeySource] ?? r.key_source, calls: 0, tokensIn: 0, tokensOut: 0, usd: 0 };
+    const l = by.get(k) ?? { stage: r.stage, model: MODEL_NAME[r.model] ?? r.model, provider: r.provider, paidBy: paidBy[r.key_source as KeySource] ?? r.key_source, calls: 0, tokensIn: 0, tokensOut: 0, usd: 0 };
     l.calls += 1;
     l.tokensIn += Number(r.tokens_in);
     l.tokensOut += Number(r.tokens_out);
