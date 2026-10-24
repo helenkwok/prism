@@ -60,12 +60,20 @@ export function validateSecondCoderEnvelopeReport(report: any): boolean {
 
 export function assertFullConfirmationProjection(report: any, ledgerSpent: unknown): void {
   const amount = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+  const bounded = report?.reservationUsage;
+  if (bounded && (bounded.source !== "request-reservation-upper-bound" ||
+      ![bounded.requests, bounded.inputTokens, bounded.outputTokens].every(value => Number.isSafeInteger(value) && value >= 0) ||
+      bounded.outputTokens !== bounded.requests * 8192 || (bounded.requests === 0 && bounded.inputTokens !== 0) || (bounded.requests > 0 && bounded.inputTokens < 1) ||
+      !amount(bounded.spentUsd) || Math.abs(bounded.spentUsd - measuredCostUsd("nemotron-3-ultra:cloud", bounded.inputTokens, bounded.outputTokens, null)) > 1e-9)) throw new Error("invalid confirmation reservation bounds");
+  const spent = report?.completedUsage?.spentUsd + (bounded?.spentUsd ?? 0) + (report?.unattributedSpentUsd ?? 0);
   if (!report || report.version !== 1 || report.stage !== "full-confirm" || report.provider !== "ollama" || report.model !== "nemotron-3-ultra:cloud" || report.thinking !== true || report.cap !== APPROVED_CAPS["full-confirm"] ||
       ![report.total, report.completed, report.remaining].every(value => Number.isSafeInteger(value) && value >= 0) || report.total <= 0 || report.completed + report.remaining !== report.total ||
       !/^[a-f0-9]{64}$/.test(report.fullInputDigest) || !/^[a-f0-9]{64}$/.test(report.fullRequestDigest) || !Array.isArray(report.remainingPrompts) || report.remainingPrompts.length !== report.remaining ||
-      !amount(ledgerSpent) || !amount(report.completedUsage?.spentUsd) || Math.abs(report.completedUsage.spentUsd - Number(ledgerSpent)) > 1e-9 ||
+      !amount(ledgerSpent) || !amount(report.completedUsage?.spentUsd) || !amount(spent) || Math.abs(spent - Number(ledgerSpent)) > 1e-9 ||
+      !amount(report.unattributedSpentUsd ?? 0) || (report.unboundedCompletedDecisions ?? report.unmeasuredCompletedDecisions ?? 0) !== 0 ||
+      (report.unboundedUsageRequests !== undefined && report.unboundedUsageRequests !== 0) ||
       ![report.projectedTotalUsd, report.projectedRemainingInputUsd, report.projectedRemainingOutputUsd].every(amount) ||
-      Math.abs(report.projectedTotalUsd - (report.completedUsage.spentUsd + report.projectedRemainingInputUsd + report.projectedRemainingOutputUsd)) > 1e-6) throw new Error("full confirmation requires a current consistent cost projection");
+      Math.abs(report.projectedTotalUsd - (spent + report.projectedRemainingInputUsd + report.projectedRemainingOutputUsd)) > 1e-6) throw new Error("full confirmation requires a current consistent cost projection");
   if (report.withinCap !== true || report.projectedTotalUsd > APPROVED_CAPS["full-confirm"]) {
     const error = new Error("projected full confirmation cost exceeds the approved run cap");
     error.name = "ProjectedBudgetExceededError"; throw error;
@@ -200,7 +208,7 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
           projectedRemainingIncludedCreditUsd: report.projectedTotalUsd === null ? null : fullFunding.includedBalanceUsd - (report.projectedTotalUsd - fullFunding.runSpentAtBalanceUsd) };
         fs.writeFileSync(next, JSON.stringify(fundedReport, null, 2) + "\n", { mode: 0o600 });
         fs.renameSync(next, file);
-        log(`COST_PROJECTION: ${JSON.stringify({ stage, completed: report.completed, remaining: report.remaining, estimated: report.projectedTotalUsd, cap: report.cap, withinCap: report.withinCap, spent: report.completedUsage.spentUsd + report.unattributedSpentUsd, includedCreditLeftEstimate: fullFunding.includedBalanceUsd - (report.completedUsage.spentUsd + report.unattributedSpentUsd - fullFunding.runSpentAtBalanceUsd), reason: report.checkpointReason })}`);
+        log(`COST_PROJECTION: ${JSON.stringify({ stage, completed: report.completed, remaining: report.remaining, estimated: report.projectedTotalUsd, cap: report.cap, withinCap: report.withinCap, spent: report.effectiveSpentUsd, includedCreditLeftEstimate: fullFunding.includedBalanceUsd - (report.effectiveSpentUsd - fullFunding.runSpentAtBalanceUsd), reason: report.checkpointReason })}`);
       } }) : undefined;
       const accounting = stage === "full-confirm"
         ? await runApprovedConfirmation({ db, dataDir, client, codebook: loadCodebook(), model: role.model, reasoning: fullSetting!, entries: selected, goldOrder: sortPilotCandidates(entries.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), log, projectionTracker })

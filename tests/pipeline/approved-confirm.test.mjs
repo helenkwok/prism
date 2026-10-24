@@ -260,3 +260,16 @@ test("a below-cap rolling projection continues and finalizes all valid outcomes"
   assert.equal(reports.length, 2); assert.equal(reports[0].checkpointReason, "twenty-completed"); assert.equal(reports[1].checkpointReason, "final");
   await f.db.destroy();
 });
+
+test("rolling attribution includes internal HTTP attempts without duplicating the final usage", async () => {
+  const f = await fixture(); const tracker = projection(f); let calls = 0;
+  const c = client(async () => {
+    calls++; const response = measuredReply(100, 10);
+    response.json.usage_attempts = [{ prompt_tokens: 80, completion_tokens: 20 }, response.json.usage];
+    return response;
+  });
+  const out = await runApprovedConfirmation({ ...f, projectionTracker: tracker, client: c });
+  assert.equal(out.ok, true); assert.equal(calls, 30);
+  assert.equal(tracker.snapshot().completedUsage.requests, 60); assert.equal(tracker.snapshot().completedUsage.inputTokens, 5400); assert.equal(tracker.snapshot().completedUsage.outputTokens, 900);
+  await f.db.destroy();
+});

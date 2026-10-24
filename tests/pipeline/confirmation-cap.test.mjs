@@ -75,6 +75,11 @@ test("forecast checks amounts and ledger baseline independently of the within-ca
   const feasible = { ...report, projectedRemainingOutputUsd: 6.394495, projectedTotalUsd: 7.094495, withinCap: true };
   assert.doesNotThrow(() => assertFullConfirmationProjection(feasible, 0.3));
   for (const patch of [{ projectedTotalUsd: Infinity }, { remaining: 8 }, { thinking: false }, { cap: 6 }]) assert.throws(() => assertFullConfirmationProjection({ ...feasible, ...patch }, 0.3));
+  const bounded = { ...feasible, reservationUsage: { requests: 1, inputTokens: 100, outputTokens: 8192, spentUsd: .024586, source: "request-reservation-upper-bound" }, projectedTotalUsd: feasible.projectedTotalUsd + .024586 };
+  assert.doesNotThrow(() => assertFullConfirmationProjection(bounded, .324586));
+  assert.throws(() => assertFullConfirmationProjection({ ...bounded, unmeasuredCompletedDecisions: 1 }, .324586), /current consistent/);
+  assert.throws(() => assertFullConfirmationProjection({ ...bounded, reservationUsage: { ...bounded.reservationUsage, inputTokens: 1 } }, .324586), /reservation bounds/);
+  assert.throws(() => assertFullConfirmationProjection(bounded, .3), /current consistent/);
 });
 
 test("an over-cap forecast refuses the wrapper before HTTP, budget mutation or source preflight", async () => {

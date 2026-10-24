@@ -162,6 +162,7 @@ export function ollamaClient({
       },
     };
     await acquire();
+    const usageAttempts: Record<string, unknown>[] = [];
     try {
       for (let attempt = 1; ; attempt += 1) {
         let cap = Math.min(tokenCap, DEFAULT_TOKEN_CAP);
@@ -170,7 +171,8 @@ export function ollamaClient({
           if (approvedCap !== DEFAULT_TOKEN_CAP && approvedCap !== 50_000) throw new Error("invalid approved request cap");
           if (approvedCap === 50_000) cap = approvedCap;
         }
-        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap, completionTokens: maxTokens, reservationTokens: reservationInputTokens(ollamaBody) });
+        const inputBound = reservationInputTokens(ollamaBody);
+        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap, completionTokens: maxTokens, reservationTokens: inputBound });
         dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
         const started = Date.now();
@@ -193,6 +195,9 @@ export function ollamaClient({
         const cached = cachedTokenCount(parsed?.prompt_eval_cached_count, prompt);
         const measured = prompt !== null && completion !== null;
         const actual = measured ? measuredCostUsd(body.model, prompt, completion, cached) : projectedUsd;
+        const reservationBounds = measured ? undefined : { inputTokens: inputBound, outputTokens: maxTokens, spentUsd: projectedUsd, source: "request-reservation-upper-bound" as const };
+        const normalizedUsage = { prompt_tokens: prompt, completion_tokens: completion, prompt_tokens_details: { cached_tokens: cached }, ...(reservationBounds ? { reservation_bounds: reservationBounds } : {}) };
+        usageAttempts.push(normalizedUsage);
         dollarBudget.settle(projectedUsd, actual);
         const rawContent = parsed?.message?.content ?? "";
         let content = rawContent;
@@ -207,7 +212,8 @@ export function ollamaClient({
         onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
           inputTokens: prompt, outputTokens: completion, cachedInputTokens: cached,
           prefixDigest: prefixDigest(body.messages), chargedUsd: actual, measured,
-          status: res.status, attempt, latencyMs: Date.now() - started });
+          status: res.status, attempt, latencyMs: Date.now() - started,
+          ...(reservationBounds ? { reservation_bounds: reservationBounds } : {}) });
         if (actual > projectedUsd + 1e-12) throw new ReservationExceededError(dollarBudget.snapshot());
         const blob = res.ok ? "" : `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
         const concurrent = res.status === 429 || /too many concurrent/.test(blob);
@@ -229,8 +235,7 @@ export function ollamaClient({
           status: res.status,
           text,
           json: { choices: [{ message: { content, ...channelFields }, finish_reason: finish }],
-            usage: { prompt_tokens: prompt, completion_tokens: completion,
-              prompt_tokens_details: { cached_tokens: cached } },
+            usage: normalizedUsage, usage_attempts: usageAttempts,
             prompt_eval_count: prompt, eval_count: completion, prompt_eval_cached_count: cached },
         };
       }

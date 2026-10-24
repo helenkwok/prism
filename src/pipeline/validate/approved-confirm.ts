@@ -152,7 +152,8 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
       let persisted = false;
       const measuredClient = { ...guardedClient, request: async (...args: any[]) => {
         const response = await guardedClient.request(...args);
-        attemptUsage.push(response.json?.usage);
+        if (Array.isArray(response.json?.usage_attempts)) attemptUsage.push(...response.json.usage_attempts);
+        else attemptUsage.push(response.json?.usage);
         return response;
       } };
       try {

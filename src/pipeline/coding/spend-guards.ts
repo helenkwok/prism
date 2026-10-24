@@ -91,6 +91,8 @@ export function reservationInputTokens(body: unknown): number {
   return Buffer.byteLength(JSON.stringify(body), "utf8") + 1024;
 }
 
+export type ReservationUsageBounds = { inputTokens: number; outputTokens: number; spentUsd: number; source: "request-reservation-upper-bound" };
+
 export type UsageObservation = {
   provider: "ollama" | "token-factory";
   stage: string | null;
@@ -104,6 +106,7 @@ export type UsageObservation = {
   status: number;
   attempt: number;
   latencyMs: number;
+  reservation_bounds?: ReservationUsageBounds;
 };
 export type UsageObserver = (observation: UsageObservation) => void;
 

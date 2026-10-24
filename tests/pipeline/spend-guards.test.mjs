@@ -14,10 +14,40 @@ import {
   BudgetExceededError,
   assertRequestAllowed,
   estimateCostUsd,
+  reservationInputTokens,
 } from "../../src/pipeline/coding/spend-guards.ts";
 import { ollamaClient } from "../../src/pipeline/validate/providers.ts";
 
 const FLASH = "deepseek-ai/DeepSeek-V4-Flash-0731";
+
+test("unmeasured Ollama responses retain null actuals and persist exact reservation bounds", async () => {
+  let sent; const observations = [];
+  const model = "nemotron-3-ultra:cloud";
+  const client = ollamaClient({ budget: 1, stage: "full-confirm", onUsage: row => observations.push(row), fetchImpl: async (_url, init) => {
+    sent = JSON.parse(init.body); return new Response(JSON.stringify({ message: { content: "{}" }, done: true }));
+  } });
+  const response = await client.request("/chat/completions", { body: { model, messages: [{ role: "system", content: "Synthetic fixture" }], max_tokens: 8192, chat_template_kwargs: { enable_thinking: true } } });
+  const actual = response.json.usage; const bounds = actual.reservation_bounds;
+  assert.equal(actual.prompt_tokens, null); assert.equal(actual.completion_tokens, null); assert.equal(actual.prompt_tokens_details.cached_tokens, null);
+  assert.deepEqual(bounds, { inputTokens: reservationInputTokens(sent), outputTokens: 8192, spentUsd: estimateCostUsd(model, reservationInputTokens(sent), 8192), source: "request-reservation-upper-bound" });
+  assert.equal(client.dollarBudget.spent, bounds.spentUsd); assert.equal(observations[0].measured, false);
+  assert.equal(observations[0].inputTokens, null); assert.equal(observations[0].outputTokens, null); assert.deepEqual(observations[0].reservation_bounds, bounds);
+});
+
+test("internal Ollama retry returns every charged attempt once with final usage unchanged", async () => {
+  let calls = 0; const observations = []; const model = "nemotron-3-ultra:cloud";
+  const client = ollamaClient({ budget: 1, maxRetries: 1, onUsage: row => observations.push(row), fetchImpl: async () => {
+    calls++;
+    return calls === 1 ? new Response('{"error":"too many concurrent"}', { status: 429 }) : new Response(JSON.stringify({ message: { content: "{}" }, prompt_eval_count: 100, eval_count: 10, done: true }));
+  } });
+  const response = await client.request("/chat/completions", { body: { model, messages: [{ role: "user", content: "Synthetic fixture" }], max_tokens: 8192 } });
+  const attempts = response.json.usage_attempts;
+  assert.equal(calls, 2); assert.equal(attempts.length, 2); assert.equal(observations.length, 2);
+  assert.equal(attempts[0].prompt_tokens, null); assert.equal(attempts[0].reservation_bounds.source, "request-reservation-upper-bound");
+  assert.equal(attempts[1], response.json.usage); assert.equal(response.json.usage.prompt_tokens, 100); assert.equal(response.json.usage.completion_tokens, 10);
+  assert.equal(client.dollarBudget.spent, attempts[0].reservation_bounds.spentUsd + estimateCostUsd(model, 100, 10));
+  assert.equal(response.text, JSON.stringify({ message: { content: "{}" }, prompt_eval_count: 100, eval_count: 10, done: true }));
+});
 
 test("shared parent cap reserves atomically and persists recovery state", () => {
   const changes = [];
