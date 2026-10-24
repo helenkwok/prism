@@ -228,7 +228,7 @@
       "sc1Item": null,
       "sub04": null,
       "narration": "Built and proven on Nebius Token Factory and Tavily, and designed to scale by plugging in other providers, without changing what counts as evidence.",
-      "onScreen": "{{FINDINGS_URL}} · github.com/helenkwok/prism · Apache-2.0",
+      "onScreen": "{{FINDINGS_URL}} · github.com/helenkwok/prism · code Apache-2.0, data CC BY 4.0",
       "source": "title card",
       "method": "card",
       "placeholders": {
