@@ -59,8 +59,10 @@ test("a terminated run lease can resume without losing pending charges", () => {
 
 test("the confirmation migration changes only its approved prior cap", () => {
   const previous = { cap: 5, spent: .3006193, reserved: .02, estimated: 8 };
-  const state = { ...previous }; migrateApprovedStageCap("full-confirm", state);
-  assert.deepEqual(state, { ...previous, cap: 7 });
+  for (const cap of [5, 7]) {
+    const state = { ...previous, cap }; migrateApprovedStageCap("full-confirm", state);
+    assert.deepEqual(state, { ...previous, cap: 7.5 });
+  }
   for (const [stage, cap] of [["gold", 5], ["spike", .5], ["full-confirm", 5.01], ["full-confirm", 7.01]]) {
     const unchanged = { ...previous, cap }; migrateApprovedStageCap(stage, unchanged);
     assert.deepEqual(unchanged, { ...previous, cap });
@@ -70,18 +72,18 @@ test("the confirmation migration changes only its approved prior cap", () => {
 
 test("resuming the increased confirmation cap retains all charges and cumulative estimates", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-confirm-budget-")); const validation = path.join(dir, "validation"); fs.mkdirSync(validation);
-  const previous = { cap: 5, spent: .3006193, reserved: .02, estimated: 8 };
+  const previous = { cap: 7, spent: .3006193, reserved: .02, estimated: 8 };
   const file = path.join(validation, "approved-budget-2026-10-23.json");
   fs.writeFileSync(file, JSON.stringify({ approval: "2026-10-23", stages: { "full-confirm": previous, gold: { cap: 4.5, spent: 2, reserved: 0, estimated: 3 } } }));
   const run = openApprovedBudget(dir, "full-confirm");
-  assert.equal(run.budget.cap, 7); assert.equal(run.budget.spent, previous.spent + previous.reserved); assert.equal(run.budget.estimated, 8); assert.equal(run.parent.estimated, 11);
+  assert.equal(run.budget.cap, APPROVED_CAPS["full-confirm"]); assert.equal(run.budget.spent, previous.spent + previous.reserved); assert.equal(run.budget.estimated, 8); assert.equal(run.parent.estimated, 11);
   const ledger = JSON.parse(fs.readFileSync(file, "utf8"));
-  assert.deepEqual(ledger.stages["full-confirm"], { cap: 7, spent: previous.spent + previous.reserved, reserved: 0, estimated: 8 });
+  assert.deepEqual(ledger.stages["full-confirm"], { cap: 7.5, spent: previous.spent + previous.reserved, reserved: 0, estimated: 8 });
   assert.deepEqual(ledger.stages.gold, { cap: 4.5, spent: 2, reserved: 0, estimated: 3 });
-  assert.throws(() => run.budget.reserve(7.01 - run.budget.spent), /budget exceeded/); run.release();
+  assert.throws(() => run.budget.reserve(7.51 - run.budget.spent), /budget exceeded/); run.release();
 });
 
-test("the seven-dollar stage cap cannot bypass the unchanged shared limit", () => {
+test("the increased stage cap cannot bypass the unchanged shared limit", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-confirm-shared-")); const validation = path.join(dir, "validation"); fs.mkdirSync(validation);
   fs.writeFileSync(path.join(validation, "approved-budget-2026-10-23.json"), JSON.stringify({ approval: "2026-10-23", stages: { gold: { cap: 4.5, spent: 4, reserved: 0, estimated: 4 }, "full-confirm": { cap: 5, spent: .3, reserved: 0, estimated: .4 } } }));
   const run = openApprovedBudget(dir, "full-confirm");

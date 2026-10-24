@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { assertIncludedCredit } from "../../src/pipeline/validate/included-credit.ts";
 import { ollamaClient } from "../../src/pipeline/validate/providers.ts";
 
-const approval = { version: 1, approvalDate: "2026-10-24", source: "user-dashboard", provider: "ollama", model: "nemotron-3-ultra:cloud", thinking: true, funding: "included-only", autoReload: false, creditPurchaseAllowed: false, oauthGrantAllowed: false, refillAfterDeadline: true, runCap: 7, includedBalanceUsd: 9.10, runSpentAtBalanceUsd: .3006193 };
+const approval = { version: 1, approvalDate: "2026-10-24", source: "user-dashboard", provider: "ollama", model: "nemotron-3-ultra:cloud", thinking: true, funding: "included-only", autoReload: false, creditPurchaseAllowed: false, oauthGrantAllowed: false, refillAfterDeadline: true, runCap: 7.5, includedBalanceUsd: 9.10, runSpentAtBalanceUsd: .3006193 };
 test("included credit funds the full authorized remainder and subtracts already consumed credit on resume", () => {
   const result = assertIncludedCredit(approval, 6.7145636, .3006193);
   assert.equal(result.available, 9.10);

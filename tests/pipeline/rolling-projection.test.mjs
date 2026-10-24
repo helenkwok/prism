@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { measuredCostUsd } from "../../src/pipeline/coding/spend-guards.ts";
 import { createRollingProjection } from "../../src/pipeline/validate/rolling-projection.ts";
+import { APPROVED_CAPS } from "../../src/pipeline/validate/approved-budget.ts";
 
 const model = "nemotron-3-ultra:cloud";
 const usage = (prompt = 100, output = 100) => ({ prompt_tokens: prompt, completion_tokens: output, prompt_tokens_details: { cached_tokens: null } });
 function baseline(count = 2) {
-  return { stage: "full-confirm", provider: "ollama", model, thinking: true, total: count + 1, completed: 1, remaining: count, cap: 7,
+  return { stage: "full-confirm", provider: "ollama", model, thinking: true, total: count + 1, completed: 1, remaining: count, cap: APPROVED_CAPS["full-confirm"],
     completedUsage: { requests: 1, inputTokens: 100, outputTokens: 100, estimatedInputTokens: 100, spentUsd: measuredCostUsd(model, 100, 100, null) },
     remainingPromptTokens: count * 100, remainingPrompts: Array.from({ length: count }, (_, i) => ({ projectN: i + 2, checkId: "fixture", estimatedInputTokens: 100 })),
   };
@@ -23,11 +24,11 @@ test("rolling estimates use every retry token and cost once per completed decisi
   assert.throws(() => tracker.complete(complete(2)), /missing or stale/); assert.equal(tracker.snapshot().completedUsage.requests, 3);
 });
 
-test("a projection above seven stops only after retaining its completed decision", () => {
+test("a projection above the approved cap stops only after retaining its completed decision", () => {
   const checkpoints = []; const tracker = createRollingProjection(baseline(), { onCheckpoint: report => checkpoints.push(report) });
   assert.throws(() => tracker.complete(complete(2, [usage(100, 2_000_000)])), { name: "ProjectedBudgetExceededError" });
   assert.equal(tracker.snapshot().completed, 2); assert.equal(tracker.snapshot().remaining, 1); assert.equal(tracker.snapshot().withinCap, false);
-  assert.equal(checkpoints.length, 1); assert.ok(checkpoints[0].projectedTotalUsd > 7); assert.equal(checkpoints[0].checkpointReason, "projected-budget-exceeded");
+  assert.equal(checkpoints.length, 1); assert.ok(checkpoints[0].projectedTotalUsd > APPROVED_CAPS["full-confirm"]); assert.equal(checkpoints[0].checkpointReason, "projected-budget-exceeded");
 });
 
 test("missing usage fails closed after the completion is retained and financial uncertainty stays explicit", () => {

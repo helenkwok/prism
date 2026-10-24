@@ -7,6 +7,7 @@ import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
 import { buildConfirmationBody, inputDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { approvedConfirmationTokenCap, assertConfirmationProjectionInputs, confirmationRequestDigest } from "../../src/pipeline/validate/confirmation-cap.ts";
+import { APPROVED_CAPS } from "../../src/pipeline/validate/approved-budget.ts";
 import { ollamaClient } from "../../src/pipeline/validate/providers.ts";
 import { assertFullConfirmationProjection, runApproved } from "../../src/pipeline/validate/approved-run.ts";
 
@@ -15,7 +16,7 @@ function fixture() {
   const positives = Array.from({ length: 9 }, (_, i) => ({ projectN: i + 1, checkId: Object.keys(codebook.checks)[0], state: "pass", spans: [{ id: "p1-s001", text: `Synthetic ${i}: ` + "x".repeat(100_000) }], flaggedSpanIds: [] }));
   const bodies = positives.map(p => buildConfirmationBody(codebook, p, model, true));
   const scope = positives.map((p, i) => ({ projectN: p.projectN, checkId: p.checkId, estimatedTokens: estimateMessagesTokens(bodies[i].messages), inputDigest: inputDigest(codebook, p), requestDigest: confirmationRequestDigest(bodies[i]) }));
-  const plan = { approved: true, approvalDate: "2026-10-24", stage: "full-confirm", model, currentCap: 20_000, proposedCap: 50_000, outputLimit: 8192, stageBudget: 7, sharedOllamaBudget: 10.75, otherRequestsKeepCap: 20_000, preserveAllCitedText: true, confirmationEnvelopeParser: false, maxInputEstimate: Math.max(...scope.map(p => p.estimatedTokens)), scope };
+  const plan = { approved: true, approvalDate: "2026-10-24", stage: "full-confirm", model, currentCap: 20_000, proposedCap: 50_000, outputLimit: 8192, stageBudget: APPROVED_CAPS["full-confirm"], sharedOllamaBudget: 10.75, otherRequestsKeepCap: 20_000, preserveAllCitedText: true, confirmationEnvelopeParser: false, maxInputEstimate: Math.max(...scope.map(p => p.estimatedTokens)), scope };
   const options = { plan, positives, codebook, stage: "full-confirm", model, reasoning: true };
   return { ...options, bodies, cap: approvedConfirmationTokenCap(options) };
 }
@@ -67,18 +68,18 @@ test("the provider refuses requests above 50k before HTTP and never trusts a sup
 });
 
 test("forecast checks amounts and ledger baseline independently of the within-cap flag", () => {
-  const report = { version: 1, stage: "full-confirm", provider: "ollama", model, thinking: true, total: 10, completed: 1, remaining: 9, completedUsage: { spentUsd: 0.3 }, remainingPrompts: Array.from({ length: 9 }, () => ({})), fullInputDigest: "a".repeat(64), fullRequestDigest: "b".repeat(64), projectedRemainingInputUsd: 0.4, projectedRemainingOutputUsd: 8, projectedTotalUsd: 8.7, cap: 7, withinCap: false };
+  const report = { version: 1, stage: "full-confirm", provider: "ollama", model, thinking: true, total: 10, completed: 1, remaining: 9, completedUsage: { spentUsd: 0.3 }, remainingPrompts: Array.from({ length: 9 }, () => ({})), fullInputDigest: "a".repeat(64), fullRequestDigest: "b".repeat(64), projectedRemainingInputUsd: 0.4, projectedRemainingOutputUsd: 8, projectedTotalUsd: 8.7, cap: APPROVED_CAPS["full-confirm"], withinCap: false };
   for (const withinCap of [false, true]) assert.throws(() => assertFullConfirmationProjection({ ...report, withinCap }, 0.3), { name: "ProjectedBudgetExceededError" });
   assert.throws(() => assertFullConfirmationProjection(report, 0.4), /current consistent/);
   assert.throws(() => assertFullConfirmationProjection({ ...report, withinCap: true, projectedTotalUsd: 4 }, 0.3), /current consistent/);
-  const feasible = { ...report, projectedRemainingOutputUsd: 6.01456, projectedTotalUsd: 6.71456, withinCap: true };
+  const feasible = { ...report, projectedRemainingOutputUsd: 6.394495, projectedTotalUsd: 7.094495, withinCap: true };
   assert.doesNotThrow(() => assertFullConfirmationProjection(feasible, 0.3));
   for (const patch of [{ projectedTotalUsd: Infinity }, { remaining: 8 }, { thinking: false }, { cap: 6 }]) assert.throws(() => assertFullConfirmationProjection({ ...feasible, ...patch }, 0.3));
 });
 
 test("an over-cap forecast refuses the wrapper before HTTP, budget mutation or source preflight", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-cap-projection-")); const validation = path.join(dataDir, "validation"); fs.mkdirSync(validation);
-  const report = { version: 1, stage: "full-confirm", provider: "ollama", model, thinking: true, total: 10, completed: 1, remaining: 9, completedUsage: { spentUsd: 0.3 }, remainingPrompts: Array.from({ length: 9 }, () => ({})), fullInputDigest: "a".repeat(64), fullRequestDigest: "b".repeat(64), projectedRemainingInputUsd: 0.4, projectedRemainingOutputUsd: 8, projectedTotalUsd: 8.7, cap: 7, withinCap: true };
+  const report = { version: 1, stage: "full-confirm", provider: "ollama", model, thinking: true, total: 10, completed: 1, remaining: 9, completedUsage: { spentUsd: 0.3 }, remainingPrompts: Array.from({ length: 9 }, () => ({})), fullInputDigest: "a".repeat(64), fullRequestDigest: "b".repeat(64), projectedRemainingInputUsd: 0.4, projectedRemainingOutputUsd: 8, projectedTotalUsd: 8.7, cap: APPROVED_CAPS["full-confirm"], withinCap: true };
   fs.writeFileSync(path.join(validation, "full-confirm-cost-projection.json"), JSON.stringify(report));
   for (const file of ["confirmation-spike.json", "confirmation-spike-review.json"]) fs.writeFileSync(path.join(validation, file), "{}");
   const ledgerPath = path.join(validation, "approved-budget-2026-10-23.json"); const ledger = JSON.stringify({ stages: { "full-confirm": { spent: 0.3 } } }); fs.writeFileSync(ledgerPath, ledger);

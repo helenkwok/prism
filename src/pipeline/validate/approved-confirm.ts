@@ -90,7 +90,7 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
   const concurrency = o.concurrency ?? 2;
   if (concurrency !== 1 && concurrency !== 2) throw new Error("full confirmation concurrency must be 1–2");
   if (canonicalModel(o.model) !== "nemotron-3-ultra" || typeof o.reasoning !== "boolean") throw new Error("approved full confirmer requires pinned model and boolean setting");
-  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > APPROVED_CAPS["full-confirm"]) throw new Error("full confirmation requires the approved seven-dollar budget");
+  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > APPROVED_CAPS["full-confirm"]) throw new Error(`full confirmation requires the approved budget, capped at $${APPROVED_CAPS["full-confirm"]}`);
   const spikePath = path.join(o.dataDir, "validation", "confirmation-spike.json");
   const reviewPath = path.join(o.dataDir, "validation", "confirmation-spike-review.json");
   const spikeText = fs.readFileSync(spikePath, "utf8");

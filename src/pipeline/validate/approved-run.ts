@@ -23,6 +23,7 @@ import { approvedConfirmationTokenCap, assertConfirmationProjectionInputs } from
 import { readPositives } from "../confirm/confirm.ts";
 import { assertIncludedCredit } from "./included-credit.ts";
 import { createRollingProjection } from "./rolling-projection.ts";
+import { assertFinishTime } from "./finish-time.ts";
 
 export function summarizeCacheUsage(observations: UsageObservation[]) {
   const groups = new Map<string, UsageObservation[]>();
@@ -85,6 +86,7 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
     const projection = JSON.parse(fs.readFileSync(path.join(validation, "full-confirm-cost-projection.json"), "utf8"));
     const ledger = JSON.parse(fs.readFileSync(path.join(validation, "approved-budget-2026-10-23.json"), "utf8"));
     assertFullConfirmationProjection(projection, ledger.stages?.["full-confirm"]?.spent);
+    assertFinishTime(JSON.parse(fs.readFileSync(path.join(validation, "confirmation-finish-time-plan.json"), "utf8")), projection.remaining);
     fullFunding = JSON.parse(fs.readFileSync(path.join(validation, "confirmation-included-credit-approval.json"), "utf8"));
     assertIncludedCredit(fullFunding, projection.projectedTotalUsd, ledger.stages?.["full-confirm"]?.spent);
     fullProjection = projection;

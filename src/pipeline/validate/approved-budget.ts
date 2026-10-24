@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DollarBudget, type BudgetState } from "../coding/spend-guards.ts";
 
-export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 7 } as const;
+export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 7.50 } as const;
 export const APPROVED_OLLAMA_CAP = 10.75;
 export type ApprovedStage = keyof typeof APPROVED_CAPS;
 type Ledger = { approval: string; stages: Partial<Record<ApprovedStage, BudgetState>> };
@@ -11,7 +11,7 @@ const hostOf = (stage: ApprovedStage) => stage === "signoff" || stage === "recod
 /** Only the explicitly approved prior caps migrate; every accounting field is preserved. */
 export function migrateApprovedStageCap(stage: string, state: BudgetState): void {
   if (stage === "recode" && state.cap === 3.50) state.cap = APPROVED_CAPS.recode;
-  if (stage === "full-confirm" && state.cap === 5) state.cap = APPROVED_CAPS["full-confirm"];
+  if (stage === "full-confirm" && (state.cap === 5 || state.cap === 7)) state.cap = APPROVED_CAPS["full-confirm"];
 }
 
 /** Persist reservations before HTTP; on resume unresolved reservations count as spent. */

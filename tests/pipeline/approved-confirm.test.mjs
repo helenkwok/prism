@@ -11,6 +11,7 @@ import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { DollarBudget, estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
 import { confirmMessages, inputDigest, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { createRollingProjection } from "../../src/pipeline/validate/rolling-projection.ts";
+import { APPROVED_CAPS } from "../../src/pipeline/validate/approved-budget.ts";
 import { ensurePipelineSchema } from "../../src/pipeline/store/results.ts";
 import { ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
 import { ARTCRAFT_HN_ID } from "../../src/pipeline/select/draw-sample.ts";
@@ -50,7 +51,7 @@ async function fixture({ flagged = false } = {}) {
   const lines = [];
   return { dataDir, db, codebook, entries, goldOrder: entries.map(e => e.hn_id), model, reasoning: false, concurrency: 1, log: line => lines.push(line), lines, spike, review, text };
 }
-const client = request => ({ request, dollarBudget: new DollarBudget(7) });
+const client = request => ({ request, dollarBudget: new DollarBudget(APPROVED_CAPS["full-confirm"]) });
 
 test("review guard binds exact bytes, setting, thirty identical pairs and sixty reviewed outcomes", () => {
   const decisions = Array.from({ length: 30 }, (_, n) => [true, false].map(setting => ({ projectN: n, checkId: ids[0], state: "pass", setting, decision: "rejected", spans: [], flaggedSpanIds: [] }))).flat();
@@ -148,7 +149,7 @@ test("excluded worked case stays outside the full confirmation denominator", asy
 
 test("full stage refuses an oversized budget before any requests", async () => {
   const f = await fixture(); let calls = 0;
-  await assert.rejects(() => runApprovedConfirmation({ ...f, client: { dollarBudget: new DollarBudget(7.01), request: async () => { calls++; } } }), /approved.*budget/);
+  await assert.rejects(() => runApprovedConfirmation({ ...f, client: { dollarBudget: new DollarBudget(7.51), request: async () => { calls++; } } }), /approved.*budget/);
   assert.equal(calls, 0);
   await f.db.destroy();
 });
@@ -229,7 +230,7 @@ function projection(f, onCheckpoint) {
     const p = f.spike.decisions.find(p => p.projectN === row.projectN && p.checkId === row.checkId);
     return { projectN: p.projectN, checkId: p.checkId, estimatedInputTokens: estimateMessagesTokens(confirmMessages(codebook, p)) };
   });
-  return createRollingProjection({ stage: "full-confirm", provider: "ollama", model, thinking: true, total: remainingPrompts.length, completed: 0, remaining: remainingPrompts.length, cap: 7, completedUsage: { requests: 0, inputTokens: 0, outputTokens: 0, estimatedInputTokens: 0, spentUsd: 0 }, remainingPromptTokens: remainingPrompts.reduce((sum, p) => sum + p.estimatedInputTokens, 0), remainingPrompts }, { onCheckpoint });
+  return createRollingProjection({ stage: "full-confirm", provider: "ollama", model, thinking: true, total: remainingPrompts.length, completed: 0, remaining: remainingPrompts.length, cap: APPROVED_CAPS["full-confirm"], completedUsage: { requests: 0, inputTokens: 0, outputTokens: 0, estimatedInputTokens: 0, spentUsd: 0 }, remainingPromptTokens: remainingPrompts.reduce((sum, p) => sum + p.estimatedInputTokens, 0), remainingPrompts }, { onCheckpoint });
 }
 const measuredReply = (inputTokens = 100, outputTokens = 10) => ({ ...reply({ decision: "rejected", reason: "p1-s001 is insufficient fixture evidence." }), json: { ...reply({ decision: "rejected", reason: "p1-s001 is insufficient fixture evidence." }).json, usage: { prompt_tokens: inputTokens, completion_tokens: outputTokens } } });
 

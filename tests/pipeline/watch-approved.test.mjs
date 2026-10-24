@@ -22,8 +22,8 @@ function fixture(text, reserved = 0) {
 test("printed identities prove completion or an explicitly partial cap stop", () => {
   const done = validateLines(lines()); assert.equal(done.complete, true); assert.equal(done.verifiedPrintedLines, true);
   const stopped = validateLines(lines(partial)); assert.equal(stopped.status, "partial"); assert.equal(stopped.complete, false); assert.equal(stopped.valid, 4); assert.equal(stopped.remaining, 6); assert.equal(stopped.reason, "BudgetExceededError");
-  const increased = validateLines(lines(complete, { stageCap: 7, stageSpent: 6.7, hostSpent: 9.7 })); assert.equal(increased.complete, true); assert.equal(increased.stageCap, 7);
-  assert.throws(() => validateLines(lines(complete, { stageCap: 7, stageSpent: 7.01, hostSpent: 10.01 })), /budget-overspend/);
+  const increased = validateLines(lines(complete, { stageCap: 7.5, stageSpent: 7.094495, hostSpent: 10.094495 })); assert.equal(increased.complete, true); assert.equal(increased.stageCap, 7.5);
+  assert.throws(() => validateLines(lines(complete, { stageCap: 7.5, stageSpent: 7.51, hostSpent: 10.51 })), /budget-overspend/);
 });
 
 test("all failed, over budget, missing terminal and inconsistent accounting never validate", () => {
