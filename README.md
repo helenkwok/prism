@@ -29,7 +29,7 @@ report showing where they stand and the next piece of evidence to add.
 Investors get a benchmark of how launches evidence readiness against ISO/IEC
 42001, the NIST AI RMF, the EU AI Act and the OECD AI Principles.
 
-PRISM is not a promotion or listing service: nobody can pay, submit or opt in
+PRISM is not a promotion or listing service: nobody can pay, submit or apply
 to be included, ranked or recommended. Projects are sampled from public
 launches, evidence comes only from each project's own site and repositories
 (never directories or listings), per-project results stay private, and the
