@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { runApproved, summarizeCacheUsage } from "../../src/pipeline/validate/approved-run.ts";
 const row = { provider: "ollama", stage: "gold", model: "glm-5.3-flash", inputTokens: 1000, outputTokens: 100, prefixDigest: "stable", chargedUsd: .0002, measured: true, status: 200, attempt: 1, latencyMs: 1 };
@@ -21,8 +24,14 @@ test("verified primary-host cache pricing is distinguished from retained ledger 
 
 test("full confirmation is held before any network call until spike review", async () => {
   const original = globalThis.fetch; let calls = 0;
+  const previousDataDir = process.env.PRISM_DATA_DIR;
+  process.env.PRISM_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "prism-missing-spike-review-"));
   globalThis.fetch = async () => { calls++; throw new Error("must not send"); };
   try { await assert.rejects(runApproved("full-confirm"), /held until/); }
-  finally { globalThis.fetch = original; }
+  finally {
+    globalThis.fetch = original;
+    if (previousDataDir === undefined) delete process.env.PRISM_DATA_DIR;
+    else process.env.PRISM_DATA_DIR = previousDataDir;
+  }
   assert.equal(calls, 0);
 });
