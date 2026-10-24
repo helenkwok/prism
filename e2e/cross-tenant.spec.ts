@@ -12,7 +12,7 @@ test.describe("company A", () => {
   test("opens its own report: 200, title, disclaimer, five decisions, checks", async ({ page }) => {
     const res = await page.goto(`/p/${own()}`);
     expect(res?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Notewell");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Example Notes (synthetic)");
     await expect(page.locator("[data-scope-disclaimer]")).toContainText("This is not a certification or a legal assessment.");
     await expect(page.getByRole("heading", { level: 2, name: "Decisions" })).toBeVisible();
     await expect(page.locator("[data-verdict-row]")).toHaveCount(5);

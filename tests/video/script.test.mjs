@@ -94,3 +94,21 @@ test("J3: the gate-first report beat starts before 30 seconds", () => {
   assert.ok(start < 30, `report beat starts at ${start.toFixed(1)} s`);
   assert.equal(beats[i].method, "cdp", "the report beat shows the app, not a card");
 });
+
+// Job A (Helen, 2026-10-24): a beat whose frames show synthetic fixture data says so on every frame.
+test("fixture beats carry a visible Synthetic fixture caption; other beats do not", async () => {
+  const { captionHtml, cardHtml, FIXTURE_CAPTION } = await import("../../scripts/video/capture.mjs");
+  assert.equal(FIXTURE_CAPTION, "Synthetic fixture");
+  for (const b of beats) {
+    assert.equal(typeof b.fixtureData, "boolean", `${b.id}: fixtureData`);
+    if (/fixture/i.test(b.source)) assert.equal(b.fixtureData, true, `${b.id}: its source is a fixture`);
+    const shown = `${captionHtml(b)}\n${cardHtml(b)}`;
+    if (b.fixtureData) {
+      assert.notEqual(b.method, "card", `${b.id}: a fixture beat needs the caption strip`);
+      assert.ok(captionHtml(b).includes(`>${FIXTURE_CAPTION}</div>`), `${b.id}: caption lacks the label`);
+      assert.ok(cardHtml(b).includes(`>${FIXTURE_CAPTION}</div>`), `${b.id}: card lacks the label`);
+      assert.match(b.onScreen, /synthetic fixture/i, b.id);
+    } else assert.ok(!shown.includes(`>${FIXTURE_CAPTION}</div>`), `${b.id}: labelled but not fixture`);
+  }
+  assert.ok(beats.some((b) => b.fixtureData), "at least the injection beat is fixture data");
+});

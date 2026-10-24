@@ -126,7 +126,7 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), "prism-measure-"));
 const dataDir = path.join(work, "data");
 fs.mkdirSync(dataDir, { recursive: true });
 const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(path.join(work, "measure.sqlite")) }) });
-const project = { n: 1, hn_id: "measure-1", title: "Show HN: Measurely – a synthetic assistant", final_url: `${ORIGIN}/` };
+const project = { n: 1, hn_id: "measure-1", title: "Show HN: Example Assistant (synthetic) – a synthetic assistant", final_url: `${ORIGIN}/` };
 const slice = path.join(work, "slice.json");
 fs.writeFileSync(slice, JSON.stringify([project]));
 

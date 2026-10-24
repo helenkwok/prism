@@ -1,6 +1,8 @@
 // APP-04 / SC3 / 07-UI-SPEC: the report reads gate first, in evidence language,
 // with every quote linked to its archived snapshot and its live page.
 import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { openEvidence, stateFor } from "./helpers.ts";
 
@@ -181,6 +183,24 @@ test("fixture notice above the h1; robots meta noindex, nofollow", async ({ page
     return !!n && !!h1 && !!(n.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
   expect(above).toBe(true);
+});
+
+test("the Synthetic fixture label shows for fixture data and never for a real project", async ({ page }) => {
+  await page.goto("/p/P09");
+  await expect(page.locator('[data-notice="fixture"] [data-fixture-label]')).toHaveText("Synthetic fixture");
+  // The same report stored as a real project (fixture false): no label, no notice.
+  const db = new Database(path.join(process.env.E2E_DIR ?? "", "data", "prism.sqlite"));
+  const row = db.prepare("select json from app_report_view where project_ref = 'P09' and view = 'identifiable'").get() as { json: string };
+  try {
+    db.prepare("update app_report_view set json = ? where project_ref = 'P09' and view = 'identifiable'").run(JSON.stringify({ ...JSON.parse(row.json), fixture: false }));
+    await page.goto("/p/P09");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.locator("[data-fixture-label]")).toHaveCount(0);
+    await expect(page.getByText("Synthetic fixture")).toHaveCount(0);
+  } finally {
+    db.prepare("update app_report_view set json = ? where project_ref = 'P09' and view = 'identifiable'").run(row.json);
+    db.close();
+  }
 });
 
 // Snapshot view (Task 3). The unmatched-span case is the unit test tests/report/marks.test.mjs:

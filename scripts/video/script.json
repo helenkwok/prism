@@ -18,6 +18,7 @@
       "onScreen": "Verdict, then what would change it; a deterministic gate decides",
       "source": "https://prism.helenkwok.dev/p/$projectId (J1 layout: verdict and 'What would change it' per decision, then the evidence opened: quote cards, snapshot links, crosswalk chips; scope disclaimer)",
       "method": "cdp",
+      "fixtureData": false,
       "pending": "the report from the B5 run on Helen's own project; needs the 07-13 run",
       "placeholders": {}
     },
@@ -34,6 +35,7 @@
       "onScreen": "What do AI launches publicly evidence, for which decision?",
       "source": "title card",
       "method": "card",
+      "fixtureData": false,
       "placeholders": {}
     },
     {
@@ -49,6 +51,7 @@
       "onScreen": "Pre-registered findings, release {{RELEASE_DATE}}",
       "source": "findings site home page (/), hypothesis panel, built from public-data/v1/release.json",
       "method": "cdp",
+      "fixtureData": false,
       "pending": "real numbers need Phase 4's signed gate and Phase 6's release; paths checked against the synthetic fixture tests/fixtures/publish/public-data-synthetic/v1/release.json (Phase 6 branch)",
       "placeholders": {
         "N_INCLUDED": {
@@ -98,6 +101,7 @@
       "onScreen": "Nemotron on Nebius Token Factory: 12 configurations, 1,675 launches screened",
       "source": "recorded runs: spikes/nebius.md matrix (C1, C2), sample-screening-log.json (C4), pilot confirmations (C5), approved-recode.log (C8); figures from 08-EVIDENCE-INVENTORY.md",
       "method": "card",
+      "fixtureData": false,
       "placeholders": {}
     },
     {
@@ -114,6 +118,7 @@
       "onScreen": "Prototype: Tavily, 142 projects; free collector agrees 91.5% (exploratory)",
       "source": "recorded runs: Tavily-142 archive bulk-300.log ACCOUNTING (C10), validation/tavily-vs-free-142.json (C12, exploratory); figures from 08-EVIDENCE-INVENTORY.md",
       "method": "card",
+      "fixtureData": false,
       "placeholders": {}
     },
     {
@@ -130,6 +135,7 @@
       "onScreen": "Private app: own-site pages, each cited quote marked (recorded run, replayed)",
       "source": "https://prism.helenkwok.dev/run then /run/$jobId, and scripts/demo-replay.mjs steps (buildSteps, markScript) over that run's report",
       "method": "cdp",
+      "fixtureData": false,
       "pending": "needs the recorded 07-13 run on Helen's own project; 07-13 has not been run (Phase 4 merge first)",
       "placeholders": {}
     },
@@ -147,6 +153,7 @@
       "onScreen": "Synthetic fixture: embedded instruction flagged; no quote, no pass",
       "source": "fixture 1, span s002 in tests/pipeline/injection-fixtures.test.mjs, through the real report builder, then the report card with INJECTION_NOTICE (src/app/components/report/report.tsx); every frame labelled synthetic fixture",
       "method": "cdp",
+      "fixtureData": true,
       "placeholders": {}
     },
     {
@@ -163,6 +170,7 @@
       "onScreen": "How we know: AC1 {{AC1_MIN}} to {{AC1_MAX}}, recall {{RECALL}}",
       "source": "findings site /validation and a figure's How we know panel, built from public-data/v1/release.json",
       "method": "cdp",
+      "fixtureData": false,
       "pending": "real numbers need Phase 4's signed gate and Phase 6's release",
       "placeholders": {
         "AGREE_N": {
@@ -208,6 +216,7 @@
       "onScreen": "The review PDF, release {{RELEASE_DATE}}: PRISMA flow, methods, limitations",
       "source": "the review PDF from the findings site build (PRISMA flow and methods pages, rendered with pdftoppm)",
       "method": "pdf",
+      "fixtureData": false,
       "placeholders": {
         "RELEASE_DATE": {
           "file": "public-data/v1/release.json",
@@ -231,6 +240,7 @@
       "onScreen": "{{FINDINGS_URL}} · github.com/helenkwok/prism · code Apache-2.0, data CC BY 4.0",
       "source": "title card",
       "method": "card",
+      "fixtureData": false,
       "placeholders": {
         "FINDINGS_URL": {
           "file": ".planning/phases/06-aggregate-findings-review-pdf-and-dashboard/06-08-SUMMARY.md",

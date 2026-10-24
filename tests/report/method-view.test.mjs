@@ -110,7 +110,7 @@ describe("buildMethodView (APP-03 method audit)", () => {
     assert.ok(p02.length > 0);
     for (const r of p02) {
       assert.equal(r.pseudonym, "PS02X");
-      assert.equal(r.title, "Ledgerline");
+      assert.equal(r.title, "Example Ledger (synthetic)");
       assert.equal(r.proposed, "pass");
       assert.ok(["confirmed", "downgraded", "rejected"].includes(r.decision));
       assert.ok(r.checkLabel && r.role && r.decidedAt);
