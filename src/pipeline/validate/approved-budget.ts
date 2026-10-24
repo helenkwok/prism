@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DollarBudget, type BudgetState } from "../coding/spend-guards.ts";
 
-export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 7.50 } as const;
+export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 7.50, "irrelevant-probe": 1 } as const;
 export const APPROVED_OLLAMA_CAP = 10.75;
 export type ApprovedStage = keyof typeof APPROVED_CAPS;
 type Ledger = { approval: string; stages: Partial<Record<ApprovedStage, BudgetState>> };

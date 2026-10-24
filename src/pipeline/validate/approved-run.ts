@@ -80,7 +80,7 @@ export function assertFullConfirmationProjection(report: any, ledgerSpent: unkno
   }
 }
 
-export async function runApproved(stage: ApprovedStage, options: { splitNemotronThinking?: boolean } = {}) {
+export async function runApproved(stage: Exclude<ApprovedStage, "irrelevant-probe">, options: { splitNemotronThinking?: boolean } = {}) {
   if (!["signoff", "recode", "gold", "second-coder", "spike", "full-confirm"].includes(stage)) throw new Error("explicit approved stage required");
   const dataDir = resolveDataDir();
   const validation = path.join(dataDir, "validation");
@@ -238,5 +238,5 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const stage = process.argv[2];
   if (!["signoff", "recode", "gold", "second-coder", "spike", "full-confirm"].includes(stage)) throw new Error("explicit approved stage required");
-  await runApproved(stage as ApprovedStage);
+  await runApproved(stage as Parameters<typeof runApproved>[0]);
 }

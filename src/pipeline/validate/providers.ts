@@ -89,6 +89,16 @@ export function splitLeadingThinkingBlock(raw: string): { reasoning: string; con
   return { reasoning: match[1], content: match[2] };
 }
 
+/** The same native payload is used for byte-bound cost preflight and transmission. */
+export function ollamaRequestBody(body: any) {
+  const rf = body.response_format;
+  const format = rf?.type === "json_schema" ? rf.json_schema?.schema : rf?.type === "json_object" ? "json" : undefined;
+  const think = body.reasoning_effort !== undefined ? body.reasoning_effort : body.chat_template_kwargs?.enable_thinking;
+  return { model: body.model, messages: body.messages, stream: false,
+    ...(format !== undefined ? { format } : {}), ...(think !== undefined ? { think } : {}),
+    options: { ...(body.temperature !== undefined ? { temperature: body.temperature } : {}), num_predict: outputTokenLimit(body.max_tokens) } };
+}
+
 /** Translate an OpenAI-style chat body into Ollama /api/chat; return OpenAI-shaped json. */
 export function ollamaClient({
   baseUrl = OLLAMA_BASE_URL,
@@ -143,24 +153,7 @@ export function ollamaClient({
     if (!body?.model || !body?.messages) throw new Error("ollamaClient: body.model and body.messages required");
     if (thinkingEnvelopeEnabled(stage, body.model, splitNemotronThinking) && !onThinkingEnvelope) throw new Error("second-coder envelope separation requires a private audit callback");
     const maxTokens = outputTokenLimit(body.max_tokens);
-    const rf = body.response_format;
-    const format =
-      rf?.type === "json_schema" ? rf.json_schema?.schema : rf?.type === "json_object" ? "json" : undefined;
-    const think =
-      body.reasoning_effort !== undefined
-        ? body.reasoning_effort
-        : body.chat_template_kwargs?.enable_thinking;
-    const ollamaBody = {
-      model: body.model,
-      messages: body.messages,
-      stream: false,
-      ...(format !== undefined ? { format } : {}),
-      ...(think !== undefined ? { think } : {}),
-      options: {
-        ...(body.temperature !== undefined ? { temperature: body.temperature } : {}),
-        num_predict: maxTokens,
-      },
-    };
+    const ollamaBody = ollamaRequestBody(body);
     await acquire();
     const usageAttempts: Record<string, unknown>[] = [];
     try {
