@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
+import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, acceptanceApprovalPaths, assertInheritedGoldApproval, verifyGoldApproval, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
 
 test("an empty successful process is not proof that tests passed", () => {
   for (const text of ["", "exit 0", "# pass 0\n# fail 0", "# pass 12\n# fail 1", "not ok 1 - fixture\n# pass 12\n# fail 0"]) assert.throws(() => assertTapSuccess(text));
@@ -20,6 +20,30 @@ test("a durable no-gold outcome is accounted separately and never masquerades as
   assert.throws(() => assertGoldOutcome({ outcome: "no-gold", reason: "retry-exhausted" }, [{ check_id: "fixture" }], ["fixture"]));
   assert.throws(() => assertGoldOutcome(undefined, [], ["fixture"]));
   assert.throws(() => assertGoldOutcome({ outcome: "labelled" }, [], ["fixture"]));
+});
+
+const inheritedProof = { a7Digest: "a".repeat(64), proofDigest: "b".repeat(64), recoveryCutoff: Date.parse("2026-10-23T12:00:00Z"), auditApproval: { item: "Screening audit action (A7.10)", decision: "approved", docDigest: "c".repeat(64), decidedAt: "2026-10-21T12:00:00Z", source: "user-verified-signature" } };
+test("inherited approval refuses stale and incomplete proof and names its inherited basis", () => {
+  const result = assertInheritedGoldApproval(inheritedProof, "a".repeat(64));
+  assert.equal(result.basis, "inherited-prior-bulk-verification"); assert.equal(result.proofDigest, inheritedProof.proofDigest);
+  for (const patch of [{ a7Digest: "d".repeat(64) }, { proofDigest: "" }, { recoveryCutoff: undefined }, { auditApproval: undefined }, { auditApproval: { ...inheritedProof.auditApproval, decision: "rejected" } }]) assert.throws(() => assertInheritedGoldApproval({ ...inheritedProof, ...patch }, "a".repeat(64)));
+});
+
+test("detached approval uses its proof loader and never invokes the legacy signature reader", async () => {
+  let loaded = 0; let legacy = 0;
+  const dependencies = { loadProof: async () => { loaded++; return inheritedProof; }, legacySigned: async () => { legacy++; throw new Error("legacy signature reader must not run"); } };
+  const result = await verifyGoldApproval({ proofPath: "/synthetic/release-approvals.json", expectedA7Digest: "a".repeat(64) }, dependencies);
+  assert.equal(result.basis, "inherited-prior-bulk-verification"); assert.equal(loaded, 1); assert.equal(legacy, 0);
+  await assert.rejects(verifyGoldApproval({ proofPath: "/synthetic/stale.json", expectedA7Digest: "d".repeat(64) }, dependencies)); assert.equal(legacy, 0);
+  await assert.rejects(verifyGoldApproval({ expectedA7Digest: "a".repeat(64) }, { loadProof: dependencies.loadProof, legacySigned: async () => false }), /a7-not-signed/);
+});
+
+test("proof mode requires an explicit dedicated signature file without changing default paths", () => {
+  const root = "/synthetic/private";
+  assert.equal(acceptanceApprovalPaths(root, {}).signoffPath, `${root}/decisions/signoff.jsonl`);
+  assert.throws(() => acceptanceApprovalPaths(root, { priorApprovalProofPath: `${root}/validation/release-approvals.json` }));
+  assert.throws(() => acceptanceApprovalPaths(root, { priorApprovalProofPath: `${root}/validation/release-approvals.json`, signoffPath: `${root}/decisions/signoff.jsonl` }));
+  assert.equal(acceptanceApprovalPaths(root, { priorApprovalProofPath: `${root}/validation/release-approvals.json`, signoffPath: `${root}/decisions/release-signoff.jsonl` }).signoffPath, `${root}/decisions/release-signoff.jsonl`);
 });
 
 test("screening audit preserves drawn and eligible denominators and rejects missing records/actions", () => {

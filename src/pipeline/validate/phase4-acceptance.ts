@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -42,6 +43,24 @@ export function assertGoldOutcome(outcome: any, labels: { check_id: string }[], 
   else requireEvidence(labels.length === 0 && (outcome.outcome !== "no-gold" || typeof outcome.reason === "string" && outcome.reason.length > 0), "no-gold-outcome-has-labels");
 }
 
+export function acceptanceApprovalPaths(dataDir: string, { priorApprovalProofPath, signoffPath }: { priorApprovalProofPath?: string; signoffPath?: string }) {
+  const legacy = path.resolve(dataDir, "decisions", "signoff.jsonl");
+  const selected = path.resolve(signoffPath ?? legacy);
+  requireEvidence(!priorApprovalProofPath || signoffPath && selected !== legacy, "detached-proof-requires-dedicated-signoff-file");
+  return { priorApprovalProofPath: priorApprovalProofPath ? path.resolve(priorApprovalProofPath) : undefined, signoffPath: selected };
+}
+
+export function assertInheritedGoldApproval(proof: any, a7Digest: string) {
+  requireEvidence(/^[a-f0-9]{64}$/.test(a7Digest) && proof?.a7Digest === a7Digest && /^[a-f0-9]{64}$/.test(proof.proofDigest) && Number.isFinite(proof.recoveryCutoff) && proof.recoveryCutoff > 0 && proof.auditApproval?.item === "Screening audit action (A7.10)" && proof.auditApproval.decision === "approved" && proof.auditApproval.source === "user-verified-signature" && /^[a-f0-9]{64}$/.test(proof.auditApproval.docDigest) && typeof proof.auditApproval.decidedAt === "string" && Number.isFinite(Date.parse(proof.auditApproval.decidedAt)), "inherited-gold-approval-stale-or-incomplete");
+  return { basis: "inherited-prior-bulk-verification", proofDigest: proof.proofDigest, a7Digest, recoveryCutoff: proof.recoveryCutoff };
+}
+
+export async function verifyGoldApproval({ proofPath, expectedA7Digest }: { proofPath?: string; expectedA7Digest: string }, { loadProof, legacySigned }: { loadProof: (file: string) => unknown | Promise<unknown>; legacySigned: () => boolean | Promise<boolean> }) {
+  if (proofPath) return assertInheritedGoldApproval(await loadProof(proofPath), expectedA7Digest);
+  requireEvidence(await legacySigned(), "a7-not-signed");
+  return { basis: "current-signoff-file", a7Digest: expectedA7Digest };
+}
+
 export async function runAcceptanceChecks(checks: { id: string; run: () => unknown | Promise<unknown> }[], log: (line: string) => void) {
   requireEvidence(checks.length === 11 && checks.every((check, i) => check.id === `C${i + 1}`), "eleven-checks-required");
   let passed = 0; let failed = 0;
@@ -54,12 +73,12 @@ export async function runAcceptanceChecks(checks: { id: string; run: () => unkno
   return { passed, failed, ok: passed === 11 && failed === 0 };
 }
 
-export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), log = console.log }: { dataDir: string; repoRoot?: string; log?: (line: string) => void }) {
+export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), log = console.log, priorApprovalProofPath, signoffPath: requestedSignoffPath }: { dataDir: string; repoRoot?: string; log?: (line: string) => void; priorApprovalProofPath?: string; signoffPath?: string }) {
   const { getDb } = await import("../../app/server/db.ts");
   const { loadCodebook } = await import("../coding/codebook-prompt.ts");
   const { ARTCRAFT_HN_ID, GOLD_SEED } = await import("../select/draw-sample.ts");
   const { sortPilotCandidates } = await import("../select/pilot-draw.ts");
-  const { a7Signed } = await import("./gold.ts");
+  const { a7Signed, a7Section } = await import("./gold.ts");
   const { projectSpans, spansDigest } = await import("../confirm/confirm.ts");
   const { ROLE_CONFIG } = await import("./providers.ts");
   const { DollarBudget } = await import("../coding/spend-guards.ts");
@@ -67,7 +86,12 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
   const validation = path.join(dataDir, "validation");
   const sampleFile = path.join(dataDir, "pipeline", "sample-projects.json");
   const subsetFile = path.join(dataDir, "pipeline", "sample-subsets.json");
-  const signoffPath = path.join(dataDir, "decisions", "signoff.jsonl");
+  const approvalPaths = acceptanceApprovalPaths(dataDir, { priorApprovalProofPath, signoffPath: requestedSignoffPath });
+  const signoffPath = approvalPaths.signoffPath;
+  if (approvalPaths.priorApprovalProofPath && fs.existsSync(signoffPath)) requireEvidence(fs.realpathSync(signoffPath) !== path.resolve(dataDir, "decisions", "signoff.jsonl"), "detached-proof-refuses-production-signoff-file");
+  const protocolPath = path.join(repoRoot, "protocol", "PROTOCOL.md");
+  const a7Digest = crypto.createHash("sha256").update(a7Section(fs.readFileSync(protocolPath, "utf8"))).digest("hex");
+  const inheritedProof = async (file: string) => { const modulePath = "./release-proof.ts"; const mod = await import(modulePath); return mod.loadReleaseProof(file, protocolPath); };
   const gatePath = path.join(validation, "gate-v1.0.json");
   const sample = () => readJson(sampleFile) as { n: number; hn_id: string; quarter: number }[];
   const subsets = () => readJson(subsetFile);
@@ -75,7 +99,9 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
   const gateModule = async () => { const modulePath = "./gate.ts"; return await import(modulePath); };
   const signedGate = async () => {
     const mod = await gateModule(); const gate = await mod.loadSignedGate(gatePath, signoffPath);
-    requireEvidence(gate, "gate-not-signed"); return { mod, gate };
+    requireEvidence(gate, "gate-not-signed");
+    if (approvalPaths.priorApprovalProofPath) { const inherited = assertInheritedGoldApproval(await inheritedProof(approvalPaths.priorApprovalProofPath), a7Digest); requireEvidence(gate.approvalEvidence?.proofDigest === inherited.proofDigest && gate.approvalEvidence.a7Digest === inherited.a7Digest, "gate-detached-approval-mismatch"); }
+    return { mod, gate };
   };
   const tests = (files: string[]) => {
     const result = spawnSync(process.execPath, ["--test", "--test-reporter=tap", ...files], { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, env: { ...process.env, PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? ""}` } });
@@ -97,7 +123,7 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
       requireEvidence(secondary.length <= 100 && secondary.every(row => allowed.has(hn.get(row.project_n)!)), "second-coder-outside-seeded-subset"); return true;
     } },
     { id: "C3", run: async () => {
-      requireEvidence(await a7Signed({ protocolPath: path.join(repoRoot, "protocol", "PROTOCOL.md"), signoffPath }), "a7-not-signed");
+      const approval = await verifyGoldApproval({ proofPath: approvalPaths.priorApprovalProofPath, expectedA7Digest: a7Digest }, { loadProof: inheritedProof, legacySigned: () => a7Signed({ protocolPath, signoffPath }) }); log(`GOLD_APPROVAL: ${JSON.stringify(approval)}`);
       const rows = await db.selectFrom("pipeline_gold_outcomes").selectAll().where("codebook_version", "=", codebook.codebookVersion).execute(); const labels = await db.selectFrom("pipeline_gold_labels").select(["project_n", "labeller_id", "labeller_kind", "provider", "input_digest", "model_id", "check_id"]).where("codebook_version", "=", codebook.codebookVersion).execute(); let counted = 0; let labelled = 0; let noGold = 0; let excludedA3 = 0;
       for (const e of sample()) {
         if (!fs.existsSync(path.join(dataDir, "pipeline", "manifests", `${e.n}.json`))) continue;
@@ -159,6 +185,6 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   globalThis.fetch = async () => { throw new Error("offline acceptance prohibits network calls"); };
-  try { const { resolveDataDir } = await import("../../app/server/db.ts"); const result = await runPhase4Acceptance({ dataDir: resolveDataDir() }); process.exitCode = result.ok ? 0 : 1; }
+  try { const { resolveDataDir } = await import("../../app/server/db.ts"); const args = process.argv.slice(2); const option = (name: string) => { const i = args.indexOf(name); if (i < 0) return undefined; requireEvidence(args[i + 1], "missing-acceptance-option"); return args[i + 1]; }; const result = await runPhase4Acceptance({ dataDir: resolveDataDir(), priorApprovalProofPath: option("--prior-approval-proof"), signoffPath: option("--signoff") }); process.exitCode = result.ok ? 0 : 1; }
   catch { for (let i = 1; i <= 11; i++) console.log(`FAIL C${i}`); console.log("ACCEPTANCE-FAILED"); process.exitCode = 1; }
 }

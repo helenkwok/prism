@@ -19,7 +19,7 @@ LOG="$DATA_DIR/validation/phase4-acceptance-${STAMP}-$$.log"
 : > "$LOG"
 chmod 600 "$LOG"
 
-"$NODE" src/pipeline/validate/phase4-acceptance.ts > "$LOG" 2>&1
+"$NODE" src/pipeline/validate/phase4-acceptance.ts "$@" > "$LOG" 2>&1
 
 PASSED=0
 FAILED=0
