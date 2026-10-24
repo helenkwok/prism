@@ -44,3 +44,15 @@ test("checkpoint persistence occurs every twenty new decisions and on final dema
   assert.equal(reports.length, 1); assert.equal(reports[0].checkpointReason, "twenty-completed"); assert.equal(reports[0].remainingPrompts.length, 1);
   tracker.checkpoint("final"); assert.equal(reports.length, 2);
 });
+
+test("snapshots refresh stale uncalibrated totals and baseline-specific assumptions", () => {
+  const tracker = createRollingProjection({ ...baseline(), uncalibratedInputProjectedTotalUsd: 999, assumption: "stale all76 assumption" });
+  tracker.complete(complete(2, [usage(50, 200)]));
+  const out = tracker.snapshot();
+  assert.equal(out.uncalibratedInputProjectedTotalUsd, out.completedUsage.spentUsd + 100 * 0.0000001 + out.projectedRemainingOutputUsd);
+  assert.notEqual(out.uncalibratedInputProjectedTotalUsd, out.projectedTotalUsd);
+  assert.ok(out.assumption.includes("per completed decision, including retry usage")); assert.ok(!out.assumption.includes("76"));
+  const final = tracker.checkpoint("final", .002);
+  assert.equal(final.uncalibratedInputProjectedTotalUsd, .002 + 100 * 0.0000001 + final.projectedRemainingOutputUsd);
+  assert.equal(final.assumption, out.assumption);
+});

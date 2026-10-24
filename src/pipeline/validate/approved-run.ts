@@ -194,7 +194,9 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       const projectionTracker = stage === "full-confirm" ? createRollingProjection(fullProjection, { onCheckpoint: report => {
         const file = path.join(validation, "full-confirm-cost-projection.json");
         const next = `${file}.next`;
-        fs.writeFileSync(next, JSON.stringify(report, null, 2) + "\n", { mode: 0o600 });
+        const fundedReport = { ...report, includedCreditAtApprovalUsd: fullFunding.includedBalanceUsd,
+          projectedRemainingIncludedCreditUsd: report.projectedTotalUsd === null ? null : fullFunding.includedBalanceUsd - (report.projectedTotalUsd - fullFunding.runSpentAtBalanceUsd) };
+        fs.writeFileSync(next, JSON.stringify(fundedReport, null, 2) + "\n", { mode: 0o600 });
         fs.renameSync(next, file);
         log(`COST_PROJECTION: ${JSON.stringify({ stage, completed: report.completed, remaining: report.remaining, estimated: report.projectedTotalUsd, cap: report.cap, withinCap: report.withinCap, spent: report.completedUsage.spentUsd + report.unattributedSpentUsd, includedCreditLeftEstimate: fullFunding.includedBalanceUsd - (report.completedUsage.spentUsd + report.unattributedSpentUsd - fullFunding.runSpentAtBalanceUsd), reason: report.checkpointReason })}`);
       } }) : undefined;
