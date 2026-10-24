@@ -71,11 +71,21 @@ async function main() {
   const doc = fs.readFileSync(docPath, "utf8");
   const context = all("--context").map((p) => fs.readFileSync(p, "utf8")).join("\n\n");
   // Sign-off is paid too; it shares the request cap and requires an explicit budget.
-  const client = createClient({
-    baseUrl: PINNED_BASE_URL,
-    apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
-    budget: requireTfBudget(),
-  });
+  // --provider openrouter: the same model on OpenRouter (key file openrouter.key), priced from its public list.
+  let client;
+  if (all("--provider")[0] === "openrouter") {
+    const or = await import("../validate/providers.ts");
+    or.registerOpenRouterPrices((await (await fetch(`${or.OPENROUTER_BASE_URL}/models`)).json()).data);
+    const apiKey = readKey("OPENROUTER_API_KEY", "openrouter.key");
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY or openrouter.key is required for --provider openrouter");
+    client = createClient({ baseUrl: or.OPENROUTER_BASE_URL, apiKey, budget: requireTfBudget(), modelMap: or.OPENROUTER_MODEL_MAP, fetchImpl: or.openRouterFetch() });
+  } else {
+    client = createClient({
+      baseUrl: PINNED_BASE_URL,
+      apiKey: readKey("NEBIUS_API_KEY", "nebius.key")!,
+      budget: requireTfBudget(),
+    });
+  }
   const dir = path.join(resolveDataDir(), "decisions");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   for (const item of all("--item")) {
@@ -83,6 +93,7 @@ async function main() {
     fs.appendFileSync(path.join(dir, "signoff.jsonl"), JSON.stringify(rec) + "\n", { mode: 0o600 });
     console.log(`SIGNOFF ${item}: ${rec.decision}${rec.narrowsWhatPasses ? " (narrows)" : ""} — ${rec.reason}`);
   }
+  console.log(client.dollarBudget!.budgetLine());
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

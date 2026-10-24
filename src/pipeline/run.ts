@@ -87,6 +87,13 @@ interface Overrides {
   useTavily?: boolean;
   /** D-67: Token Factory dollar cap; required for live TF (CLI --budget / PRISM_TF_BUDGET). */
   tfBudget?: number | DollarBudget;
+  /** 07-13: live-run stage events (Collect, Code, Gate); absent → no behaviour change. */
+  onStage?: (stage: "collect" | "code" | "gate", status: "running" | "done", message?: string | null) => void | Promise<void>;
+  /** Provider swap: OpenAI-compatible base URL and model-id map for coding (default Token Factory). */
+  nebiusBaseUrl?: string;
+  modelMap?: Record<string, string>;
+  /** 07-13: where the A9 guard reads sign-off records (the live run's scratch copy). */
+  a9SignoffPath?: string;
 }
 
 /** One browser at a time across concurrent projects (D-55 / Pitfall 3). */
@@ -234,6 +241,8 @@ async function processProject(
   const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides, secondCoderIds, onStop } = ctx;
   const projectId = String(project.hn_id);
 
+  const onStage = overrides.onStage ?? (() => {});
+  await onStage("collect", "running");
   // 1. boundary — cheap, cached anyway for a uniform resume story.
   const boundaryStage = await withStageCache(cacheDir, projectId, "boundary", { finalUrl: project.final_url }, async () => deriveBoundary(project.final_url));
   const boundary: Boundary = boundaryStage.value;
@@ -423,6 +432,8 @@ async function processProject(
   });
   const segmented = segmentStage.value;
   const spanIds = segmented.spans.map((s: { id: string }) => s.id);
+  await onStage("collect", "done", `${redacted.sources.length} pages collected (robots.txt checked first).`);
+  await onStage("code", "running");
 
   // EVD-06: injection-pattern detection — cached, metadata-only, never read by
   // any later stage (D-39/D-40/D-41). Must not influence codeChecks, filteredChecks or claims.
@@ -453,9 +464,10 @@ async function processProject(
         // D-67: TF coding requires explicit --budget / PRISM_TF_BUDGET (no silent spend).
         // Injected nebiusFetchImpl (unit tests) may skip the gate; live path never does.
         const client = createClient({
-          baseUrl: PINNED_BASE_URL,
+          baseUrl: overrides.nebiusBaseUrl ?? PINNED_BASE_URL,
           apiKey: apiKeys.nebius,
           fetchImpl: overrides.nebiusFetchImpl,
+          modelMap: overrides.modelMap,
           ...(overrides.tfBudget != null
             ? { budget: overrides.tfBudget }
             : overrides.nebiusFetchImpl
@@ -496,6 +508,8 @@ async function processProject(
   const codeChecks: CheckEntry[] = codingResult.checks ?? codingResult.data?.checks ?? [];
   const codingAttempts: number = codingResult.attempts ?? 0;
   const codingAllUnknown: boolean = codingResult.allUnknown === true;
+  await onStage("code", "done", `${contract.checkIds.length} checks coded${codingAllUnknown && spanIds.length ? " (the coder gave no valid reply: all unknown)" : ""}.`);
+  await onStage("gate", "running");
 
   // 6. filter — downgrade-only quote-or-unknown (COD-02).
   const filterStage = await withStageCache(cacheDir, projectId, "filter", { codeChecks, spanIds }, async () => applyQuoteOrUnknownFilter(codeChecks, spanIds));
@@ -512,6 +526,7 @@ async function processProject(
     }),
   );
   const claims = claimsStage.value;
+  await onStage("gate", "done", "Gate run on the filtered states.");
 
   // 8. record — the durable manifest + per-check + per-claim rows (COD-06). Never cached: the
   // cache knows nothing about which database it wrote to, so a cached record skipped writing to a
@@ -637,7 +652,7 @@ export async function runPipeline({
   overrides?: Overrides;
 }): Promise<RunAccounting> {
   const resolvedDataDir = dataDir ?? resolveDataDir();
-  if (!overrides.nebiusFetchImpl) assertA9Signed();
+  if (!overrides.nebiusFetchImpl) assertA9Signed(overrides.a9SignoffPath ? { signoffPath: overrides.a9SignoffPath } : undefined);
   // One budget object is shared by every project/client in this run.
   if (overrides.tfBudget != null && !(overrides.tfBudget instanceof DollarBudget)) {
     overrides = { ...overrides, tfBudget: new DollarBudget(overrides.tfBudget) };

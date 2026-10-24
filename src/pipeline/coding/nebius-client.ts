@@ -137,6 +137,7 @@ export function createClient({
   skipBudgetGate = false,
   tokenCap = DEFAULT_TOKEN_CAP,
   onUsage, stage,
+  modelMap,
 }: {
   baseUrl: string;
   apiKey: string;
@@ -148,6 +149,8 @@ export function createClient({
   tokenCap?: number;
   onUsage?: UsageObserver;
   stage?: string;
+  /** Provider swap (e.g. OpenRouter): pipeline model id -> provider model id, applied before pricing. */
+  modelMap?: Record<string, string>;
 }) {
   if (!baseUrl) throw new NebiusError(0, "baseUrl is required");
   if (!apiKey) throw new NebiusError(0, "apiKey is required (set NEBIUS_API_KEY in the private env file)");
@@ -171,6 +174,8 @@ export function createClient({
       // D-67: estimate + refuse before any HTTP for chat/completions with messages.
       if (!isMultipart && body && typeof body === "object" && Array.isArray((body as any).messages)) {
         const messages = (body as any).messages as { content?: string }[];
+        const mapped = modelMap?.[String((body as any).model ?? "")];
+        if (mapped) body = { ...body, model: mapped };
         const model = String((body as any).model ?? "");
         requestModel = model || "deepseek-ai/DeepSeek-V4-Flash-0731";
         body = { ...body, max_tokens: outputTokenLimit((body as any).max_tokens) };

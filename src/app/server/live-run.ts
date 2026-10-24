@@ -106,7 +106,8 @@ export interface RunContext {
   /** Records that a report view exists for this project (call it once the gate has run). */
   setReport(projectRef: string): Promise<void>;
 }
-export type LiveRunner = (ctx: RunContext) => Promise<{ projectRef: string }>;
+/** `notAnalysed`: the screen excluded the project; the job ends with that message and no report. */
+export type LiveRunner = (ctx: RunContext) => Promise<{ projectRef: string; notAnalysed?: string }>;
 
 /** Production default until plan 07-13 wires the real pipeline. */
 export const notConfiguredRunner: LiveRunner = async () => {
@@ -141,10 +142,204 @@ export function createFixtureRunner({ stageMs = 200 }: { stageMs?: number } = {}
   };
 }
 
-export function runnerFromEnv(env: NodeJS.ProcessEnv = process.env): { name: "fixture" | "not-configured"; runner: LiveRunner } {
+export function runnerFromEnv(env: NodeJS.ProcessEnv = process.env): { name: "fixture" | "real" | "not-configured"; runner: LiveRunner } {
+  if (env.PRISM_LIVE_RUNNER === "real") {
+    const missing = ["NEBIUS_API_KEY", "PRISM_LIVE_RUN_CAP_USD"].filter((k) => !env[k]?.trim());
+    if (missing.length) throw new Error(`PRISM_LIVE_RUNNER=real needs ${missing.join(" and ")}`);
+    return { name: "real", runner: createRealRunner({ apiKey: env.NEBIUS_API_KEY!, githubToken: env.GITHUB_TOKEN ?? "" }) };
+  }
   return env.PRISM_LIVE_RUNNER === "fixture"
     ? { name: "fixture", runner: createFixtureRunner() }
     : { name: "not-configured", runner: notConfiguredRunner };
+}
+
+// ---- the real runner (07-13, D-80) ----------------------------------------------------
+
+export const A9_TABLE = "app_a9_signoff";
+
+/** seed-access fills it; the runner copies it into each job's scratch decisions file for the A9 guard. */
+export async function ensureA9Table(db: Kysely<any>): Promise<void> {
+  await db.schema.createTable(A9_TABLE).ifNotExists().addColumn("line", "text", (c) => c.primaryKey()).execute();
+}
+
+export interface RealRunnerDeps {
+  apiKey: string;
+  githubToken: string;
+  /** OpenAI-compatible inference host (default Token Factory) and model-id map for a provider swap. */
+  baseUrl?: string;
+  modelMap?: Record<string, string>;
+  hostLabel?: string;
+  modelFetch?: typeof fetch;
+  /** Collector connections; default pinnedFetch (D-80). */
+  siteFetch?: typeof fetch;
+  githubFetch?: typeof fetch;
+  gateSpawnImpl?: unknown;
+  pythonPath?: string;
+  /** Root for per-job scratch dirs; default PRISM_DATA_DIR/live. */
+  scratchRoot?: string;
+  /** A9 sign-off record lines; default the app database's app_a9_signoff table. */
+  a9Lines?: (db: Kysely<any>) => Promise<string[]>;
+  keepScratch?: boolean;
+}
+
+/**
+ * Screen (Lightning) -> runPipeline on a one-entry slice (own site + own repos, robots.txt first,
+ * pinnedFetch, no rendering) -> confirm positives (Ultra, thinking on: Phase 4's A10.2 winner) ->
+ * report. Every paid call goes through the run's DollarBudget. Pipeline rows live only in the
+ * job's scratch database; the app database receives the ReportView and its snapshots.
+ */
+export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
+  return async ({ db, job, emit, budget, setReport }) => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const { default: Database } = await import("better-sqlite3");
+    const { Kysely: K, SqliteDialect } = await import("kysely");
+    const { resolveDataDir } = await import("./db.ts");
+    const { createClient, PINNED_BASE_URL, PINNED_MODEL } = await import("../../pipeline/coding/nebius-client.ts");
+    const { screenCandidate, SCREENER_MODEL, STAGE1_THINKING } = await import("../../pipeline/select/screen-model.ts");
+    const { runPipeline } = await import("../../pipeline/run.ts");
+    const { pinnedFetch } = await import("../../pipeline/evidence/pinned-fetch.ts");
+    const { loadCodebook } = await import("../../pipeline/coding/codebook-prompt.ts");
+    const { resolveGatesPath } = await import("../../pipeline/coding/contract.ts");
+    const conf = await import("../../pipeline/confirm/confirm.ts");
+    const { runGate } = await import("../../pipeline/gate/run-gate.ts");
+    const { sourceFromStore } = await import("../../report/source-from-store.ts");
+    const { buildReportView, loadGapText } = await import("../../report/view.ts");
+    const { upsertReportView, upsertSnapshot } = await import("../../report/store.ts");
+
+    const access = job.projectRef
+      ? await db.selectFrom("app_project_access").select(["project_id", "title"]).where("project_id", "=", job.projectRef).executeTakeFirst()
+      : undefined;
+    if (!access) throw new Error("no access row for this site");
+    const projectRef = String(access.project_id);
+    const title = String(access.title ?? job.host);
+    const client = createClient({
+      baseUrl: deps.baseUrl ?? PINNED_BASE_URL,
+      apiKey: deps.apiKey,
+      fetchImpl: deps.modelFetch,
+      modelMap: deps.modelMap,
+      budget,
+      concurrency: 1,
+    });
+    const host = deps.hostLabel ?? "Nebius Token Factory";
+
+    await emit("screen", "running");
+    const screen = await screenCandidate(client, 1, { title, url: job.url }, { thinking: STAGE1_THINKING });
+    if (!screen.include) {
+      const message = `Not analysed: the screen found ${screen.reasonCode}. No report was built.`;
+      await emit("screen", "done", message);
+      return { projectRef, notAnalysed: message };
+    }
+    await emit("screen", "done", "Screened as an AI product.");
+
+    const scratch = path.join(deps.scratchRoot ?? path.join(resolveDataDir(), "live"), String(job.id));
+    fs.rmSync(scratch, { recursive: true, force: true });
+    fs.mkdirSync(path.join(scratch, "decisions"), { recursive: true, mode: 0o700 });
+    const sdb = new K<any>({ dialect: new SqliteDialect({ database: new Database(path.join(scratch, "pipeline.sqlite")) }) });
+    try {
+      const lines = deps.a9Lines
+        ? await deps.a9Lines(db)
+        : await ensureA9Table(db).then(async () => (await db.selectFrom(A9_TABLE).select("line").execute()).map((r: any) => String(r.line)));
+      const a9Path = path.join(scratch, "decisions", "signoff.jsonl");
+      fs.writeFileSync(a9Path, lines.map((l) => l + "\n").join(""), { mode: 0o600 });
+      const slice = path.join(scratch, "slice.json");
+      fs.writeFileSync(slice, JSON.stringify([{ n: 1, hn_id: `live-${job.id}`, title, final_url: job.url }]));
+
+      const accounting = await runPipeline({
+        sliceProjectsPath: slice,
+        apiKeys: { tavily: "", nebius: deps.apiKey, github: deps.githubToken },
+        concurrency: 1,
+        cacheDir: path.join(scratch, "cache"),
+        dataDir: scratch,
+        db: sdb as any,
+        secondCoderIds: new Set(),
+        overrides: {
+          ownSiteFetchImpl: deps.siteFetch ?? pinnedFetch,
+          githubFetchImpl: deps.githubFetch ?? pinnedFetch,
+          nebiusFetchImpl: deps.modelFetch,
+          nebiusBaseUrl: deps.baseUrl,
+          modelMap: deps.modelMap,
+          renderImpl: async () => "",
+          gateSpawnImpl: deps.gateSpawnImpl as any,
+          pythonPath: deps.pythonPath,
+          tfBudget: budget,
+          a9SignoffPath: a9Path,
+          onStage: (stage, status, message) => emit(stage, status, message ?? null),
+        },
+      });
+      const outcome = accounting.outcomes[0];
+      if (!outcome || outcome.status !== "ok") {
+        if (outcome?.status === "stopped" && /budget|reserved allowance/i.test(outcome.error ?? "")) throw new BudgetExceededError(budget.snapshot());
+        throw new Error(outcome?.error ?? "the pipeline ran no project");
+      }
+
+      const codebook = loadCodebook(path.join(process.cwd(), "codebook.md"));
+      const gatesPath = resolveGatesPath();
+      const gapText = loadGapText({ codebook });
+      const gate = (record: unknown) => runGate(record as any, { spawnImpl: deps.gateSpawnImpl as any, pythonPath: deps.pythonPath });
+      await conf.ensureConfirmationSchema(sdb as any);
+      await conf.ensureEditsSchema(sdb as any);
+      const collectedAt = new Date().toISOString();
+      const store = async () => {
+        const source = await sourceFromStore(sdb as any, scratch, codebook, 1, {
+          projectId: projectRef,
+          title,
+          hnId: null,
+          collectedAt,
+          generatedAt: new Date().toISOString(),
+          renderAvailable: false,
+          roles: {
+            coding: { role: "coder", modelId: PINNED_MODEL, host },
+            confirmation: { role: "confirmer", modelId: conf.CONFIRMER_MODEL, host },
+            humanEdits: "none",
+          },
+        });
+        const view = await buildReportView(source, { codebook, gatesPath, runGate: gate as any, gapText });
+        for (const p of source.pages) {
+          const snap = JSON.parse(fs.readFileSync(path.join(scratch, "pipeline", "snapshots", `${p.snapshotHash}.json`), "utf8"));
+          await upsertSnapshot(db, { projectRef, hash: p.snapshotHash, url: p.url, archivedAt: collectedAt, text: snap.redactedText, fixture: false });
+        }
+        await upsertReportView(db, view);
+        return view;
+      };
+      await store(); // after the gate: a budget stop in Confirm still leaves a report (positives awaiting)
+      await setReport(projectRef);
+
+      await emit("confirm", "running");
+      const spanText = new Map(conf.projectSpans(scratch, 1).map((s) => [s.id, s.text]));
+      const flags = (await sdb.selectFrom("pipeline_injection_flags").select("span_id").where("project_n", "=", 1).execute()).map((r: any) => r.span_id);
+      const rows = await sdb.selectFrom("pipeline_check_states").selectAll().where("project_n", "=", 1).execute();
+      const positives = (rows as any[])
+        .filter((r) => r.filtered_state === "pass" || r.filtered_state === "claimed")
+        .map((r) => ({ projectN: 1, checkId: r.check_id, state: r.filtered_state, flaggedSpanIds: flags, spans: JSON.parse(r.span_ids_json).map((id: string) => ({ id, text: spanText.get(id) ?? "" })) }));
+      let decided = 0;
+      let undecided = 0;
+      for (const p of positives) {
+        try {
+          const v = await conf.confirmWithModel(client, codebook, p, conf.CONFIRMER_MODEL, 3, true);
+          await conf.recordConfirmation(sdb as any, {
+            projectN: 1, checkId: p.checkId, decision: v.decision, confirmedState: conf.confirmedStateFor(v.decision, p.state), reason: v.reason,
+            confirmerId: `agent:${conf.CONFIRMER_MODEL}`, confirmerKind: "agent", modelId: conf.CONFIRMER_MODEL,
+            decidedAt: new Date().toISOString(), inputDigest: conf.inputDigest(codebook, p), spanIds: p.spans.map((s: { id: string }) => s.id),
+          });
+          decided += 1;
+        } catch (err) {
+          // An off-contract or flagged-span reply leaves that positive awaiting; money and quota stops end the run.
+          if (err instanceof conf.InvalidConfirmationError || err instanceof conf.FlaggedRuleError) undecided += 1;
+          else throw err;
+        }
+      }
+      await emit("confirm", "done", `${decided} of ${positives.length} positives confirmed or decided${undecided ? `, ${undecided} awaiting` : ""}.`);
+
+      await emit("report", "running");
+      const view = await store();
+      await emit("report", "done", `Report stored: ${view.collection.pages} pages, not rendered on the server.`);
+      return { projectRef };
+    } finally {
+      await sdb.destroy();
+      if (!deps.keepScratch) fs.rmSync(scratch, { recursive: true, force: true });
+    }
+  };
 }
 
 /** Fixture mode answers .example hosts with one public address, so tests need no real DNS. */
@@ -410,7 +605,9 @@ async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promi
         await db.updateTable("app_job").set({ project_ref: projectRef }).where("id", "=", jobId).execute();
       },
     });
-    end = { status: "done", project_ref: result.projectRef, report_ready: 1, stop_stage: null, message: null };
+    end = result.notAnalysed
+      ? { status: "done", project_ref: result.projectRef, report_ready: 0, stop_stage: null, message: result.notAnalysed }
+      : { status: "done", project_ref: result.projectRef, report_ready: 1, stop_stage: null, message: null };
   } catch (err) {
     const at: Stage = stage === "queued" ? "screen" : stage;
     if (err instanceof BudgetExceededError) {

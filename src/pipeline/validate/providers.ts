@@ -8,7 +8,7 @@ import {
   type FetchImpl,
   QuotaStop,
 } from "../coding/nebius-client.ts";
-import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, assertRequestAllowed, measuredCostUsd, tokenCount, cachedTokenCount, outputTokenLimit, reservationInputTokens, prefixDigest, ReservationExceededError, type UsageObserver } from "../coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, LIST_PRICES, assertRequestAllowed, measuredCostUsd, tokenCount, cachedTokenCount, outputTokenLimit, reservationInputTokens, prefixDigest, ReservationExceededError, type UsageObserver } from "../coding/spend-guards.ts";
 import { CONFIRMER_MODEL } from "../confirm/confirm.ts";
 import { SCREENER_MODEL } from "../select/screen-model.ts";
 
@@ -267,4 +267,82 @@ export function roleClient(
     });
   }
   return ollamaClient({ fetchImpl, budget, counters, concurrency, onUsage, stage, splitNemotronThinking, onThinkingEnvelope });
+}
+
+// ---- OpenRouter (same models, OpenAI-compatible host) ---------------------------------------
+
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+/**
+ * Pipeline model id -> OpenRouter id for the same model. The paid endpoints: the `:free` ones are
+ * excluded by the account's training/ZDR guardrails (404 at routing, measured 2026-10-24).
+ */
+export const OPENROUTER_MODEL_MAP: Record<string, string> = {
+  [SCREENER_MODEL]: "nvidia/nemotron-3.5-lightning",
+  [CONFIRMER_MODEL]: "nvidia/nemotron-3-ultra-550b-a55b",
+  [PINNED_MODEL]: "deepseek/deepseek-v4-flash",
+  "Qwen/Qwen3.5-397B-A17B": "qwen/qwen3.5-397b-a17b",
+};
+
+/** List prices from OpenRouter's public /api/v1/models `data`, for the mapped ids only (USD per token). */
+export function registerOpenRouterPrices(models: { id: string; pricing?: { prompt?: string; completion?: string } }[], ids = Object.values(OPENROUTER_MODEL_MAP)): void {
+  for (const id of ids) {
+    const m = models.find((x) => x.id === id);
+    const prompt = Number(m?.pricing?.prompt);
+    const completion = Number(m?.pricing?.completion);
+    if (!m || !(prompt >= 0) || !(completion >= 0)) throw new Error(`openrouter: no list price for ${id}`);
+    LIST_PRICES[id] = { prompt, completion };
+  }
+}
+
+/**
+ * fetch wrapper for createClient against OpenRouter: Nemotron's chat_template_kwargs thinking switch
+ * becomes OpenRouter's `reasoning`, only endpoints honouring every parameter (response_format) are
+ * used, and a 429 waits (Retry-After, else exponential) at most `maxAttempts` times.
+ */
+export function openRouterFetch({
+  fetchImpl = fetch,
+  maxAttempts = 6,
+  maxWaitMs = 65_000,
+  beforeRequest,
+  onResponse,
+}: {
+  fetchImpl?: FetchImpl;
+  maxAttempts?: number;
+  maxWaitMs?: number;
+  /** Return a Response to refuse the request without sending it (e.g. a hard spending cap). */
+  beforeRequest?: (body: any) => Response | null;
+  onResponse?: (info: { model: string; status: number; json: any; attempt: number }) => void;
+} = {}): FetchImpl {
+  return (async (input: any, init: any = {}) => {
+    let body = init.body;
+    let parsed: any = null;
+    if (typeof body === "string") {
+      parsed = JSON.parse(body);
+      const think = parsed.chat_template_kwargs?.enable_thinking;
+      delete parsed.chat_template_kwargs;
+      if (parsed.reasoning_effort) {
+        parsed.reasoning = { effort: parsed.reasoning_effort };
+        delete parsed.reasoning_effort;
+      } else if (typeof think === "boolean") parsed.reasoning = { enabled: think };
+      parsed.usage = { include: true };
+      parsed.provider = { require_parameters: true };
+      body = JSON.stringify(parsed);
+      const refused = beforeRequest?.(parsed);
+      if (refused) return refused;
+    }
+    for (let attempt = 1; ; attempt += 1) {
+      const res = await fetchImpl(input, { ...init, body });
+      if (res.status === 429 && attempt < maxAttempts) {
+        const after = Number(res.headers.get("retry-after"));
+        await sleep(Math.min(maxWaitMs, after > 0 ? after * 1000 : 2000 * 2 ** (attempt - 1)));
+        continue;
+      }
+      if (parsed && onResponse) {
+        const json = await res.clone().json().catch(() => null);
+        onResponse({ model: parsed.model, status: res.status, json, attempt });
+      }
+      return res;
+    }
+  }) as FetchImpl;
 }
