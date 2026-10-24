@@ -15,6 +15,9 @@ export const LIST_PRICES: Record<string, { prompt: number; completion: number }>
   "deepseek-ai/DeepSeek-V4-Flash-0731": { prompt: 0.00000014, completion: 0.00000028 },
   "nvidia/Nemotron-3-Ultra-550b-a55b": { prompt: 0.000001, completion: 0.000003 },
   "nvidia/Nemotron-3.5-Super-VL": { prompt: 0.0000003, completion: 0.0000009 },
+  // Published input/output rates per million tokens, fixed for screening.
+  // https://nebius.com/services/token-factory/models/nvidia-nemotron-models-inference
+  "nvidia/Nemotron-3_5-Lightning": { prompt: .06 / 1e6, completion: .24 / 1e6 },
   // https://nebius.com/services/token-factory/models/qwen-models-inference
   "Qwen/Qwen3.5-397B-A17B": { prompt: 0.60 / 1e6, completion: 3.60 / 1e6 },
   // USD per token; D-65/D-67 correction 2026-10-23, Pro monthly credit is $60.
