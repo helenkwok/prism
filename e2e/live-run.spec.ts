@@ -54,6 +54,30 @@ test.describe("admin", () => {
     await page.reload();
     await expect(page.locator("[data-run]")).toHaveCount(before);
   });
+
+  test("shows what is left on PRISM's demo budget and names the limit, its reset and the way round it", async ({ page }) => {
+    // e2e/serve.mjs: a fake PRISM Tavily key (the fixture runner never calls Tavily) and 2 Tavily runs per session.
+    await page.goto("/run");
+    await expect(page.locator("[data-demo-model]")).toContainText(/\d of 5 model runs left today on PRISM's demo budget\./);
+    await expect(page.locator("[data-demo-tavily]")).toHaveText("2 of 2 Tavily runs left today on PRISM's demo budget (90 of 90 Tavily credits left; up to 10 per run).");
+    for (let i = 0; i < 2; i++) {
+      await page.getByLabel("Project URL").fill("https://p01.example/");
+      await page.getByLabel("Evidence collector").selectOption("tavily");
+      await page.getByRole("button", { name: "Run PRISM on this URL" }).click();
+      await page.waitForURL(/\/run\/\d+$/);
+      await expect(page.locator("[data-end-state=done]")).toBeVisible({ timeout: 20_000 });
+      await page.goto("/run");
+    }
+    await expect(page.locator("[data-demo-tavily]")).toContainText("0 of 2 Tavily runs left today on PRISM's demo budget; the next one frees up");
+    await page.getByLabel("Project URL").fill("https://p01.example/");
+    await page.getByLabel("Evidence collector").selectOption("tavily");
+    await page.getByRole("button", { name: "Run PRISM on this URL" }).click();
+    const notice = page.getByRole("alert");
+    await expect(notice).toContainText("Not run: this session has used all 2 Tavily runs on PRISM's demo budget in the last 24 hours. The next one frees up");
+    await expect(notice).toContainText("Use your own Tavily key, or the own-site collector, or read the recorded reports.");
+    await expect(notice.getByRole("link", { name: "Read the recorded reports" })).toHaveAttribute("href", "/");
+    expect(new URL(page.url()).pathname).toBe("/run");
+  });
 });
 
 for (const role of ["judge", "companyA"] as const) {

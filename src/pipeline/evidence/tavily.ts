@@ -183,6 +183,30 @@ export interface CollectProjectPagesResult {
   missingUrls: string[];
 }
 
+/** Live runs only (Helen, 2026-10-24): map at most 20 URLs, extract the 10 most relevant. Never the bulk pipeline. */
+export const LEAN = { mapLimit: 20, extractCap: 10 } as const;
+
+// The collector had no page priority (start URL, then map order), so lean mode adds one: the home
+// page, then docs, pricing, security and about pages (the pages that carry most decision evidence),
+// then the rest in map order. Matched on the path, case-insensitive.
+const LEAN_PRIORITY = [/^\/?$/, /(^|\/)(docs?|documentation|guide|guides|api)(\/|$)/i, /(^|\/)pricing(\/|$)/i, /(^|\/)(security|trust|privacy)(\/|$)/i, /(^|\/)(about|company|team)(\/|$)/i];
+function leanRank(url: string): number {
+  let p: string;
+  try {
+    p = new URL(url).pathname;
+  } catch {
+    return LEAN_PRIORITY.length;
+  }
+  const i = LEAN_PRIORITY.findIndex((re) => re.test(p));
+  return i === -1 ? LEAN_PRIORITY.length : i;
+}
+/** The start URL first, then by lean rank; stable, so ties keep map order. */
+export function leanOrder(startUrl: string, urls: string[]): string[] {
+  const rest = urls.filter((u) => u !== startUrl).map((u, i) => ({ u, i, r: leanRank(u) }));
+  rest.sort((a, b) => a.r - b.r || a.i - b.i);
+  return [startUrl, ...rest.map((x) => x.u)];
+}
+
 const EMPTY_BELOW_CHARS = 100;
 const isEmptyContent = (r: { raw_content?: unknown }) => typeof r.raw_content !== "string" || r.raw_content.trim().length < EMPTY_BELOW_CHARS;
 
@@ -204,6 +228,8 @@ export async function collectProjectPages({
   mapDepth = 2,
   extractCap = 20,
   allowUrl,
+  budget = new CreditBudget(CEILING_CREDITS),
+  prioritise = false,
 }: {
   boundary: Boundary;
   startUrl: string;
@@ -214,8 +240,12 @@ export async function collectProjectPages({
   mapLimit?: number;
   mapDepth?: number;
   extractCap?: number;
+  /** Shared across a run's calls (a live run's per-run credit cap); default a fresh 40-credit ceiling. */
+  budget?: CreditBudget;
+  /** Lean mode: order candidates by leanOrder before taking extractCap of them. */
+  prioritise?: boolean;
 }): Promise<CollectProjectPagesResult> {
-  const budget = new CreditBudget(CEILING_CREDITS);
+  const startTally = budget.tally;
   const calls: CollectCallResult[] = [];
   const sel = selectorsFor(boundary);
 
@@ -229,7 +259,7 @@ export async function collectProjectPages({
   const projectedMap = mapCredits(mapLimit);
   if (!budget.allows(projectedMap)) {
     calls.push({ pages: [], refused: true, reason: "map call would exceed the credit ceiling" });
-    return { pages: [], creditsSpent: budget.tally, mapUrlCount: 0, offBoundaryCount: 0, calls, missingUrls: [] };
+    return { pages: [], creditsSpent: budget.tally - startTally, mapUrlCount: 0, offBoundaryCount: 0, calls, missingUrls: [] };
   }
   try {
     const mapBody = { url: startUrl, max_depth: mapDepth, limit: mapLimit, allow_external: false, include_usage: true, ...sel };
@@ -254,7 +284,7 @@ export async function collectProjectPages({
   const offBoundary = mapUrls.filter((u) => !withinBoundary(u, boundary));
   const inBoundary = [...new Set(mapUrls.filter((u) => withinBoundary(u, boundary)))];
   const pageLike = inBoundary.filter((u) => isPageLike(u));
-  const ordered = [startUrl, ...pageLike.filter((u) => u !== startUrl)];
+  const ordered = prioritise ? leanOrder(startUrl, pageLike) : [startUrl, ...pageLike.filter((u) => u !== startUrl)];
   const candidates = [...new Set(ordered)].filter((u) => withinBoundary(u, boundary));
   const toExtract: string[] = [];
   for (const u of candidates) {
@@ -315,7 +345,7 @@ export async function collectProjectPages({
 
   return {
     pages,
-    creditsSpent: budget.tally,
+    creditsSpent: budget.tally - startTally,
     mapUrlCount: mapUrls.length,
     offBoundaryCount: offBoundary.length,
     calls,

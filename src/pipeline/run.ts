@@ -20,7 +20,7 @@ import pLimit from "p-limit";
 
 import { resolveDataDir, getDb } from "../app/server/db.ts";
 import { deriveBoundary, hostClass, withinBoundary, type Boundary } from "./evidence/boundary.ts";
-import { collectProjectPages, type CollectProjectPagesResult, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
+import { collectProjectPages, LEAN, type CollectProjectPagesResult, type CreditBudget, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
 import { collectOwnSitePages, robotsGate, type FetchImpl as OwnSiteFetchImpl } from "./evidence/own-site.ts";
 import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImpl, type RepoEvidence } from "./evidence/github.ts";
 import { redactText } from "./evidence/redact.ts";
@@ -87,6 +87,8 @@ interface Overrides {
   useTavily?: boolean;
   /** Live run (BYOK): check robots.txt (through ownSiteFetchImpl) before Tavily maps or extracts a URL. */
   tavilyRobotsFirst?: boolean;
+  /** Live runs only: lean map (20) + extract (10 by priority), every call within this run's shared credit budget. */
+  tavilyLean?: { budget: CreditBudget };
   /** D-67: Token Factory dollar cap; required for live TF (CLI --budget / PRISM_TF_BUDGET). */
   tfBudget?: number | DollarBudget;
   /** 07-13: live-run stage events (Collect, Code, Gate); absent → no behaviour change. */
@@ -268,6 +270,7 @@ async function processProject(
         apiKey: apiKeys.tavily,
         fetchImpl: overrides.tavilyFetchImpl,
         allowUrl: overrides.tavilyRobotsFirst ? robotsGate({ fetchImpl: overrides.ownSiteFetchImpl }) : undefined,
+        ...(overrides.tavilyLean ? { ...LEAN, budget: overrides.tavilyLean.budget, prioritise: true } : {}),
       });
     }
     return collectOwnSitePages({ boundary: b, startUrl, fetchImpl: overrides.ownSiteFetchImpl });
@@ -282,6 +285,7 @@ async function processProject(
       boundary,
       githubOwnerRepo,
       collector: useTavily ? "tavily" : "own-site-v1",
+      ...(useTavily && overrides.tavilyLean ? { lean: 1 } : {}),
       ...(githubOwnerRepo ? { homepageFollow: 1 } : {}),
     },
     async () => {

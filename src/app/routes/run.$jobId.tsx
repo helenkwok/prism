@@ -91,6 +91,11 @@ function RunView({ initial }: { initial: RunStatus }) {
       </div>
       {active ? null : <EndState status={status} linkRef={linkRef} />}
       {active ? null : <Receipt receipt={status.receipt} collector={job.collector} />}
+      {!active && job.demoLeft ? (
+        <p className="mt-2 text-[0.8125rem] tabular-nums" data-demo-left="">
+          {job.demoLeft}
+        </p>
+      ) : null}
       <p className="mt-8">
         <a href="/run">Back to live runs</a>
       </p>

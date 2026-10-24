@@ -58,6 +58,10 @@ const env = {
   PRISM_DATA_DIR: dataDir,
   PRISM_LIVE_RUNNER: "fixture",
   PRISM_LIVE_RUN_CAP_USD: "1.00",
+  // PRISM's Tavily key is a fake: the fixture runner never calls Tavily, and the real key file is never read.
+  PRISM_KEY_DIR: dir,
+  TAVILY_API_KEY: "tvly-e2e-fake-not-a-key",
+  PRISM_DEMO_TAVILY_PER_SESSION_DAY: "2",
 };
 
 const accounts = {

@@ -12,7 +12,7 @@ export const DEFAULT_PROVIDER: ProviderId = "token-factory";
 /** The provider's plain name, for the report and the run receipt. */
 export const PROVIDER_NAME: Record<ProviderId, string> = { "token-factory": "Nebius Token Factory", openrouter: "OpenRouter" };
 
-/** Evidence collectors. Tavily needs the user's own Tavily key. Extend the list, not the form. */
+/** Evidence collectors. Tavily runs on the user's own key, or on PRISM's within its demo limits. Extend the list, not the form. */
 export const COLLECTORS = {
   "own-site": "own-site collector",
   tavily: "Tavily",
@@ -57,4 +57,61 @@ export interface RunReceipt {
   total: { calls: number; tokensIn: number; tokensOut: number; usd: number };
   /** Estimate: the same tokens at Nemotron 3 Ultra's Token Factory list price, for every model step. */
   ultraEstimateUsd: number;
+  /** Tavily runs: credits spent and whose key paid. */
+  tavily?: { credits: number; paidBy: string };
+}
+
+// ---- demo limits on PRISM's own keys (Helen, 2026-10-24; counted in demo-quota.ts) ----------------
+
+export type DemoKind = "tavily" | "model";
+/** Which limit refused a run on PRISM's key, and when it frees up (ISO; null for a spent total). */
+export interface DemoLimitHit {
+  kind: DemoKind;
+  limit: "session" | "account" | "total";
+  of: number;
+  resetsAt: string | null;
+}
+/** What the signed-in session has left on PRISM's keys. Totals only for Tavily (credits). */
+export interface DemoAllowance {
+  kind: DemoKind;
+  sessionLeft: number;
+  sessionOf: number;
+  sessionResetsAt: string | null;
+  accountLeft: number;
+  accountOf: number;
+  accountResetsAt: string | null;
+  totalLeft: number | null;
+  totalOf: number | null;
+  perRun: number | null;
+}
+
+const DEMO_WHAT: Record<DemoKind, string> = { tavily: "Tavily", model: "model" };
+const OWN_KEY: Record<DemoKind, string> = {
+  tavily: "Use your own Tavily key, or the own-site collector",
+  model: "Use your own Token Factory key (or an OpenRouter key)",
+};
+/** Local time of day, in the reader's own time zone, with the zone named. */
+export const localTime = (isoString: string) =>
+  new Date(isoString).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+
+/** "2 of 3 Tavily runs left today on PRISM's demo budget": the tighter of the session and account limits. */
+export function allowanceLine(a: DemoAllowance, at: (iso: string) => string = localTime): string {
+  const account = a.accountLeft < a.sessionLeft;
+  const left = account ? a.accountLeft : a.sessionLeft;
+  const of = account ? a.accountOf : a.sessionOf;
+  const reset = account ? a.accountResetsAt : a.sessionResetsAt;
+  let line = `${left} of ${of} ${DEMO_WHAT[a.kind]} runs left today ${account ? "for this account " : ""}on PRISM's demo budget`;
+  if (left === 0 && reset) line += `; the next one frees up ${at(reset)}`;
+  if (a.totalLeft !== null) line += ` (${a.totalLeft} of ${a.totalOf} Tavily credits left; up to ${a.perRun} per run)`;
+  return line + ".";
+}
+
+/** The refusal text for a demo limit: which limit, when it resets, and the way round it. */
+export function demoLimitMessage(h: DemoLimitHit, at: (iso: string) => string = localTime): string {
+  const what = DEMO_WHAT[h.kind];
+  const head =
+    h.limit === "total"
+      ? `Not run: PRISM's Tavily demo budget (${h.of} credits) is used up.`
+      : `Not run: ${h.limit === "session" ? "this session" : "this account"} has used all ${h.of} ${what} runs on PRISM's demo budget in the last 24 hours.${h.resetsAt ? ` The next one frees up ${at(h.resetsAt)}.` : ""}`;
+  return `${head} ${OWN_KEY[h.kind]}, or read the recorded reports. Nothing was fetched.`;
 }

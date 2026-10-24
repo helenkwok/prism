@@ -9,7 +9,17 @@ import { Button } from "../../components/ui/button";
 import { clock } from "../components/run/StageList";
 import { listRecentRuns, startLiveRun } from "../server/run-fns.ts";
 import type { JobStatus, JobView, Refusal } from "../server/live-run.ts";
-import { COLLECTORS, DEFAULT_PROVIDER, KEY_NOTE, MODEL_PROVIDERS, type CollectorId, type ProviderId } from "../server/live-options.ts";
+import {
+  allowanceLine,
+  COLLECTORS,
+  DEFAULT_PROVIDER,
+  demoLimitMessage,
+  KEY_NOTE,
+  MODEL_PROVIDERS,
+  type CollectorId,
+  type DemoLimitHit,
+  type ProviderId,
+} from "../server/live-options.ts";
 
 export const Route = createFileRoute("/run/")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -27,7 +37,8 @@ export const REFUSED: Record<Refusal, string> = {
   "dns-fail": "Not run: this address could not be found. Nothing was fetched.",
   "not-configured": "Not run: live runs are not configured on this server. Nothing was fetched.",
   budget: "Not run: PRISM's shared demo budget is used up. Add your own Token Factory key below to run, or read the recorded reports. Nothing was fetched.",
-  "bad-option": "Not run: check the key fields. A key has no spaces; OpenRouter needs your own model key; Tavily needs your own Tavily key. Nothing was fetched.",
+  "bad-option": "Not run: check the key fields. A key has no spaces; OpenRouter needs your own model key; Tavily needs your own Tavily key when PRISM's is not set up. Nothing was fetched.",
+  "demo-limit": "Not run: a limit on PRISM's demo budget was reached. Use your own key, or read the recorded reports. Nothing was fetched.",
 };
 
 export const JOB_WORD: Record<JobStatus, string> = {
@@ -46,7 +57,7 @@ const th = "px-2 py-1 text-left text-[0.8125rem] font-semibold tracking-[0.04em]
 const td = "border-t border-border px-2 py-1 align-top";
 
 function RunPage() {
-  const { runs, budget } = Route.useLoaderData();
+  const { runs, budget, demo } = Route.useLoaderData();
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
   const [modelKey, setModelKey] = useState("");
@@ -54,8 +65,12 @@ function RunPage() {
   const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER);
   const [collector, setCollector] = useState<CollectorId>("own-site");
   const [refused, setRefused] = useState<Refusal | null>(null);
+  const [limit, setLimit] = useState<DemoLimitHit | null>(null);
   const [pending, setPending] = useState(false);
   const noticeRef = useRef<HTMLDivElement>(null);
+  // Reset times are in the reader's own time zone: re-render once in the browser (the server's zone is not theirs).
+  const [, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // A refusal moves focus to its notice (07-UI-SPEC).
   useEffect(() => {
@@ -71,7 +86,10 @@ function RunPage() {
       // Keys leave the page's memory once sent; nothing is kept in storage or the URL.
       setModelKey("");
       setTavilyKey("");
-      if ("refused" in r) setRefused(r.refused);
+      if ("refused" in r) {
+        setRefused(r.refused);
+        setLimit(r.limit ?? null);
+      }
       else await navigate({ to: "/run/$jobId", params: { jobId: String(r.jobId) } });
     } finally {
       setPending(false);
@@ -83,12 +101,23 @@ function RunPage() {
       <h1 className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.01em]">Run PRISM on one URL</h1>
       {refused ? (
         <Notice variant="refused" announce ref={noticeRef} className="mt-8">
-          <span data-refused={refused}>{REFUSED[refused]}</span>
+          <span data-refused={refused}>{refused === "demo-limit" && limit ? demoLimitMessage(limit) : REFUSED[refused]}</span>
+          {refused === "demo-limit" || refused === "budget" ? (
+            <>
+              {" "}
+              <a href="/">Read the recorded reports</a>
+            </>
+          ) : null}
         </Notice>
       ) : null}
       {budget.notice ? (
         <Notice variant="refused" className="mt-8">
           <span data-budget-notice="">{budget.notice}</span> <a href="/">Read the recorded reports</a>
+        </Notice>
+      ) : null}
+      {demo.tavilyNotice ? (
+        <Notice variant="refused" className="mt-8">
+          <span data-tavily-notice="">{demo.tavilyNotice}</span> <a href="/">Read the recorded reports</a>
         </Notice>
       ) : null}
       <form className="mt-8 max-w-[640px]" onSubmit={onSubmit}>
@@ -157,14 +186,14 @@ function RunPage() {
           >
             {(Object.keys(COLLECTORS) as CollectorId[]).map((id) => (
               <option key={id} value={id}>
-                {id === "tavily" ? "Tavily (your key)" : COLLECTORS[id]}
+                {id === "tavily" ? (demo.tavilyConfigured ? "Tavily (your key, or PRISM's demo budget)" : "Tavily (your key)") : COLLECTORS[id]}
               </option>
             ))}
           </select>
           {collector === "tavily" ? (
             <>
               <label htmlFor="run-tavily-key" className="mt-3 block text-[0.9375rem] font-semibold">
-                Tavily API key
+                Tavily API key{demo.tavilyConfigured ? " (optional: leave empty to use PRISM's demo budget)" : ""}
               </label>
               <input
                 id="run-tavily-key"
@@ -191,6 +220,16 @@ function RunPage() {
             <span>{budget.line}</span>
           </div>
         </div>
+        <ul className="mt-3 text-[0.8125rem] tabular-nums" data-demo-left="">
+          <li data-demo-model="" suppressHydrationWarning>
+            {allowanceLine(demo.model)}
+          </li>
+          {demo.tavilyConfigured ? (
+            <li data-demo-tavily="" suppressHydrationWarning>
+              {allowanceLine(demo.tavily)}
+            </li>
+          ) : null}
+        </ul>
       </form>
       <h2 className="mt-12 text-[1.25rem] leading-[1.2] font-semibold">Recent runs</h2>
       {runs.length === 0 ? <p className="mt-4">No live runs yet.</p> : <RecentRuns runs={runs} />}

@@ -24,6 +24,8 @@ import { preflightLiveUrl, type PreflightRefusal } from "./live-preflight.ts";
 import { BudgetExceededError, DollarBudget, formatBudgetLine } from "../../pipeline/coding/spend-guards.ts";
 import type { Boundary } from "../../pipeline/evidence/boundary.ts";
 import { scrubSecrets } from "../../pipeline/evidence/redact.ts";
+import { CreditBudget } from "../../pipeline/evidence/tavily.ts";
+import { attachDemoJob, demoLimitsFromEnv, ensureDemoQuotaSchema, readAllowance, releaseDemo, reserveDemo, settleDemo, tavilyCreditsUsed, type Who } from "./demo-quota.ts";
 import {
   COLLECTORS,
   DEFAULT_PROVIDER,
@@ -35,6 +37,8 @@ import {
   PROVIDER_NAME,
   STAGE_MODEL,
   type CollectorId,
+  type DemoAllowance,
+  type DemoLimitHit,
   type KeySource,
   type ProviderId,
   type ReceiptLine,
@@ -63,9 +67,9 @@ export const NOT_CONFIGURED = "Live run is not configured on this server";
 export const FIXTURE_ADDRESS = "93.184.216.34";
 const EPS = 1e-9;
 
-export type Refusal = PreflightRefusal | "budget" | "not-configured" | "bad-option";
-/** `position`: jobs ahead of this one (0 = it runs now); `waitSeconds` a rough estimate (J7). */
-export type StartResult = { jobId: number; position: number; waitSeconds: number } | { refused: Refusal };
+export type Refusal = PreflightRefusal | "budget" | "not-configured" | "bad-option" | "demo-limit";
+/** `position`: jobs ahead of this one (0 = it runs now); `waitSeconds` a rough estimate (J7). `limit` with "demo-limit". */
+export type StartResult = { jobId: number; position: number; waitSeconds: number } | { refused: Refusal; limit?: DemoLimitHit };
 
 // ---- bring your own key ----------------------------------------------------------
 
@@ -78,9 +82,13 @@ export interface LiveOptions {
   provider: ProviderId;
   collector: CollectorId;
   keySource: KeySource;
+  /** Who pays for Tavily: the user's key, PRISM's (within the demo limits), or null for the own-site collector. */
+  tavilySource: KeySource | null;
   keys: LiveKeys;
+  /** Set by the server at start: the lean collector's credit cap for this run (every key). */
+  tavilyCreditsPerRun?: number;
 }
-export const SERVER_OPTIONS: LiveOptions = { provider: DEFAULT_PROVIDER, collector: "own-site", keySource: "server", keys: {} };
+export const SERVER_OPTIONS: LiveOptions = { provider: DEFAULT_PROVIDER, collector: "own-site", keySource: "server", tavilySource: null, keys: {} };
 
 const keyShape = z.string().min(8).max(512).regex(/^[\x21-\x7e]+$/); // printable ASCII, no whitespace
 const optionalKey = z.preprocess((v) => (v === "" || v == null ? undefined : v), keyShape.optional());
@@ -95,7 +103,8 @@ const optionsSchema = z
 
 /**
  * The form's key and choice fields, or null (refused). A provider other than the default needs
- * a model key; the Tavily collector needs a Tavily key; a Tavily key alone selects Tavily.
+ * a model key; the Tavily collector without a key runs on PRISM's Tavily key (the start checks it
+ * is configured and within its demo limits); a Tavily key alone selects Tavily.
  * Never put the raw input in an error: it may hold a key.
  */
 export function parseLiveOptions(raw: unknown): LiveOptions | null {
@@ -105,12 +114,12 @@ export function parseLiveOptions(raw: unknown): LiveOptions | null {
   const provider = p.data.provider ?? DEFAULT_PROVIDER;
   const collector = p.data.collector ?? (tavilyKey ? "tavily" : "own-site");
   if (provider !== DEFAULT_PROVIDER && !modelKey) return null;
-  if (collector === "tavily" && !tavilyKey) return null;
   if (collector !== "tavily" && tavilyKey) return null;
   const keys: LiveKeys = {};
   if (modelKey) keys.model = modelKey;
   if (tavilyKey) keys.tavily = tavilyKey;
-  return { provider, collector, keySource: modelKey ? "user" : "server", keys };
+  const tavilySource: KeySource | null = collector === "tavily" ? (tavilyKey ? "user" : "server") : null;
+  return { provider, collector, keySource: modelKey ? "user" : "server", tavilySource, keys };
 }
 
 /** Ledger row for a run: the server cap's own row, or one per provider for user-key spend. */
@@ -173,11 +182,17 @@ export async function ensureLiveRunSchema(db: Kysely<any>): Promise<void> {
   await addColumnIfMissing(db, "app_job", "collector", "'own-site'");
   await addColumnIfMissing(db, "app_spend_ledger", "key_source", "'server'");
   await addColumnIfMissing(db, "app_spend_ledger", "provider", `'${DEFAULT_PROVIDER}'`);
+  // Demo limits (2026-10-24): which key paid for Tavily, the credits a run spent, and PRISM's
+  // demo budget left once it ended.
+  await addColumnIfMissing(db, "app_job", "tavily_key_source", "'none'");
+  await addColumnIfMissing(db, "app_job", "tavily_credits", "0", "real");
+  await addColumnIfMissing(db, "app_job", "demo_left", "''");
+  await ensureDemoQuotaSchema(db);
 }
 
-async function addColumnIfMissing(db: Kysely<any>, table: string, column: string, defaultSql: string): Promise<void> {
+async function addColumnIfMissing(db: Kysely<any>, table: string, column: string, defaultSql: string, type = "text"): Promise<void> {
   const cols = (await sql<{ name: string }>`select name from pragma_table_info(${table})`.execute(db)).rows.map((r) => r.name);
-  if (!cols.includes(column)) await sql.raw(`alter table ${table} add column ${column} text not null default ${defaultSql}`).execute(db);
+  if (!cols.includes(column)) await sql.raw(`alter table ${table} add column ${column} ${type} not null default ${defaultSql}`).execute(db);
 }
 
 // ---- runners -------------------------------------------------------------------
@@ -204,6 +219,8 @@ export interface RunContext {
    * `toPipelineId` turns a provider's model id back into the pipeline's.
    */
   meter?(f: typeof fetch | undefined, toPipelineId?: (model: string) => string): typeof fetch;
+  /** Tavily runs: the run's credit budget (per-run cap); every map and extract is estimated against it first. */
+  tavilyBudget?: CreditBudget;
 }
 /** `notAnalysed`: the screen excluded the project; the job ends with that message and no report. */
 export type LiveRunner = (ctx: RunContext) => Promise<{ projectRef: string; notAnalysed?: string }>;
@@ -276,8 +293,10 @@ export interface RealRunnerDeps {
   /** A9 sign-off record lines; default the app database's app_a9_signoff table. */
   a9Lines?: (db: Kysely<any>) => Promise<string[]>;
   keepScratch?: boolean;
-  /** Tavily connection (tests); default fetch. Used only with a user's Tavily key. */
+  /** Tavily connection (tests); default fetch. */
   tavilyFetch?: typeof fetch;
+  /** PRISM's own Tavily key (tests); default serverTavilyKey(), read only when a run uses it. */
+  serverTavilyKey?: string;
   /** Raw fetch under a user-key provider (tests); the provider's own wrapper still applies. Default fetch. */
   userModelFetch?: typeof fetch;
 }
@@ -306,7 +325,7 @@ async function userProvider(id: ProviderId, rawFetch: typeof fetch = fetch) {
  * job's scratch database; the app database receives the ReportView and its snapshots.
  */
 export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
-  return async ({ db, job, emit, budget, setReport, meter }) => {
+  return async ({ db, job, emit, budget, setReport, meter, tavilyBudget }) => {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const { default: Database } = await import("better-sqlite3");
@@ -337,6 +356,8 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
       : // PRISM's own key only ever goes to Token Factory (hackathon platform rule): no URL or map override.
         { apiKey: deps.apiKey, baseUrl: PINNED_BASE_URL, modelMap: undefined, fetchImpl: deps.modelFetch, host: PROVIDER_NAME["token-factory"] };
     const useTavily = opts.collector === "tavily";
+    const tavilyKey = !useTavily ? "" : opts.tavilySource === "user" ? opts.keys.tavily! : (deps.serverTavilyKey ?? (await serverTavilyKey()) ?? "");
+    if (useTavily && !tavilyKey) throw new Error("PRISM's Tavily key is not configured on this server");
     if (meter) {
       const back = new Map(Object.entries(model.modelMap ?? {}).map(([k, v]) => [v, k]));
       model.fetchImpl = meter(model.fetchImpl, (m) => back.get(m) ?? m);
@@ -377,7 +398,7 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
 
       const accounting = await runPipeline({
         sliceProjectsPath: slice,
-        apiKeys: { tavily: useTavily ? opts.keys.tavily! : "", nebius: model.apiKey, github: deps.githubToken },
+        apiKeys: { tavily: tavilyKey, nebius: model.apiKey, github: deps.githubToken },
         concurrency: 1,
         cacheDir: path.join(scratch, "cache"),
         dataDir: scratch,
@@ -392,6 +413,7 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
           useTavily,
           tavilyRobotsFirst: true,
           tavilyFetchImpl: deps.tavilyFetch,
+          tavilyLean: useTavily ? { budget: tavilyBudget ?? new CreditBudget(opts.tavilyCreditsPerRun ?? demoLimitsFromEnv().tavily.creditsPerRun) } : undefined,
           renderImpl: async () => "",
           gateSpawnImpl: deps.gateSpawnImpl as any,
           pythonPath: deps.pythonPath,
@@ -425,7 +447,14 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
             coding: { role: "coder", modelId: PINNED_MODEL, host },
             confirmation: { role: "confirmer", modelId: conf.CONFIRMER_MODEL, host },
             humanEdits: "none",
-            run: { ...runLine, receipt: await readRunReceipt(db, job.id, REPORT_PAID_BY) },
+            run: {
+              ...runLine,
+              receipt: {
+                ...(await readRunReceipt(db, job.id, REPORT_PAID_BY)),
+                // Collect has ended by now, so the run's credit budget holds its Tavily spend.
+                ...(useTavily && opts.tavilySource ? { tavily: { credits: tavilyBudget?.tally ?? 0, paidBy: REPORT_PAID_BY[opts.tavilySource] } } : {}),
+              },
+            },
           },
         });
         const view = await buildReportView(source, { codebook, gatesPath, runGate: gate as any, gapText });
@@ -489,6 +518,22 @@ export interface StartDeps {
   runner: LiveRunner;
   resolver?: (hostname: string) => Promise<string[]>;
   env?: NodeJS.ProcessEnv;
+  /** Clock for the rolling 24 h windows (tests); default Date.now. */
+  now?: () => number;
+}
+
+/**
+ * PRISM's own Tavily key: TAVILY_API_KEY, else <PRISM_KEY_DIR or ~/Library/Application Support/prism>/tavily.key
+ * (mode 600). Undefined when neither exists. Never logged, never stored.
+ */
+export async function serverTavilyKey(env: NodeJS.ProcessEnv = process.env): Promise<string | undefined> {
+  const { readKey } = await import("../../pipeline/run.ts");
+  return readKey("TAVILY_API_KEY", "tavily.key", env);
+}
+
+/** better-auth user and session ids. Judges share one login, so the session is the per-judge unit. */
+export function whoOf(session: { user: { id: string }; session?: { id?: string } | null }): Who {
+  return { accountId: session.user.id, sessionId: session.session?.id ?? `user:${session.user.id}` };
 }
 
 async function trustedOrigins(env: NodeJS.ProcessEnv): Promise<string[]> {
@@ -540,10 +585,10 @@ async function addEvent(db: Kysely<any>, jobId: number, stage: Stage, status: St
 
 /** The session has already passed checkRole / requireRole("admin"). */
 export async function startLiveRunCore(
-  session: { user: { id: string } },
+  session: { user: { id: string }; session?: { id?: string } | null },
   headers: Headers,
   rawUrl: unknown,
-  { db, runner, resolver, env = process.env }: StartDeps,
+  { db, runner, resolver, env = process.env, now: clock = Date.now }: StartDeps,
   rawOptions?: unknown,
 ): Promise<StartResult> {
   await assertTrustedOrigin(headers, env);
@@ -551,6 +596,7 @@ export async function startLiveRunCore(
   if (cap === null) return { refused: "not-configured" };
   const options = parseLiveOptions(rawOptions);
   if (!options) return { refused: "bad-option" };
+  if (options.tavilySource === "server" && !(await serverTavilyKey(env))) return { refused: "bad-option" };
   const parsed = urlSchema.safeParse(rawUrl);
   if (!parsed.success) return { refused: "bad-url" };
   const list = await liveBoundaries(db);
@@ -562,9 +608,35 @@ export async function startLiveRunCore(
   if (!pre.ok) return { refused: pre.reason };
   const projectRef = list.find((l) => l.boundary === pre.boundary)!.projectId;
   const url = new URL(parsed.data).toString();
-  // A user's own model key pays for its run: the server cap is not reserved, the run budget still applies.
+  // A user's own key pays for its run: PRISM's limits are not touched, the per-run caps still apply.
+  // Order: run counts (one atomic insert each), then the dollar total. Any refusal gives back what
+  // was already reserved, so a refused run costs nothing and leaves no job.
   const server = options.keySource === "server";
-  if (server && !(await reserveRun(db, cap))) return { refused: "budget" };
+  const limits = demoLimitsFromEnv(env);
+  options.tavilyCreditsPerRun = limits.tavily.creditsPerRun;
+  const who = whoOf(session);
+  const demoRows: number[] = [];
+  const giveBack = async () => {
+    for (const id of demoRows) await releaseDemo(db, id);
+  };
+  const nowMs = clock();
+  if (server) {
+    const r = await reserveDemo(db, "model", who, limits, { reserved: RUN_BUDGET_USD, nowMs });
+    if ("hit" in r) return { refused: "demo-limit", limit: r.hit };
+    demoRows.push(r.id);
+  }
+  if (options.tavilySource === "server") {
+    const r = await reserveDemo(db, "tavily", who, limits, { reserved: limits.tavily.creditsPerRun, nowMs });
+    if ("hit" in r) {
+      await giveBack();
+      return { refused: "demo-limit", limit: r.hit };
+    }
+    demoRows.push(r.id);
+  }
+  if (server && !(await reserveRun(db, cap))) {
+    await giveBack();
+    return { refused: "budget" };
+  }
   let jobId: number;
   try {
     const inserted = await db
@@ -579,16 +651,19 @@ export async function startLiveRunCore(
         key_source: options.keySource,
         provider: options.provider,
         collector: options.collector,
+        tavily_key_source: options.tavilySource ?? "none",
       })
       .executeTakeFirstOrThrow();
     jobId = Number(inserted.insertId);
   } catch (err) {
     if (server) await settleRun(db, LEDGER_SCOPE, 0); // no job, so nothing spent: give the reservation back
+    await giveBack();
     throw err;
   }
+  await attachDemoJob(db, demoRows, jobId);
   await addEvent(db, jobId, "queued", "running", "Waiting for the runner.");
   const position = await queuePosition(db, jobId);
-  enqueue(db, jobId, runner, options);
+  enqueue(db, jobId, runner, options, env);
   return { jobId, position, waitSeconds: position * MEDIAN_RUN_SECONDS };
 }
 
@@ -730,13 +805,46 @@ export async function readBudgetSummary(db: Kysely<any>, env: NodeJS.ProcessEnv 
   return budgetSummary({ configured: cap !== null, cap: cap ?? 0, spent: l.spent, reserved: l.reserved });
 }
 
+/** Stored on a job when it ends: what PRISM's demo budget had left at that moment. */
+export async function demoLeftLine(db: Kysely<any>, env: NodeJS.ProcessEnv = process.env): Promise<string> {
+  const b = await readBudgetSummary(db, env);
+  const t = demoLimitsFromEnv(env).tavily.totalCredits;
+  const credits = Math.max(0, Math.round((t - (await tavilyCreditsUsed(db))) * 1e6) / 1e6);
+  const model = b.configured ? `${usd(Math.max(0, b.cap - b.used))} of ${usd(b.cap)} for model calls` : "model calls not configured";
+  return `PRISM's demo budget left after this run: ${model}; ${credits} of ${t} Tavily credits.`;
+}
+
+export const TAVILY_SPENT_NOTICE =
+  "PRISM's Tavily demo budget is used up, so Tavily runs on PRISM's key are closed. You can still run Tavily with your own Tavily key, use the own-site collector, or read the recorded reports.";
+
+export interface DemoState {
+  model: DemoAllowance;
+  tavily: DemoAllowance;
+  /** PRISM's Tavily key exists on this server (the key itself never leaves it). */
+  tavilyConfigured: boolean;
+  tavilyNotice: string | null;
+}
+
+/** The /run form's remaining counts for this session (read-only; the limits live in the server env). */
+export async function readDemoState(db: Kysely<any>, who: Who, env: NodeJS.ProcessEnv = process.env, nowMs = Date.now()): Promise<DemoState> {
+  const limits = demoLimitsFromEnv(env);
+  const tavily = await readAllowance(db, "tavily", who, limits, nowMs);
+  const tavilyConfigured = !!(await serverTavilyKey(env));
+  return {
+    model: await readAllowance(db, "model", who, limits, nowMs),
+    tavily,
+    tavilyConfigured,
+    tavilyNotice: tavilyConfigured && (tavily.totalLeft ?? 0) < limits.tavily.creditsPerRun ? TAVILY_SPENT_NOTICE : null,
+  };
+}
+
 // ---- the queue -------------------------------------------------------------------
 
 const limit = pLimit(1);
 const inFlight = new Set<Promise<void>>();
 
-function enqueue(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions = SERVER_OPTIONS): void {
-  const p = limit(() => runJob(db, jobId, runner, options)).catch((err) => {
+function enqueue(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions = SERVER_OPTIONS, env: NodeJS.ProcessEnv = process.env): void {
+  const p = limit(() => runJob(db, jobId, runner, options, env)).catch((err) => {
     console.error(`[prism] live run ${jobId}: runner bookkeeping failed: ${err instanceof Error ? err.name : "error"}`);
   });
   inFlight.add(p);
@@ -748,15 +856,15 @@ export async function whenIdle(): Promise<void> {
   while (inFlight.size) await Promise.all([...inFlight]);
 }
 
-async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions): Promise<void> {
+async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions, env: NodeJS.ProcessEnv): Promise<void> {
   try {
-    await runJobInner(db, jobId, runner, options);
+    await runJobInner(db, jobId, runner, options, env);
   } finally {
     options.keys = {}; // success, stop, error or skipped: the keys leave memory with the job
   }
 }
 
-async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions): Promise<void> {
+async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions, env: NodeJS.ProcessEnv): Promise<void> {
   const started = await db.updateTable("app_job").set({ status: "running" }).where("id", "=", jobId).where("status", "=", "queued").executeTakeFirst();
   if (Number(started.numUpdatedRows) !== 1) return; // interrupted at boot, or gone
   const row = await db.selectFrom("app_job").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
@@ -774,6 +882,8 @@ async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, o
     const ledger = new DollarBudget(Math.max(l.cap, RUN_BUDGET_USD), { initialSpent: Math.max(0, l.spent + l.reserved - RUN_BUDGET_USD) });
     budget = new DollarBudget(RUN_BUDGET_USD, { parent: ledger });
   } else budget = new DollarBudget(RUN_BUDGET_USD);
+  // Every live Tavily run, on any key, has the per-run credit cap; PRISM's key also reserved it from the total.
+  const tavilyBudget = options.collector === "tavily" ? new CreditBudget(options.tavilyCreditsPerRun ?? demoLimitsFromEnv().tavily.creditsPerRun) : undefined;
   let stage = "queued" as Stage; // set by emit, inside the runner
   let reportReady = false;
   const job: RunJob = { id: jobId, url: row.url, host: row.host, projectRef: row.project_ref, options };
@@ -812,6 +922,7 @@ async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, o
       job,
       budget,
       meter,
+      tavilyBudget,
       emit: async (s, status, message = null) => {
         stage = s;
         await addEvent(db, jobId, s, status, clean(message));
@@ -841,12 +952,16 @@ async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, o
   // interrupted was charged in full and must not be released a second time.
   const finished = await db
     .updateTable("app_job")
-    .set({ ...end, spent_usd: budget.spent, finished_at: now() })
+    .set({ ...end, spent_usd: budget.spent, tavily_credits: tavilyBudget?.tally ?? 0, finished_at: now() })
     .where("id", "=", jobId)
     .where("status", "=", "running")
     .executeTakeFirst();
   // ponytail: two statements; a crash between them leaves this $0.10 reserved for good (over-counts, never under).
-  if (Number(finished.numUpdatedRows) === 1) await settleRun(db, ledgerScope(options), budget.spent, options);
+  if (Number(finished.numUpdatedRows) === 1) {
+    await settleRun(db, ledgerScope(options), budget.spent, options);
+    await settleDemo(db, jobId, { model: budget.spent, tavily: tavilyBudget?.tally ?? 0 });
+    await db.updateTable("app_job").set({ demo_left: await demoLeftLine(db, env) }).where("id", "=", jobId).execute();
+  }
   console.log(`[prism] live run ${jobId} ${String(end.status)} ${formatBudgetLine({ estimated: budget.estimated, spent: budget.spent, cap: budget.cap })}`);
 }
 
@@ -877,6 +992,10 @@ export interface JobView {
   collector: string;
   provider: string;
   paidBy: string;
+  /** Tavily runs: credits this run spent and whose key paid; null for the own-site collector. */
+  tavily: { credits: number; paidBy: string } | null;
+  /** Set when the run ended: PRISM's demo budget left at that moment. */
+  demoLeft: string | null;
 }
 export interface RunStatus {
   job: JobView;
@@ -906,7 +1025,14 @@ function jobView(r: any): JobView {
     collector: COLLECTORS[r.collector as CollectorId] ?? COLLECTORS["own-site"],
     provider: PROVIDER_NAME[r.provider as ProviderId] ?? PROVIDER_NAME[DEFAULT_PROVIDER],
     paidBy: PAID_BY[(r.key_source as KeySource) ?? "server"] ?? PAID_BY.server,
+    tavily: tavilyLine(r, PAID_BY),
+    demoLeft: r.demo_left || null,
   };
+}
+
+function tavilyLine(r: any, paidBy: Record<KeySource, string>): { credits: number; paidBy: string } | null {
+  const k = r?.tavily_key_source as KeySource | "none" | undefined;
+  return k === "server" || k === "user" ? { credits: Number(r.tavily_credits ?? 0), paidBy: paidBy[k] } : null;
 }
 
 /** Stages in the fixed order; each shows its latest event. Stages never reached show Waiting, or Skipped once the job has ended. */
@@ -970,7 +1096,9 @@ export async function readRunReceipt(db: Kysely<any>, jobId: number, paidBy: Rec
   const total = lines.reduce((t, l) => ({ calls: t.calls + l.calls, tokensIn: t.tokensIn + l.tokensIn, tokensOut: t.tokensOut + l.tokensOut, usd: t.usd + l.usd }), { calls: 0, tokensIn: 0, tokensOut: 0, usd: 0 });
   const { priceOf } = await import("../../pipeline/coding/spend-guards.ts");
   const ultra = priceOf(STAGE_MODEL.confirm); // Token Factory list price
-  return { lines, total, ultraEstimateUsd: total.tokensIn * ultra.prompt + total.tokensOut * ultra.completion };
+  const job = await db.selectFrom("app_job").selectAll().where("id", "=", jobId).executeTakeFirst();
+  const tavily = tavilyLine(job, paidBy);
+  return { lines, total, ultraEstimateUsd: total.tokensIn * ultra.prompt + total.tokensOut * ultra.completion, ...(tavily ? { tavily } : {}) };
 }
 
 /** Newest 20 first; ties broken by job id. */

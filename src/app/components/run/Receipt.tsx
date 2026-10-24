@@ -15,6 +15,11 @@ export function Receipt({ receipt, collector }: { receipt: RunReceipt; collector
         Run receipt
       </h2>
       {collector ? <p className="mt-2">Evidence collector: {collector}.</p> : null}
+      {receipt.tavily ? (
+        <p className="mt-2 tabular-nums" data-receipt-tavily="">
+          Tavily: {receipt.tavily.credits} credits, paid with {receipt.tavily.paidBy}.
+        </p>
+      ) : null}
       {receipt.lines.length === 0 ? (
         <p className="mt-2">No model calls were made.</p>
       ) : (

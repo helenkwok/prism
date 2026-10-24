@@ -49,7 +49,8 @@ export const getRunStatus = createServerFn({ method: "GET" })
   });
 
 export const listRecentRuns = createServerFn({ method: "GET" }).handler(async () => {
-  await requireRole("admin");
+  const session = await requireRole("admin");
   const { db, live } = await deps();
-  return { runs: await live.readRecentRuns(db), budget: await live.readBudgetSummary(db) };
+  // demo: this session's remaining runs on PRISM's keys. Read-only; the limits live in the server env.
+  return { runs: await live.readRecentRuns(db), budget: await live.readBudgetSummary(db), demo: await live.readDemoState(db, live.whoOf(session)) };
 });

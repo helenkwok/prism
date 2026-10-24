@@ -22,6 +22,9 @@ const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-byok-"));
 process.env.PRISM_DATA_DIR = dataDir;
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:3997";
 delete process.env.TRUSTED_ORIGINS;
+// No server Tavily key in these tests: never the real key file, never the real env key.
+process.env.PRISM_KEY_DIR = dataDir;
+delete process.env.TAVILY_API_KEY;
 
 const live = await import("../../src/app/server/live-run.ts");
 const { ensureAccessSchema, upsertProjectAccess } = await import("../../src/app/server/access-store.ts");
