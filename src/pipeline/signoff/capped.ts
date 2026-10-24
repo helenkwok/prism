@@ -13,20 +13,22 @@ export function projectSignoff(doc: string, context: string, item: string) {
   return { inputTokens, outputTokens: 2048, inputDigest: sha(JSON.stringify({ doc, context, item })), cap: .50 };
 }
 
-export async function cappedSignoff(o: { dataDir: string; doc: string; context: string; item: string; apiKey: string; fetchImpl?: typeof fetch }) {
+export async function cappedSignoff(o: { dataDir: string; doc: string; context: string; item: string; apiKey: string; fetchImpl?: typeof fetch; recordFile?: string }) {
   const plan = projectSignoff(o.doc, o.context, o.item);
+  const recordFile = o.recordFile ?? "signoff.jsonl";
+  if (path.basename(recordFile) !== recordFile) throw new Error("review record must be a decisions filename");
   const dir = path.join(o.dataDir, "decisions", "capped");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const file = path.join(dir, plan.inputDigest + ".json");
   const saved = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
   if (saved) {
-    if (saved.record?.inputDigest !== plan.inputDigest || saved.state !== "complete") throw new Error("retained review attempt requires inspection before another call");
+    if (saved.record?.inputDigest !== plan.inputDigest || saved.state !== "complete" || (saved.recordFile ?? "signoff.jsonl") !== recordFile) throw new Error("retained review attempt requires inspection before another call");
     console.log(`SIGNOFF: ${JSON.stringify({ item: o.item, decision: saved.record.decision, cached: true, inputDigest: plan.inputDigest })}`);
     console.log(`BUDGET: ${JSON.stringify(saved.budget)}`);
     console.log('ACCOUNTING: {"stage":"signoff","total":1,"valid":1,"failed":0,"complete":true}');
     return saved.record;
   }
-  const evidence: any = { state: "prepared", plan, usage: [] };
+  const evidence: any = { state: "prepared", plan, recordFile, usage: [] };
   const persist = () => fs.writeFileSync(file, JSON.stringify(evidence) + "\n", { mode: 0o600 });
   const budget = new DollarBudget(plan.cap, { onChange: state => { evidence.budget = state; persist(); } });
   const fetchImpl: typeof fetch = async (input, init) => {
@@ -51,7 +53,7 @@ export async function cappedSignoff(o: { dataDir: string; doc: string; context: 
   } };
   try {
     const record = await signOff(client, o.doc, o.context, o.item);
-    fs.appendFileSync(path.join(o.dataDir, "decisions", "signoff.jsonl"), JSON.stringify(record) + "\n", { mode: 0o600 });
+    fs.appendFileSync(path.join(o.dataDir, "decisions", recordFile), JSON.stringify(record) + "\n", { mode: 0o600 });
     evidence.record = record; evidence.state = "complete"; evidence.budget = budget.snapshot(); persist();
     console.log(`SIGNOFF: ${JSON.stringify({ item: record.item, decision: record.decision, cached: false, inputDigest: record.inputDigest })}`);
     console.log('ACCOUNTING: {"stage":"signoff","total":1,"valid":1,"failed":0,"complete":true}');

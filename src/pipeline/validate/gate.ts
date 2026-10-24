@@ -12,6 +12,7 @@ import { confirmationMatches, effectiveStates, inputDigest, projectSpans, spansD
 import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
 import { assertA9Signed, a9Section } from "../signoff/a9.ts";
 import { agreementByCheck, estimable, type AgreementRow } from "./agreement.ts";
+import { loadReleaseProof } from "./release-proof.ts";
 
 export const AC1_THRESHOLD = 0.70;
 export const PRECISION_THRESHOLD = 0.85;
@@ -28,6 +29,7 @@ export type GateOptions = {
   codebook: Codebook; codebookVersion: string; gateFile: GateFile;
   revalidation?: Revalidation; actions?: { checks: Action[] }; protocolPath?: string;
   screeningAuditAction?: { documentPath: string; signoffPath?: string };
+  priorApprovalProofPath?: string;
 };
 
 function within(metrics: { ac1: number; precision: number | null }): boolean {
@@ -45,6 +47,7 @@ function recoveryCutoff(o: GateOptions): number {
   const real = fs.existsSync(o.dataDir) ? fs.realpathSync(o.dataDir) : path.resolve(o.dataDir);
   if (real.split(path.sep).some(p => p === "backups" || p === "2026-10-21-whole-page-spans" || p === "2026-10-21-tavily-142")) throw new Error("archived evidence cannot be evaluated for publication");
   const protocolPath = o.protocolPath ?? path.resolve("protocol/PROTOCOL.md");
+  if (o.priorApprovalProofPath) return loadReleaseProof(o.priorApprovalProofPath, protocolPath).recoveryCutoff;
   const signoffPath = path.join(o.dataDir, "decisions", "signoff.jsonl");
   assertA9Signed({ protocolPath, signoffPath });
   const digest = sha(a9Section(fs.readFileSync(protocolPath, "utf8")));
@@ -70,14 +73,14 @@ function signedDocument(documentPath: string, signoffPath: string, item: string)
   } catch { return null; }
 }
 
-function validationSummaries(dataDir: string, companion?: GateOptions["screeningAuditAction"]) {
+function validationSummaries(dataDir: string, companion?: GateOptions["screeningAuditAction"], detached?: ReturnType<typeof loadReleaseProof>) {
   const audit = readJson(path.join(dataDir, "validation", "screening-audit.json"));
   const recall = readJson(path.join(dataDir, "validation", "recall.json"));
   const af = audit?.figure ?? audit;
   const rf = recall?.figure;
   const auditAction = audit?.action;
   const recallAction = recall?.action;
-  const binding = companion ? signedDocument(companion.documentPath, companion.signoffPath ?? path.join(dataDir, "decisions", "signoff.jsonl"), "Screening audit action (A7.10)")?.binding ?? null : null;
+  const binding = detached?.auditApproval ?? (companion ? signedDocument(companion.documentPath, companion.signoffPath ?? path.join(dataDir, "decisions", "signoff.jsonl"), "Screening audit action (A7.10)")?.binding ?? null : null);
   let auditStatus = "missing";
   if (af && af.n === 50 && af.assessable > 0 && Number.isFinite(af.errorRate) && !audit?.stopped) {
     auditStatus = af.errorRate <= .1 ? "within" : "missed";
@@ -201,7 +204,8 @@ export async function evaluateGate(o: GateOptions) {
     else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied) { status = "corrected-revalidated"; reason = "passed estimable fresh revalidation and correction is recorded on every scoped sample manifest"; }
     return { ...metric, status, reason, correctionApplied, ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
-  const validation = validationSummaries(o.dataDir, o.screeningAuditAction);
+  const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
+  const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
   const flaggedProjects = new Set(flags.map(f => f.project_n));
   const injectionDecisions: Record<string, number> = {};
   let invalidFlaggedDecisions = 0;
@@ -218,6 +222,7 @@ export async function evaluateGate(o: GateOptions) {
   }
   return {
     generatedAt: new Date().toISOString(), codebookVersion: o.codebookVersion, gateSha: o.gateFile.sha256, sampleNs, revalidationSampleNs: fresh ? freshNs : [],
+    ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
     bootstrap: { resamples: 2000, unit: "projects", primarySeed: goldSeed, secondModelSeed: secondSeed },
     thresholds: { ac1: AC1_THRESHOLD, passPrecision: PRECISION_THRESHOLD, goldPassesForEstimability: 10, basis: "point estimates; pooled results never rescue a check" },
     labeller: { kind: "agent", provider: "ollama", modelId: GOLD_MODEL, reasoning: "low", wording: "agreement with an independent labeller (GLM-5.3)" },
@@ -255,10 +260,10 @@ async function main() {
   const codebook = loadCodebook();
   const db = getDb();
   try {
-    const revalidation = value("--revalidation"); const actions = value("--actions"); const screeningAction = value("--screening-audit-action");
-    const gate = await evaluateGate({ db, dataDir, sampleNs: entries.map((e: { n: number }) => e.n), subsets: readJson(path.join(dataDir, "pipeline", "sample-subsets.json")), codebook, codebookVersion: codebook.codebookVersion, gateFile: loadGateFile(resolveGatesPath()), revalidation: revalidation ? readJson(revalidation) : undefined, actions: actions ? readJson(actions) : undefined, screeningAuditAction: screeningAction ? { documentPath: screeningAction } : undefined });
+    const revalidation = value("--revalidation"); const actions = value("--actions"); const screeningAction = value("--screening-audit-action"); const priorApprovalProofPath = value("--prior-approval-proof");
+    const gate = await evaluateGate({ db, dataDir, sampleNs: entries.map((e: { n: number }) => e.n), subsets: readJson(path.join(dataDir, "pipeline", "sample-subsets.json")), codebook, codebookVersion: codebook.codebookVersion, gateFile: loadGateFile(resolveGatesPath()), revalidation: revalidation ? readJson(revalidation) : undefined, actions: actions ? readJson(actions) : undefined, screeningAuditAction: screeningAction ? { documentPath: screeningAction } : undefined, priorApprovalProofPath });
     const dir = path.join(dataDir, "validation"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(path.join(dir, "gate-v1.0.json"), JSON.stringify(gate, null, 2) + "\n", { mode: 0o600 });
+    fs.writeFileSync(path.join(dir, "gate-v1.0.json"), JSON.stringify(gate) + "\n", { mode: 0o600 });
     fs.writeFileSync(path.join(dir, "gate-v1.0.md"), renderGateMarkdown(gate), { mode: 0o600 });
     const count = (status: string) => gate.checks.filter(c => c.status === status).length;
     console.log(`GATE: ${JSON.stringify({ released: count("released"), notEstimable: count("released-not-estimable"), corrected: count("corrected-revalidated"), personCoded: count("person-coded"), missed: count("missed"), withheld: count("withheld"), audit: gate.screeningAudit.status, recall: gate.collectionRecall.status })}`);

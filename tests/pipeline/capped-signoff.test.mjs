@@ -12,11 +12,13 @@ test("review spends once, retains raw response and binds cached decision to exac
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-review-"));
   let calls = 0;
   const raw = JSON.stringify({ choices: [{ message: { content: JSON.stringify({ decision: "approved", narrowsWhatPasses: false, reason: "Fixture evidence supports it." }) } }], usage: { prompt_tokens: 100, completion_tokens: 20 } });
-  const options = { dataDir, doc: "Evidence", context: "Rules", item: "final", apiKey: "fixture", fetchImpl: async () => { calls++; return new Response(raw); } };
+  const options = { dataDir, doc: "Evidence", context: "Rules", item: "final", apiKey: "fixture", recordFile: "release-signoff.jsonl", fetchImpl: async () => { calls++; return new Response(raw); } };
   try {
     const record = await cappedSignoff(options);
     assert.equal(record.decision, "approved");
     assert.deepEqual(await cappedSignoff(options), record); assert.equal(calls, 1);
+    assert.equal(fs.existsSync(path.join(dataDir, "decisions", "signoff.jsonl")), false);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, "decisions", options.recordFile), "utf8")).inputDigest, record.inputDigest);
     const file = path.join(dataDir, "decisions", "capped", record.inputDigest + ".json");
     const evidence = JSON.parse(fs.readFileSync(file));
     assert.equal(evidence.raw, raw); assert.equal(evidence.budget.cap, .5);

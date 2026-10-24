@@ -19,6 +19,18 @@ const book = loadCodebook();
 const ids = Object.keys(book.checks).slice(0, 3);
 const cb = { ...book, checks: Object.fromEntries(ids.map(id => [id, book.checks[id]])) };
 const goldId = "agent:ollama:glm-5.3-flash:cloud";
+test("an explicit missing detached proof fails without falling back to the signature ledger", async () => {
+  const read = fs.readFileSync;
+  let ledgerReads = 0;
+  fs.readFileSync = function(file, ...args) {
+    if (typeof file === "string" && file.endsWith("/decisions/signoff.jsonl")) { ledgerReads++; throw new Error("ledger read prohibited"); }
+    return read.call(this, file, ...args);
+  };
+  try {
+    await assert.rejects(evaluateGate({ dataDir: os.tmpdir(), priorApprovalProofPath: path.join(os.tmpdir(), "missing-release-proof.json") }));
+    assert.equal(ledgerReads, 0);
+  } finally { fs.readFileSync = read; }
+});
 async function fixture() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-gate-"));
   for (const dir of ["pipeline/manifests", "pipeline/snapshots", "validation", "decisions"]) fs.mkdirSync(path.join(dataDir, dir), { recursive: true });
