@@ -176,14 +176,29 @@ export function ollamaClient({
         dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
         const started = Date.now();
+        const transportFailure = (error: unknown, phase: "request" | "response-body") => {
+          dollarBudget.settle(projectedUsd);
+          const name = (error as any)?.name;
+          const code = (error as any)?.cause?.code ?? (error as any)?.code;
+          try {
+            onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
+              inputTokens: null, outputTokens: null, cachedInputTokens: null, measured: false,
+              prefixDigest: prefixDigest(body.messages), chargedUsd: projectedUsd, status: 0, attempt,
+              latencyMs: Math.max(0, Date.now() - started), transportFailure: true, phase,
+              errorName: typeof name === "string" && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name) ? name : "Error",
+              causeCode: typeof code === "string" && /^[A-Z0-9_]{1,64}$/.test(code) ? code : null,
+              reservation_bounds: { inputTokens: inputBound, outputTokens: maxTokens, spentUsd: projectedUsd, source: "request-reservation-upper-bound" },
+            });
+          } catch { /* The original transport failure remains the thrown error. */ }
+        };
         let res: Response;
         try { res = await fetchImpl(`${baseUrl}/api/chat`, {
           method,
           headers: { "content-type": "application/json" },
           body: JSON.stringify(ollamaBody),
-        }); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
+        }); } catch (error) { transportFailure(error, "request"); throw error; }
         let text: string;
-        try { text = await res.text(); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
+        try { text = await res.text(); } catch (error) { transportFailure(error, "response-body"); throw error; }
         let parsed: any = null;
         try {
           parsed = text ? JSON.parse(text) : null;

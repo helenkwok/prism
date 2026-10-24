@@ -20,6 +20,39 @@ import { ollamaClient } from "../../src/pipeline/validate/providers.ts";
 
 const FLASH = "deepseek-ai/DeepSeek-V4-Flash-0731";
 
+test("Ollama transport failures emit bounded payload-free metadata and keep the original error", async () => {
+  for (const phase of ["request", "response-body"]) {
+    const observations = []; let sent; let calls = 0;
+    const failure = new TypeError("PRIVATE_ERROR_MESSAGE");
+    failure.cause = { code: "UND_ERR_SOCKET", message: "PRIVATE_CAUSE_MESSAGE" };
+    const model = "nemotron-3-ultra:cloud";
+    const client = ollamaClient({ budget: 1, stage: "full-confirm", onUsage: row => observations.push(row), fetchImpl: async (_url, init) => {
+      calls++; sent = JSON.parse(init.body);
+      if (phase === "request") throw failure;
+      return { status: 200, ok: true, text: async () => { throw failure; } };
+    } });
+    await assert.rejects(client.request("/chat/completions", { body: { model, messages: [{ role: "user", content: "PRIVATE_PROMPT_TEXT" }], max_tokens: 8192 } }), error => error === failure);
+    assert.equal(calls, 1); assert.equal(observations.length, 1); assert.equal(client.counters.calls, 1); assert.equal(client.counters.retries, 0);
+    const row = observations[0]; const expected = estimateCostUsd(model, reservationInputTokens(sent), 8192);
+    assert.equal(client.dollarBudget.spent, expected); assert.equal(client.dollarBudget.reserved, 0); assert.equal(row.chargedUsd, expected);
+    assert.equal(row.transportFailure, true); assert.equal(row.measured, false); assert.equal(row.status, 0); assert.equal(row.phase, phase);
+    assert.equal(row.inputTokens, null); assert.equal(row.outputTokens, null); assert.equal(row.cachedInputTokens, null);
+    assert.equal(row.errorName, "TypeError"); assert.equal(row.causeCode, "UND_ERR_SOCKET"); assert.ok(row.latencyMs >= 0);
+    assert.deepEqual(row.reservation_bounds, { inputTokens: reservationInputTokens(sent), outputTokens: 8192, spentUsd: expected, source: "request-reservation-upper-bound" });
+    const serialized = JSON.stringify(row);
+    for (const forbidden of ["PRIVATE_ERROR_MESSAGE", "PRIVATE_CAUSE_MESSAGE", "PRIVATE_PROMPT_TEXT", "stack", "headers"]) assert.equal(serialized.includes(forbidden), false);
+  }
+});
+
+test("transport diagnostics sanitize names and cause codes even when the observer throws", async () => {
+  const failure = new Error("PRIVATE_MESSAGE"); failure.name = "Error\nPRIVATE_NAME"; failure.cause = { code: "ECONNRESET\nPRIVATE_CODE" };
+  const observations = [];
+  const client = ollamaClient({ budget: 1, fetchImpl: async () => { throw failure; }, onUsage: row => { observations.push(row); throw new Error("observer fixture failure"); } });
+  await assert.rejects(client.request("/chat/completions", { body: { model: "nemotron-3-ultra:cloud", messages: [{ role: "user", content: "Fixture" }], max_tokens: 8192 } }), error => error === failure);
+  assert.equal(observations.length, 1); assert.equal(observations[0].errorName, "Error"); assert.equal(observations[0].causeCode, null);
+  assert.equal(JSON.stringify(observations).includes("PRIVATE"), false);
+});
+
 test("unmeasured Ollama responses retain null actuals and persist exact reservation bounds", async () => {
   let sent; const observations = [];
   const model = "nemotron-3-ultra:cloud";

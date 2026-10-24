@@ -107,6 +107,10 @@ export type UsageObservation = {
   attempt: number;
   latencyMs: number;
   reservation_bounds?: ReservationUsageBounds;
+  transportFailure?: true;
+  errorName?: string;
+  causeCode?: string | null;
+  phase?: "request" | "response-body";
 };
 export type UsageObserver = (observation: UsageObservation) => void;
 
