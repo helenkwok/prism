@@ -15,6 +15,7 @@ import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { PINNED_MODEL, QuotaStop, SECOND_CODER_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
 import {
   confirmationStatus,
+  confirmationMatches,
   confirmedStateFor,
   confirmWithModel,
   effectiveStates,
@@ -164,11 +165,42 @@ describe("confirmation records", () => {
   });
 });
 
+test("publication selects the latest current person, then the latest independent current model", async () => {
+  const db = memDb(); const dataDir = makeDataDir(1); const spans = projectSpans(dataDir, 1);
+  await ensureConfirmationSchema(db); await ensureEditsSchema(db);
+  await seedCheckStates(db, [{ projectN: 1, checkId, state: "pass", spanIds: spans.map(s => s.id) }]);
+  const p = { projectN: 1, checkId, state: "pass", spans };
+  const base = { projectN: 1, checkId, reason: "synthetic fixture", spanIds: spans.map(s => s.id), inputDigest: inputDigest(codebook, p), confirmerKind: "agent", modelId: "nemotron-3-ultra:cloud" };
+  await recordConfirmation(db, { ...base, confirmerId: "agent:older", decision: "confirmed", confirmedState: "pass", decidedAt: "2026-10-24T01:00:00Z" });
+  await recordConfirmation(db, { ...base, confirmerId: "agent:newer", decision: "rejected", confirmedState: null, decidedAt: "2026-10-24T02:00:00Z" });
+  let published = await publishedStates(db, dataDir, codebook, [1], { allowedModelIds: ["nemotron-3-ultra"] });
+  assert.equal(published[0].basis, "rejected");
+  await recordConfirmation(db, { ...base, confirmerId: "person:older", confirmerKind: "person", modelId: null, decision: "confirmed", confirmedState: "pass", decidedAt: "2026-10-23T01:00:00Z" });
+  published = await publishedStates(db, dataDir, codebook, [1]); assert.equal(published[0].published, "pass");
+  await recordConfirmation(db, { ...base, confirmerId: "person:newer", confirmerKind: "person", modelId: null, decision: "rejected", confirmedState: null, decidedAt: "2026-10-23T02:00:00Z" });
+  published = await publishedStates(db, dataDir, codebook, [1]); assert.equal(published[0].basis, "rejected");
+  await db.destroy();
+});
+
+test("shared freshness rejects unresolved citations, stale inputs, flags, self edits and coder reuse", () => {
+  const p = { ...positive, spans: [{ id: "p1-s1", text: "Synthetic resolved evidence." }], flaggedSpanIds: [] };
+  const row = { project_n: p.projectN, check_id: p.checkId, input_digest: inputDigest(codebook, p), confirmer_id: "agent:fixture", confirmer_kind: "agent", model_id: "nemotron-3-ultra:cloud", decision: "confirmed", confirmed_state: "pass", span_ids_json: JSON.stringify(p.spans.map(s => s.id)), reason: "p1-s1 synthetic" };
+  assert.equal(confirmationMatches(row, p, codebook, { allowedModelIds: ["nemotron-3-ultra"] }), true);
+  assert.equal(confirmationMatches(row, { ...p, spans: [{ id: "p1-s1", text: "" }] }, codebook), false);
+  assert.equal(confirmationMatches({ ...row, input_digest: "stale" }, p, codebook), false);
+  assert.equal(confirmationMatches(row, { ...p, flaggedSpanIds: ["p1-s1"] }, codebook), false);
+  assert.equal(confirmationMatches(row, p, codebook, { editActorId: row.confirmer_id }), false);
+  assert.equal(confirmationMatches({ ...row, model_id: PINNED_MODEL }, p, codebook), false);
+  assert.equal(confirmationMatches({ ...row, span_ids_json: "[]" }, p, codebook), false);
+  assert.equal(confirmationMatches({ ...row, decision: "rejected", confirmed_state: null }, { ...p, flaggedSpanIds: ["p1-s1"] }, codebook), true);
+});
+
 describe("D-56 downgrade and publishedStates", () => {
   test("a pass downgraded records claimed and publishedStates returns claimed", async () => {
     const db = memDb();
+    const dataDir = makeDataDir(1);
     await ensureConfirmationSchema(db);
-    await seedCheckStates(db, [{ projectN: 1, checkId, state: "pass" }]);
+    await seedCheckStates(db, [{ projectN: 1, checkId, state: "pass", spanIds: ["p1-s001"] }]);
     let calls = 0;
     const client = {
       request: async () => (
@@ -179,17 +211,17 @@ describe("D-56 downgrade and publishedStates", () => {
     const v = await confirmWithModel(client, codebook, positive);
     assert.equal(v.decision, "downgraded");
     assert.equal(calls, 1);
-    const forPublish = { ...positive, spans: [{ id: "p1-s1", text: "" }] };
+    const forPublish = { ...positive, spans: projectSpans(dataDir, 1) };
     const digest = inputDigest(codebook, forPublish);
     await recordConfirmation(db, {
       projectN: 1, checkId, decision: v.decision, confirmedState: confirmedStateFor(v.decision, "pass"),
       reason: v.reason, confirmerId: "agent:m", confirmerKind: "agent", modelId: "m",
-      decidedAt: "t", inputDigest: digest, spanIds: ["p1-s1"],
+      decidedAt: "t", inputDigest: digest, spanIds: ["p1-s001"],
     });
     const row = await db.selectFrom("pipeline_confirmations").selectAll().executeTakeFirst();
     assert.equal(row.decision, "downgraded");
     assert.equal(row.confirmed_state, "claimed");
-    const published = await publishedStates(db, "/nonexistent", codebook, [1]);
+    const published = await publishedStates(db, dataDir, codebook, [1]);
     const hit = published.find((p) => p.checkId === checkId);
     assert.equal(hit.published, "claimed");
     assert.equal(hit.basis, "downgraded");
@@ -214,33 +246,34 @@ describe("D-56 downgrade and publishedStates", () => {
 
   test("confirmed/rejected set confirmed_state; publishedStates null for rejected and undecided", async () => {
     const db = memDb();
+    const dataDir = makeDataDir(1);
     await ensureConfirmationSchema(db);
     const passId = checkId;
     const claimedId = Object.keys(codebook.checks)[1];
     const undecidedId = Object.keys(codebook.checks)[2];
     await seedCheckStates(db, [
-      { projectN: 1, checkId: passId, state: "pass" },
-      { projectN: 1, checkId: claimedId, state: "claimed" },
-      { projectN: 1, checkId: undecidedId, state: "pass" },
+      { projectN: 1, checkId: passId, state: "pass", spanIds: ["p1-s001"] },
+      { projectN: 1, checkId: claimedId, state: "claimed", spanIds: ["p1-s001"] },
+      { projectN: 1, checkId: undecidedId, state: "pass", spanIds: ["p1-s001"] },
     ]);
-    const passPos = { projectN: 1, checkId: passId, state: "pass", spans: [{ id: "p1-s1", text: "" }] };
-    const claimedPos = { projectN: 1, checkId: claimedId, state: "claimed", spans: [{ id: "p1-s1", text: "" }] };
+    const passPos = { projectN: 1, checkId: passId, state: "pass", spans: projectSpans(dataDir, 1) };
+    const claimedPos = { projectN: 1, checkId: claimedId, state: "claimed", spans: projectSpans(dataDir, 1) };
     await recordConfirmation(db, {
       projectN: 1, checkId: passId, decision: "confirmed", confirmedState: "pass",
       reason: "ok", confirmerId: "agent:m", confirmerKind: "agent", modelId: "m",
-      decidedAt: "t", inputDigest: inputDigest(codebook, passPos), spanIds: ["p1-s1"],
+      decidedAt: "t", inputDigest: inputDigest(codebook, passPos), spanIds: ["p1-s001"],
     });
     await recordConfirmation(db, {
       projectN: 1, checkId: claimedId, decision: "rejected", confirmedState: null,
       reason: "no", confirmerId: "agent:m", confirmerKind: "agent", modelId: "m",
-      decidedAt: "t", inputDigest: inputDigest(codebook, claimedPos), spanIds: ["p1-s1"],
+      decidedAt: "t", inputDigest: inputDigest(codebook, claimedPos), spanIds: ["p1-s001"],
     });
     const rows = await db.selectFrom("pipeline_confirmations").selectAll().orderBy("check_id").execute();
     const byId = Object.fromEntries(rows.map((r) => [r.check_id, r]));
     assert.equal(byId[passId].confirmed_state, "pass");
     assert.equal(byId[claimedId].confirmed_state, null);
 
-    const published = await publishedStates(db, "/nonexistent", codebook, [1]);
+    const published = await publishedStates(db, dataDir, codebook, [1]);
     assert.equal(published.find((p) => p.checkId === passId).published, "pass");
     assert.equal(published.find((p) => p.checkId === passId).basis, "confirmed");
     assert.equal(published.find((p) => p.checkId === claimedId).published, null);
@@ -389,22 +422,23 @@ describe("D-57 flagged spans, D-53 gold lock, A7.8 edits", () => {
 
   test("person decision outranks agent; own-edit person decision is ignored", async () => {
     const db = memDb();
+    const dataDir = makeDataDir(1);
     await ensureConfirmationSchema(db);
     await ensureEditsSchema(db);
-    await seedCheckStates(db, [{ projectN: 1, checkId, state: "pass" }]);
-    const forPublish = { projectN: 1, checkId, state: "pass", spans: [{ id: "p1-s1", text: "" }] };
+    await seedCheckStates(db, [{ projectN: 1, checkId, state: "pass", spanIds: ["p1-s001"] }]);
+    const forPublish = { projectN: 1, checkId, state: "pass", spans: projectSpans(dataDir, 1) };
     const digest = inputDigest(codebook, forPublish);
     await recordConfirmation(db, {
       projectN: 1, checkId, decision: "rejected", confirmedState: null, reason: "agent",
       confirmerId: "agent:m", confirmerKind: "agent", modelId: "m", decidedAt: "t",
-      inputDigest: digest, spanIds: ["p1-s1"],
+      inputDigest: digest, spanIds: ["p1-s001"],
     });
     await recordConfirmation(db, {
       projectN: 1, checkId, decision: "confirmed", confirmedState: "pass", reason: "person",
       confirmerId: "person:other", confirmerKind: "person", modelId: null, decidedAt: "t",
-      inputDigest: digest, spanIds: ["p1-s1"],
+      inputDigest: digest, spanIds: ["p1-s001"],
     });
-    let published = await publishedStates(db, "/nonexistent", codebook, [1]);
+    let published = await publishedStates(db, dataDir, codebook, [1]);
     assert.equal(published.find((p) => p.checkId === checkId).published, "pass");
     assert.equal(published.find((p) => p.checkId === checkId).basis, "confirmed");
 
@@ -413,11 +447,11 @@ describe("D-57 flagged spans, D-53 gold lock, A7.8 edits", () => {
       .insertInto("pipeline_edits")
       .values({
         project_n: 1, check_id: checkId, state: "pass", filtered_state: "pass",
-        span_ids_json: JSON.stringify(["p1-s1"]), reason: "edit", actor_id: "person:other",
+        span_ids_json: JSON.stringify(["p1-s001"]), reason: "edit", actor_id: "person:other",
         actor_kind: "person", input_digest: "e", edited_at: "2026-01-03T00:00:00Z",
       })
       .execute();
-    published = await publishedStates(db, "/nonexistent", codebook, [1]);
+    published = await publishedStates(db, dataDir, codebook, [1]);
     assert.equal(published.find((p) => p.checkId === checkId).published, null);
     assert.equal(published.find((p) => p.checkId === checkId).basis, "rejected");
   });
@@ -455,7 +489,7 @@ describe("D-57 flagged spans, D-53 gold lock, A7.8 edits", () => {
     });
     const published = await publishedStates(db, "/nonexistent", codebook, [1]);
     assert.equal(published.find((x) => x.checkId === fixture.checkId).published, null);
-    assert.equal(published.find((x) => x.checkId === fixture.checkId).basis, "rejected");
+    assert.equal(published.find((x) => x.checkId === fixture.checkId).basis, "stale");
   });
 });
 
