@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, acceptanceApprovalPaths, assertInheritedGoldApproval, verifyGoldApproval, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
+import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, assertGoldSubset, acceptanceApprovalPaths, assertInheritedGoldApproval, verifyGoldApproval, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
+
+test("gold scheduling excludes the registered project only when it is actually in the sample", () => {
+  assert.doesNotThrow(() => assertGoldSubset(["a", "b"], { goldOrder: ["b", "a"], a3Excluded: [] }, "excluded"));
+  assert.doesNotThrow(() => assertGoldSubset(["a", "excluded"], { goldOrder: ["a"], a3Excluded: ["excluded"] }, "excluded"));
+  assert.throws(() => assertGoldSubset(["a", "b"], { goldOrder: ["a"], a3Excluded: ["excluded"] }, "excluded"));
+  assert.throws(() => assertGoldSubset(["a", "b"], { goldOrder: ["a", "a"], a3Excluded: [] }, "excluded"));
+});
 
 test("an empty successful process is not proof that tests passed", () => {
   for (const text of ["", "exit 0", "# pass 0\n# fail 0", "# pass 12\n# fail 1", "not ok 1 - fixture\n# pass 12\n# fail 0"]) assert.throws(() => assertTapSuccess(text));

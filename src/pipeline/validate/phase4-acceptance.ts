@@ -43,6 +43,12 @@ export function assertGoldOutcome(outcome: any, labels: { check_id: string }[], 
   else requireEvidence(labels.length === 0 && (outcome.outcome !== "no-gold" || typeof outcome.reason === "string" && outcome.reason.length > 0), "no-gold-outcome-has-labels");
 }
 
+export function assertGoldSubset(sampleIds: string[], subset: any, excludedId: string): void {
+  const eligible = sampleIds.filter(id => id !== excludedId);
+  const excluded = sampleIds.filter(id => id === excludedId);
+  requireEvidence(Array.isArray(subset.goldOrder) && subset.goldOrder.length === eligible.length && new Set(subset.goldOrder).size === eligible.length && subset.goldOrder.every((id: string) => eligible.includes(id)) && Array.isArray(subset.a3Excluded) && subset.a3Excluded.length === excluded.length && subset.a3Excluded.every((id: string) => id === excludedId), "gold-subset-scope-inconsistent");
+}
+
 export function acceptanceApprovalPaths(dataDir: string, { priorApprovalProofPath, signoffPath }: { priorApprovalProofPath?: string; signoffPath?: string }) {
   const legacy = path.resolve(dataDir, "decisions", "signoff.jsonl");
   const selected = path.resolve(signoffPath ?? legacy);
@@ -111,7 +117,8 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
     { id: "C1", run: async () => {
       const entries = sample(); const s = subsets(); const ids = entries.map(e => String(e.hn_id));
       requireEvidence(entries.length === 300 && new Set(entries.map(e => e.n)).size === 300 && new Set(ids).size === 300 && entries.every(e => Number.isSafeInteger(e.n) && e.n >= 1 && e.n <= 300) && [1, 2, 3, 4].every(q => entries.filter(e => e.quarter === q).length === 75), "sample-not-stratified-300");
-      requireEvidence(s.goldOrder?.length === 299 && !s.goldOrder.includes(ARTCRAFT_HN_ID) && s.a3Excluded?.length === 1 && s.a3Excluded[0] === ARTCRAFT_HN_ID && s.secondModel?.length === 100 && s.recall?.length === 10 && s.audit?.length === 50, "subset-sizes-incomplete");
+      assertGoldSubset(ids, s, ARTCRAFT_HN_ID);
+      requireEvidence(s.secondModel?.length === 100 && s.recall?.length === 10 && s.audit?.length === 50, "subset-sizes-incomplete");
       for (const list of [s.goldOrder, s.secondModel, s.recall]) requireEvidence(new Set(list.map(String)).size === list.length && list.every((id: unknown) => ids.includes(String(id))), "subset-outside-sample");
       const { prismaCounts } = await import("../select/draw.ts"); const counts = prismaCounts(readJson(path.join(dataDir, "pipeline", "sample-screening-log.json")).log);
       requireEvidence(counts.included + counts["included-insufficient-text"] === 300, "sampling-log-mismatch"); log(`PRISMA: ${JSON.stringify(counts)}`); return true;
