@@ -27,7 +27,8 @@ function cardHtml(beat) {
       : `<p class="kicker">${esc(beat.id)} · storyboard card, not final footage</p>
          <h1>${esc(beat.title)}</h1>
          <p class="shot">Shot: ${esc(beat.source)}</p>
-         <p class="meta">${esc(beat.criterion.join(" · "))}</p>`;
+         <p class="meta">${esc(beat.criterion.join(" · "))}</p>
+         ${beat.pending ? `<p class="pending">PLACEHOLDER: ${esc(beat.pending)}</p>` : ""}`;
   return `<!doctype html><html><head><style>
     html,body{margin:0;width:${W}px;height:${H}px;background:#0b0d12;color:#f5f7fa;font-family:${FONT}}
     main{box-sizing:border-box;width:100%;height:100%;padding:140px 160px;display:flex;flex-direction:column;justify-content:center;gap:28px}
@@ -35,6 +36,7 @@ function cardHtml(beat) {
     .kicker{font-size:30px;margin:0;color:#9aa4b2;letter-spacing:.04em;text-transform:uppercase}
     .shot{font-size:34px;margin:0;color:#d6dbe3;max-width:1500px;line-height:1.35}
     .meta{font-size:28px;margin:0;color:#9aa4b2}
+    .pending{font-size:28px;margin:0;color:#ffd166;max-width:1500px;line-height:1.35}
   </style></head><body><main>${body}</main></body></html>`;
 }
 

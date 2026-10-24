@@ -67,3 +67,19 @@ test("wording rules: no deficit, certification, score or priority words", () => 
     assert.ok(!banned.test(b.onScreen), `${b.id} onScreen`);
   }
 });
+
+// 08-FRAMING.md wording guards (Helen, 2026-10-24) and 08-DECISIONS-HELEN.md (t4, i2).
+test("framing guards: no runtime-Tavily or every-positive claims; injection labelled synthetic; framing close line", () => {
+  const all = (b) => `${b.narration} ${b.onScreen}`;
+  for (const b of beats) {
+    assert.ok(!/confirms? (each|every) positive/i.test(all(b)), `${b.id}: every-positive claim`);
+    assert.ok(!/Nemotron (codes|coded) (all|every)/i.test(all(b)), `${b.id}: Nemotron-does-all-coding claim`);
+    if (/91\.5/.test(all(b))) assert.ok(/exploratory/i.test(b.narration) && /exploratory/i.test(b.onScreen), `${b.id}: 91.5% unlabelled`);
+  }
+  // t4: Tavily appears only in prototype/close beats, never in an app (cdp) beat.
+  for (const b of beats.filter((x) => x.method === "cdp")) assert.ok(!/Tavily/.test(all(b)), `${b.id}: app beat names Tavily`);
+  const inj = beats.find((b) => b.sc1Item === "injection");
+  assert.match(inj.onScreen, /synthetic fixture/i);
+  assert.match(inj.narration, /synthetic fixture/i);
+  assert.match(beats.at(-1).narration, /Built and proven on Nebius Token Factory and Tavily, and designed to scale by plugging in other providers/);
+});
