@@ -11,7 +11,7 @@ import type { Page } from "@playwright/test";
 import { dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
 import type { DeidentifiedView, Dictionary } from "../src/report/deidentify.ts";
 import type { ReportView } from "../src/report/view.ts";
-import { stateFor } from "./helpers.ts";
+import { openEvidence, stateFor } from "./helpers.ts";
 
 const DEID_FIGCAPTION = "Source page and snapshot withheld in de-identified records.";
 
@@ -147,6 +147,7 @@ test.describe("judge", () => {
   test("the masked render: no URL, host, snapshot or live link; withheld captions; quotes of at most 40 words; visible redactions", async ({ page }) => {
     const res = await page.goto(`/j/${pseud("P07")}`);
     expect(res?.status()).toBe(200);
+    await openEvidence(page);
     const main = page.locator("main");
     await expect(main.locator("[data-quote-url]")).toHaveCount(0);
     await expect(main.locator('a[href*="/snapshot/"], a[target="_blank"], a[href^="http"]')).toHaveCount(0);

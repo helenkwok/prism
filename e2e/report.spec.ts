@@ -2,7 +2,7 @@
 // with every quote linked to its archived snapshot and its live page.
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { stateFor } from "./helpers.ts";
+import { openEvidence, stateFor } from "./helpers.ts";
 
 test.use({ storageState: ({}, use) => stateFor("admin").then(use) });
 
@@ -26,6 +26,36 @@ test("disclaimer precedes the Decisions block, which precedes the first check ca
   );
 });
 
+test("J1: each decision leads with its verdict and what would change it; the evidence follows, closed", async ({ page }) => {
+  for (const id of ["P01", "P03", "P08", "P10"]) {
+    await page.goto(`/p/${id}`);
+    const rows = await page.locator("[data-verdict-row]").evaluateAll((rows) =>
+      rows.map((r) => {
+        const after = (a: Element | null, b: Element | null) => !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+        const action = r.querySelector("[data-action]");
+        const details = r.querySelector("details[data-evidence]") as HTMLDetailsElement | null;
+        const cards = [...r.querySelectorAll("[data-check-card]")];
+        return {
+          decision: r.getAttribute("data-decision"),
+          verdictBeforeAction: after(r.querySelector("[data-verdict-head] h3"), action),
+          actionBeforeEvidence: !!details && cards.length > 0 && cards.every((c) => after(action, c) && details.contains(c)),
+          closed: details?.open === false,
+          // Every action item names a required check of this decision that is not publicly evidenced.
+          actions: [...r.querySelectorAll("[data-action-item]")].map((a) => a.getAttribute("data-action-item")),
+          notPass: [...document.querySelectorAll("[data-check-card]")].filter((c) => c.getAttribute("data-state") !== "pass").map((c) => c.getAttribute("data-check")),
+        };
+      }),
+    );
+    expect(rows.length).toBe(5);
+    for (const r of rows) {
+      expect(r.verdictBeforeAction, `${id} ${r.decision}`).toBe(true);
+      expect(r.actionBeforeEvidence, `${id} ${r.decision}`).toBe(true);
+      expect(r.closed, `${id} ${r.decision}`).toBe(true);
+      for (const a of r.actions) expect(r.notPass, `${id} ${r.decision}`).toContain(a);
+    }
+  }
+});
+
 test("evaluative text uses evidence language; raw gate statuses only in data-gate-status", async ({ page }) => {
   for (const id of ["P01", "P03", "P08", "P10"]) {
     await page.goto(`/p/${id}`);
@@ -36,11 +66,19 @@ test("evaluative text uses evidence language; raw gate statuses only in data-gat
     // until the 07-13 approval is the codebook pass rule verbatim (it names "gate result was PASS").
     const visible = await page.evaluate(() => {
       const main = document.querySelector("main")!.cloneNode(true) as HTMLElement;
-      main.querySelectorAll("[data-gap], blockquote").forEach((e) => e.remove());
+      main.querySelectorAll("[data-gap], [data-action-gap], blockquote").forEach((e) => e.remove());
       return main.textContent ?? "";
     });
     expect(visible).not.toMatch(/\b(PASS|BLOCKED|INSUFFICIENT_EVIDENCE)\b/);
-    for (const row of await page.locator("[data-verdict-row]").allInnerTexts()) expect(row).not.toMatch(/PASS|BLOCKED|INSUFFICIENT/);
+    // The app's own row text: the stored gap text (the codebook pass rule until approval) is left out.
+    const rowTexts = await page.locator("[data-verdict-row]").evaluateAll((rows) =>
+      rows.map((r) => {
+        const c = r.cloneNode(true) as HTMLElement;
+        c.querySelectorAll("[data-gap], [data-action-gap], blockquote").forEach((e) => e.remove());
+        return c.textContent ?? "";
+      }),
+    );
+    for (const row of rowTexts) expect(row).not.toMatch(/PASS|BLOCKED|INSUFFICIENT/);
     const statuses = await page.locator("[data-verdict-row]").evaluateAll((rows) => rows.map((r) => r.getAttribute("data-gate-status")));
     expect(statuses.every((s) => ["PASS", "BLOCKED", "INSUFFICIENT_EVIDENCE"].includes(s ?? ""))).toBe(true);
   }
@@ -51,6 +89,7 @@ test("evaluative text uses evidence language; raw gate statuses only in data-gat
 
 test("crosswalk chips name the standard once: the locator's leading word (or its singular) is not repeated", async ({ page }) => {
   await page.goto("/p/P01");
+  await openEvidence(page);
   const chips = await page.locator("[data-chip]").allInnerTexts();
   expect(chips.length).toBeGreaterThan(0);
   for (const c of chips) {
@@ -65,6 +104,7 @@ test("crosswalk chips name the standard once: the locator's leading word (or its
 
 test("quote cards: URL as truncated text with title, snapshot link with #span-, live link rel and target", async ({ page }) => {
   await page.goto("/p/P01");
+  await openEvidence(page);
   const q = card(page, "output-reproducible").locator("[data-quote-card]").first();
   const url = q.locator("[data-quote-url]");
   await expect(url).toHaveText("https://p01.example/");
@@ -151,6 +191,8 @@ const pagesOf = (id: string): { url: string; snapshotHash: string }[] =>
 
 test("a quote's snapshot link lands on its marked span, focused, with the meta block and back links", async ({ page }) => {
   await page.goto("/p/P01");
+  // A reader opens the evidence under the decision first.
+  await page.locator('[data-verdict-row]:has([data-check="output-reproducible"]) details[data-evidence] > summary').click();
   await card(page, "output-reproducible").locator('[data-span="s012"]').getByRole("link", { name: "Open archived snapshot" }).click();
   await expect(page).toHaveURL(/\/p\/P01\/snapshot\/[0-9a-f]{64}\?check=output-reproducible#span-s012$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Archived page");

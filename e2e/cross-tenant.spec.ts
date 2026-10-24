@@ -16,7 +16,7 @@ test.describe("company A", () => {
     await expect(page.locator("[data-scope-disclaimer]")).toContainText("This is not a certification or a legal assessment.");
     await expect(page.getByRole("heading", { level: 2, name: "Decisions" })).toBeVisible();
     await expect(page.locator("[data-verdict-row]")).toHaveCount(5);
-    await expect(page.getByRole("heading", { level: 2, name: "Checks" })).toBeVisible();
+    await expect(page.locator("details[data-evidence]")).toHaveCount(5);
   });
 
   test("gets 403 and the 403 page on company B's report", async ({ page }) => {

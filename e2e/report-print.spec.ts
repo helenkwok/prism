@@ -132,8 +132,8 @@ test.describe("report print layout (/p/P01, admin)", () => {
     await expect(role).toBeHidden();
   });
 
-  test("interactive-only controls (Show checks, record toggles) are not printed", async ({ page }) => {
-    const controls = [page.getByRole("link", { name: "Show checks" }), page.locator("summary")];
+  test("interactive-only controls (evidence and record toggles) are not printed", async ({ page }) => {
+    const controls = [page.locator("details[data-evidence] > summary"), page.locator("summary")];
     await page.emulateMedia({ media: "screen" });
     for (const c of controls) {
       expect(await c.count()).toBeGreaterThan(0);
@@ -158,11 +158,11 @@ test.describe("report print layout (/p/P01, admin)", () => {
     });
   });
 
-  test("check cards, quote cards and each decision row keep together; the Decisions block may break between rows", async ({
+  test("check cards, quote cards and each decision's verdict and action keep together; the Decisions block may break between rows", async ({
     page,
   }) => {
     const avoid = (sel: string) => page.locator(sel).evaluateAll((els) => els.map((e) => getComputedStyle(e).breakInside));
-    for (const sel of ["[data-check-card]", "[data-quote-card]", "[data-verdict-row]"]) {
+    for (const sel of ["[data-check-card]", "[data-quote-card]", "[data-verdict-head]"]) {
       const v = await avoid(sel);
       expect(v.length, sel).toBeGreaterThan(0);
       for (const b of v) expect(b, sel).toBe("avoid");
@@ -170,23 +170,15 @@ test.describe("report print layout (/p/P01, admin)", () => {
     expect(await avoid("[data-decisions]")).toEqual(["auto"]);
   });
 
-  test("the Checks heading and each decision heading print together with their first check card", async ({ page }) => {
-    const groups = await page.evaluate(() => {
-      const keepOf = (e: Element | null) => e?.closest("[data-keep]") ?? null;
-      const headings = [document.getElementById("checks"), ...document.querySelectorAll("section[aria-labelledby=checks] h3")];
-      return headings.map((h) => {
-        const keep = keepOf(h);
-        const firstCard = h?.parentElement?.closest("[data-check-group]")?.querySelector("[data-check-card]") ?? null;
-        return {
-          id: h?.id,
-          keep: !!keep,
-          avoid: keep ? getComputedStyle(keep).breakInside : null,
-          withCard: !!keep && !!firstCard && keepOf(firstCard) === keep,
-        };
-      });
-    });
-    expect(groups.length).toBe(6);
-    for (const g of groups) expect(g, g.id).toEqual({ id: g.id, keep: true, avoid: "avoid", withCard: true });
+  test("J1: the evidence under every decision prints open, though it is closed on screen", async ({ page }) => {
+    const shown = () =>
+      page.locator("[data-check-card]").evaluateAll((els) => [els.length, els.filter((e) => e.checkVisibility()).length]);
+    await page.emulateMedia({ media: "screen" });
+    const [total, onScreen] = await shown();
+    expect(total).toBeGreaterThan(0);
+    expect(onScreen).toBe(0);
+    await page.emulateMedia({ media: "print", colorScheme: "light" });
+    expect(await shown()).toEqual([total, total]);
   });
 
   test("page.pdf A4 gives at least one A4 page", async ({ page }) => {
