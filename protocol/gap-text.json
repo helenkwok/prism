@@ -1,8 +1,13 @@
 {
-  "status": "draft",
+  "status": "approved",
   "purpose": "Text shown under 'What would close this gap' on a private PRISM report, for each gate check whose published state is not pass. Drafted from each check's codebook v1.0 pass rule (plan 07-03, Helen's option-b). Plain evidence language; no standard's text is quoted.",
   "digestNote": "The report uses these entries only when approval is a decision record { actorId, actorKind, decidedAt, digest } (protocol addendum A6) whose digest is the sha256 of JSON.stringify(entries) with the keys sorted (src/report/view.ts gapTextDigest). Until then the codebook pass rule is shown. Approval is collected at plan 07-13's checkpoint and is never written by an executor.",
-  "approval": null,
+  "approval": {
+    "actorId": "person:helen",
+    "actorKind": "person",
+    "decidedAt": "2026-10-24T12:04:24.431Z",
+    "digest": "fc57621700ef2f94dafa171fc116e378686ab79567ac75fb7a49e844ba27b16b"
+  },
   "entries": {
     "output-reproducible": "A sentence on the project's own page or repository that links something outsiders can use to run or inspect the product, such as source code with build steps, a public demo, or published model weights or data.",
     "assumptions-catalogued": "A sentence on the project's own page or repository naming a specific assumption, input context or inference the product relies on, ideally linked to a design note, model card or README section.",

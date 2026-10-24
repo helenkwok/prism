@@ -199,10 +199,12 @@ describe("Helen's report-content answers (07-03 Task 3)", () => {
   const BANNED = /lack|missing|fail|non-compliant|blocked|compliant|certified|score|\bfirst\b|\bonly\b/i;
   const STANDARD_TEXT = /\b(ISO|IEC|NIST|RMF|AI Act|OECD|GAICC|Annex|clause|shall)\b/i;
 
-  test("option-b: protocol/gap-text.json drafts exactly the 24 gate checks in evidence language, approval null", () => {
+  test("option-b: protocol/gap-text.json holds exactly the 24 gate checks in evidence language, approved by a person over its own digest", () => {
     const g = JSON.parse(fs.readFileSync(gapFile, "utf8"));
     assert.deepEqual(Object.keys(g.entries), order);
-    assert.equal(g.approval, null);
+    // Helen approved the text on 2026-10-24 ("approve gap text").
+    assert.equal(g.approval.actorKind, "person");
+    assert.equal(g.approval.digest, gapTextDigest(g.entries));
     assert.match(g.digestNote, /actorId, actorKind, decidedAt, digest/);
     for (const [id, text] of Object.entries(g.entries)) {
       assert.equal(typeof text, "string", id);
@@ -214,18 +216,19 @@ describe("Helen's report-content answers (07-03 Task 3)", () => {
     }
   });
 
-  test("option-b: gapSource stays passRule while approval is null, and becomes gap-text with a matching approval digest on a temp copy", async () => {
-    const live = loadGapText({ repoRoot: root, codebook });
-    for (const id of order) assert.deepEqual(live(id), { text: codebook.checks[id].passRule, source: "passRule" });
-    const v = await buildReportView(source("P01"), { codebook, gatesPath, runGate: jsRunGate, gapText: live });
-    assert.deepEqual([...new Set(v.checks.map((c) => c.gapSource).filter(Boolean))], ["passRule"]);
-
+  test("option-b: gapSource is passRule without a matching approval, and gap-text with the approved file", async () => {
     const g = JSON.parse(fs.readFileSync(gapFile, "utf8"));
-    g.approval = { actorId: "test-signoff", actorKind: "person", decidedAt: "2026-10-23T00:00:00Z", digest: gapTextDigest(g.entries) };
-    const dir = path.join(scratch, "approved");
-    fs.mkdirSync(path.join(dir, "protocol"), { recursive: true });
-    fs.writeFileSync(path.join(dir, "protocol", "gap-text.json"), JSON.stringify(g));
-    const approved = loadGapText({ repoRoot: dir, codebook });
+    for (const [name, approval] of [["unapproved", null], ["stale", { ...g.approval, digest: "0".repeat(64) }]]) {
+      const d = path.join(scratch, name);
+      fs.mkdirSync(path.join(d, "protocol"), { recursive: true });
+      fs.writeFileSync(path.join(d, "protocol", "gap-text.json"), JSON.stringify({ ...g, approval }));
+      const draft = loadGapText({ repoRoot: d, codebook });
+      for (const id of order) assert.deepEqual(draft(id), { text: codebook.checks[id].passRule, source: "passRule" });
+      const v = await buildReportView(source("P01"), { codebook, gatesPath, runGate: jsRunGate, gapText: draft });
+      assert.deepEqual([...new Set(v.checks.map((c) => c.gapSource).filter(Boolean))], ["passRule"]);
+    }
+
+    const approved = loadGapText({ repoRoot: root, codebook });
     const va = await buildReportView(source("P01"), { codebook, gatesPath, runGate: jsRunGate, gapText: approved });
     for (const c of va.checks) {
       if (c.published === "pass") assert.equal(c.gapText, null);
