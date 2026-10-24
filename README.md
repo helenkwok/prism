@@ -20,6 +20,21 @@ run PRISM live on one project.
   login through Devpost).
 - Codebook: `codebook.md`. Protocol: `protocol/PROTOCOL.md`.
 
+## Audience
+
+PRISM is a checklist for users, a tour guide for builders and a benchmark for
+investors. Users get a checklist of the evidence to look for before trusting an
+AI launch, and how often launches actually show it. Builders get a private
+report showing where they stand and the next piece of evidence to add.
+Investors get a benchmark of how launches evidence readiness against ISO/IEC
+42001, the NIST AI RMF, the EU AI Act and the OECD AI Principles.
+
+PRISM is not a promotion or listing service: nobody can pay, submit or opt in
+to be included, ranked or recommended. Projects are sampled from public
+launches, evidence comes only from each project's own site and repositories
+(never directories or listings), per-project results stay private, and the
+public sees aggregates only.
+
 ## NVIDIA Nemotron on Nebius Token Factory
 
 PRISM's model calls go to NVIDIA Nemotron models served by Nebius Token
@@ -60,6 +75,31 @@ Tavily (`map` then `extract`, anchored to the project's domain, after a
 `robots.txt` check). The published sample uses PRISM's own-site collector,
 compared against Tavily on 142 projects (the same check result 91.5% of the
 time; exploratory).
+
+## Limitations and failure cases
+
+- Nemotron Lightning stopped following the JSON schema with thinking on (4–8%
+  of replies valid), so screening runs with thinking off.
+- Even the best setting is not perfect: in a 50-call repeat of Ultra with
+  `json_schema`, the longest run of consecutive valid replies was 23. Every
+  reply is validated and retried once; if it is still invalid, it is recorded
+  as "unknown".
+- One early confirmation run sent whole pages as quotes: about 17M input tokens
+  and $18.30 before it was stopped. Its results are archived and never
+  published, and the run led to the per-request token cap and per-run budget
+  that now sit in front of every paid call.
+- Screening depends on how the model reads a title: in tests on another host,
+  the same project was screened in on one server and out on another. Screening
+  is audited (a sample of 50; error rate 12.2%).
+- The free collector and Tavily agree on 91.5% of check results over 142
+  projects, but they share only 44% of pages: an exploratory figure, not a
+  validation.
+- Collection recall against a separate gatherer is 0.887 on 10 projects.
+- When evidence is thin, the gate says "insufficient evidence" instead of
+  guessing, so many verdicts are "insufficient evidence": a finding about public
+  evidence, not a verdict on the product.
+- Reddit was not collected automatically, because its Data API needs
+  pre-approval. The live app does not render pages that need JavaScript.
 
 ## Setup
 
