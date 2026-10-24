@@ -4,13 +4,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { createClient, PINNED_BASE_URL } from "../coding/nebius-client.ts";
 import { DEFAULT_TOKEN_CAP, DollarBudget, estimateMessagesTokens, estimateCostUsd, reservationInputTokens, type UsageObservation } from "../coding/spend-guards.ts";
-import { signOff, signoffMessages, SIGNOFF_MODEL } from "./signoff.ts";
+import { buildSignoffBody, signOff, signoffMessages, SIGNOFF_MODEL } from "./signoff.ts";
 
 const sha = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 export function projectSignoff(doc: string, context: string, item: string) {
   const inputTokens = estimateMessagesTokens(signoffMessages(doc, context, item));
   if (inputTokens > DEFAULT_TOKEN_CAP) throw new Error(`sign-off input ${inputTokens} exceeds ${DEFAULT_TOKEN_CAP}; preserve the full evidence and obtain a specific exception`);
-  return { inputTokens, outputTokens: 2048, inputDigest: sha(JSON.stringify({ doc, context, item })), cap: .50 };
+  const upperBoundUsd = estimateCostUsd(SIGNOFF_MODEL, reservationInputTokens(buildSignoffBody(doc, context, item)), 2048);
+  if (upperBoundUsd > .50) throw new Error("sign-off request exceeds its approved allowance");
+  return { inputTokens, outputTokens: 2048, inputDigest: sha(JSON.stringify({ doc, context, item })), cap: .50, upperBoundUsd };
 }
 
 export async function cappedSignoff(o: { dataDir: string; doc: string; context: string; item: string; apiKey: string; fetchImpl?: typeof fetch; recordFile?: string }) {
