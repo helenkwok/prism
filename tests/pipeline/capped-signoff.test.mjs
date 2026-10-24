@@ -29,6 +29,8 @@ test("quota failure stops without retry and restart cannot rebuy it", async () =
   const options = { dataDir, doc: "Evidence", context: "Rules", item: "final", apiKey: "fixture", fetchImpl: async () => { calls++; return new Response("insufficient credit", { status: 402 }); } };
   try {
     await assert.rejects(cappedSignoff(options)); assert.equal(calls, 1);
+    const file = path.join(dataDir, "decisions", "capped", projectSignoff(options.doc, options.context, options.item).inputDigest + ".json");
+    assert.equal(JSON.parse(fs.readFileSync(file)).raw, "insufficient credit");
     await assert.rejects(cappedSignoff(options), /requires inspection/); assert.equal(calls, 1);
   } finally { fs.rmSync(dataDir, { recursive: true }); }
 });

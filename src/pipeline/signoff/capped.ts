@@ -29,7 +29,12 @@ export async function cappedSignoff(o: { dataDir: string; doc: string; context: 
   const evidence: any = { state: "prepared", plan, usage: [] };
   const persist = () => fs.writeFileSync(file, JSON.stringify(evidence) + "\n", { mode: 0o600 });
   const budget = new DollarBudget(plan.cap, { onChange: state => { evidence.budget = state; persist(); } });
-  const underlying = createClient({ baseUrl: PINNED_BASE_URL, apiKey: o.apiKey, fetchImpl: o.fetchImpl, maxRetries: 0, concurrency: 1, budget, onUsage: (usage: UsageObservation) => { evidence.usage.push(usage); persist(); }, stage: "signoff" });
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const response = await (o.fetchImpl ?? fetch)(input, init);
+    evidence.raw = await response.clone().text(); persist();
+    return response;
+  };
+  const underlying = createClient({ baseUrl: PINNED_BASE_URL, apiKey: o.apiKey, fetchImpl, maxRetries: 0, concurrency: 1, budget, onUsage: (usage: UsageObservation) => { evidence.usage.push(usage); persist(); }, stage: "signoff" });
   persist();
   const client = { request: async (url: string, init: { method: string; body: unknown }) => {
     const upperBoundUsd = estimateCostUsd(SIGNOFF_MODEL, reservationInputTokens(init.body), 2048);
