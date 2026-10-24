@@ -262,7 +262,7 @@ test("budget summary for /run: line, meter values and the disabled state", () =>
     used: 0.95,
     line: "Live-run budget: $0.95 of $1.00 spent",
     disabled: true,
-    notice: "The live-run budget is spent ($0.95 of $1.00). Raise the cap in the server settings to run again.",
+    notice: live.BUDGET_SPENT_NOTICE,
   });
   assert.equal(live.budgetSummary({ configured: true, cap: 1, spent: 0.9, reserved: 0 }).disabled, false);
   const off = live.budgetSummary({ configured: false, cap: 0, spent: 0, reserved: 0 });

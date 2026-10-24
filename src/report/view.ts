@@ -53,7 +53,15 @@ export interface ReportSource {
   cites: Record<string, string[]>;
   flaggedSpanIds: string[];
   confirmations: Record<string, ConfirmationLine[]>;
-  roles: { coding: RoleLine; confirmation: RoleLine; humanEdits: string };
+  roles: { coding: RoleLine; confirmation: RoleLine; humanEdits: string; run?: LiveRunLine };
+}
+
+/** A live run's receipt (BYOK, 2026-10-24): collector, model provider and which key paid. Never a key. */
+export interface LiveRunLine {
+  collector: string;
+  provider: string;
+  paidBy: string;
+  receipt?: import("../app/server/live-options.ts").RunReceipt;
 }
 
 export interface Quote {
@@ -113,7 +121,7 @@ export interface ReportView {
   collection: { pages: number; rendered: number; notRendered: number; renderAvailable: boolean; collectedAt: string; urls: string[] };
   decisions: DecisionView[];
   checks: CheckView[];
-  howMade: { coding: RoleLine; confirmation: RoleLine; gateSha: string; humanEdits: string };
+  howMade: { coding: RoleLine; confirmation: RoleLine; gateSha: string; humanEdits: string; run?: LiveRunLine };
 }
 
 export type GapTextFn = (checkId: string) => { text: string; source: GapSource };
@@ -263,7 +271,13 @@ export async function buildReportView(
     },
     decisions,
     checks,
-    howMade: { coding: source.roles.coding, confirmation: source.roles.confirmation, gateSha, humanEdits: source.roles.humanEdits },
+    howMade: {
+      coding: source.roles.coding,
+      confirmation: source.roles.confirmation,
+      gateSha,
+      humanEdits: source.roles.humanEdits,
+      ...(source.roles.run ? { run: source.roles.run } : {}),
+    },
   };
 }
 

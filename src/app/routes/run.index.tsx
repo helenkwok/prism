@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { clock } from "../components/run/StageList";
 import { listRecentRuns, startLiveRun } from "../server/run-fns.ts";
 import type { JobStatus, JobView, Refusal } from "../server/live-run.ts";
+import { COLLECTORS, DEFAULT_PROVIDER, KEY_NOTE, MODEL_PROVIDERS, type CollectorId, type ProviderId } from "../server/live-options.ts";
 
 export const Route = createFileRoute("/run/")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -25,7 +26,8 @@ export const REFUSED: Record<Refusal, string> = {
   "bad-url": "Not run: enter a full https:// address.",
   "dns-fail": "Not run: this address could not be found. Nothing was fetched.",
   "not-configured": "Not run: live runs are not configured on this server. Nothing was fetched.",
-  budget: "Not run: the live-run budget is spent. Nothing was fetched.",
+  budget: "Not run: PRISM's shared demo budget is used up. Add your own Token Factory key below to run, or read the recorded reports. Nothing was fetched.",
+  "bad-option": "Not run: check the key fields. A key has no spaces; OpenRouter needs your own model key; Tavily needs your own Tavily key. Nothing was fetched.",
 };
 
 export const JOB_WORD: Record<JobStatus, string> = {
@@ -47,6 +49,10 @@ function RunPage() {
   const { runs, budget } = Route.useLoaderData();
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [modelKey, setModelKey] = useState("");
+  const [tavilyKey, setTavilyKey] = useState("");
+  const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER);
+  const [collector, setCollector] = useState<CollectorId>("own-site");
   const [refused, setRefused] = useState<Refusal | null>(null);
   const [pending, setPending] = useState(false);
   const noticeRef = useRef<HTMLDivElement>(null);
@@ -61,7 +67,10 @@ function RunPage() {
     setPending(true);
     setRefused(null);
     try {
-      const r = await startLiveRun({ data: { url } });
+      const r = await startLiveRun({ data: { url, modelKey, tavilyKey: collector === "tavily" ? tavilyKey : "", provider, collector } });
+      // Keys leave the page's memory once sent; nothing is kept in storage or the URL.
+      setModelKey("");
+      setTavilyKey("");
       if ("refused" in r) setRefused(r.refused);
       else await navigate({ to: "/run/$jobId", params: { jobId: String(r.jobId) } });
     } finally {
@@ -79,7 +88,7 @@ function RunPage() {
       ) : null}
       {budget.notice ? (
         <Notice variant="refused" className="mt-8">
-          <span data-budget-notice="">{budget.notice}</span>
+          <span data-budget-notice="">{budget.notice}</span> <a href="/">Read the recorded reports</a>
         </Notice>
       ) : null}
       <form className="mt-8 max-w-[640px]" onSubmit={onSubmit}>
@@ -101,8 +110,78 @@ function RunPage() {
         <p id="run-url-help" className="mt-2 text-[0.8125rem] text-muted-foreground">
           {HELP}
         </p>
+        <fieldset className="mt-6">
+          <legend className="text-base font-semibold">Your own keys (optional)</legend>
+          <p id="key-note" className="mt-1 text-[0.8125rem] text-muted-foreground">
+            {KEY_NOTE} Without a model key, PRISM's own Nebius Token Factory key pays, within its shared demo budget.
+          </p>
+          <label htmlFor="run-provider" className="mt-3 block text-[0.9375rem] font-semibold">
+            Model provider
+          </label>
+          <select
+            id="run-provider"
+            name="provider"
+            value={provider}
+            onChange={(e) => setProvider(e.target.value as ProviderId)}
+            className="mt-1 h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
+          >
+            {(Object.keys(MODEL_PROVIDERS) as ProviderId[]).map((id) => (
+              <option key={id} value={id}>
+                {MODEL_PROVIDERS[id]}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="run-model-key" className="mt-3 block text-[0.9375rem] font-semibold">
+            {provider === "openrouter" ? "OpenRouter API key" : "Token Factory API key"}
+          </label>
+          <input
+            id="run-model-key"
+            name="modelKey"
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            aria-describedby="key-note"
+            value={modelKey}
+            onChange={(e) => setModelKey(e.target.value)}
+            className="mt-1 h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
+          />
+          <label htmlFor="run-collector" className="mt-3 block text-[0.9375rem] font-semibold">
+            Evidence collector
+          </label>
+          <select
+            id="run-collector"
+            name="collector"
+            value={collector}
+            onChange={(e) => setCollector(e.target.value as CollectorId)}
+            className="mt-1 h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
+          >
+            {(Object.keys(COLLECTORS) as CollectorId[]).map((id) => (
+              <option key={id} value={id}>
+                {id === "tavily" ? "Tavily (your key)" : COLLECTORS[id]}
+              </option>
+            ))}
+          </select>
+          {collector === "tavily" ? (
+            <>
+              <label htmlFor="run-tavily-key" className="mt-3 block text-[0.9375rem] font-semibold">
+                Tavily API key
+              </label>
+              <input
+                id="run-tavily-key"
+                name="tavilyKey"
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                aria-describedby="key-note"
+                value={tavilyKey}
+                onChange={(e) => setTavilyKey(e.target.value)}
+                className="mt-1 h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground"
+              />
+            </>
+          ) : null}
+        </fieldset>
         <div className="mt-4 flex flex-wrap items-center gap-4">
-          <Button type="submit" size="lg" disabled={pending || budget.disabled}>
+          <Button type="submit" size="lg" disabled={pending || !budget.configured || (budget.disabled && !modelKey)}>
             Run PRISM on this URL
           </Button>
           <div className="flex items-center gap-2 text-[0.8125rem] tabular-nums" data-budget="">

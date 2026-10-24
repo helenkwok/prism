@@ -6,6 +6,7 @@ import type { DeidentifiedView } from "../../../report/deidentify.ts";
 import type { CheckView, DecisionView, GateStatus, PublishedValue, ReportView } from "../../../report/view.ts";
 import { cn } from "../../../lib/utils";
 import { Notice } from "../Notice";
+import { Receipt } from "../run/Receipt";
 
 export const day = (iso: string) => iso.slice(0, 10);
 
@@ -416,6 +417,7 @@ export function ReportBody({ view }: { view: ReportView | DeidentifiedView }) {
           <dd>{view.howMade.humanEdits}</dd>
         </dl>
       </section>
+      {view.howMade.run?.receipt ? <Receipt receipt={view.howMade.run.receipt} collector={view.howMade.run.collector} /> : null}
     </>
   );
 }

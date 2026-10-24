@@ -6,6 +6,7 @@ import type { Ref } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Notice } from "../components/Notice";
 import { NotFound } from "../components/Forbidden";
+import { Receipt } from "../components/run/Receipt";
 import { StageList, STATUS, clock } from "../components/run/StageList";
 import { buttonVariants } from "../../components/ui/button";
 import { getRunStatus } from "../server/run-fns.ts";
@@ -75,13 +76,21 @@ function RunView({ initial }: { initial: RunStatus }) {
       ) : null}
       <h1 className="text-[2rem] leading-[1.15] font-semibold tracking-[-0.01em]">Live run: {job.host}</h1>
       <p className="mt-2 text-[0.8125rem] text-muted-foreground tabular-nums">
-        Started {job.createdAt.slice(0, 10)} {clock(job.createdAt)} · Run budget $0.10 · Spent {usd(job.spentUsd)}
+        Started {job.createdAt.slice(0, 10)} {clock(job.createdAt)} · Run budget $0.10 · Spent {usd(job.spentUsd)} · Collector: {job.collector} · Models: {job.provider}, paid with {job.paidBy}
       </p>
+      {status.queue ? (
+        <p className="mt-4" data-queue="" aria-live="polite">
+          {status.queue.position === 0
+            ? "Starting now."
+            : `Queued: ${status.queue.position} ${status.queue.position === 1 ? "run is" : "runs are"} ahead of this one. Rough wait: about ${Math.max(1, Math.round(status.queue.waitSeconds / 60))} min. This page updates by itself.`}
+        </p>
+      ) : null}
       <StageList stages={status.stages} />
       <div className="sr-only" aria-live="polite" data-live-region="">
         {announcement}
       </div>
       {active ? null : <EndState status={status} linkRef={linkRef} />}
+      {active ? null : <Receipt receipt={status.receipt} collector={job.collector} />}
       <p className="mt-8">
         <a href="/run">Back to live runs</a>
       </p>

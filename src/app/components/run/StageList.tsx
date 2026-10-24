@@ -28,6 +28,11 @@ export function StageList({ stages }: { stages: StageView[] }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-3">
                 <span className="text-base font-semibold">{s.label}</span>
+                {s.detail ? (
+                  <span className="text-[0.8125rem]" data-stage-detail="">
+                    {s.detail}
+                  </span>
+                ) : null}
                 <span className="text-[0.8125rem]" data-stage-status="">
                   {st.word}
                 </span>

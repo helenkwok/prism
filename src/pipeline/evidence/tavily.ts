@@ -203,11 +203,14 @@ export async function collectProjectPages({
   mapLimit = 50,
   mapDepth = 2,
   extractCap = 20,
+  allowUrl,
 }: {
   boundary: Boundary;
   startUrl: string;
   apiKey: string;
   fetchImpl?: FetchImpl;
+  /** robots.txt first: checked for the start URL before map, and for every URL before extract. */
+  allowUrl?: (url: string) => Promise<boolean>;
   mapLimit?: number;
   mapDepth?: number;
   extractCap?: number;
@@ -215,6 +218,11 @@ export async function collectProjectPages({
   const budget = new CreditBudget(CEILING_CREDITS);
   const calls: CollectCallResult[] = [];
   const sel = selectorsFor(boundary);
+
+  if (allowUrl && !(await allowUrl(startUrl))) {
+    calls.push({ pages: [], refused: true, reason: "robots.txt disallows" });
+    return { pages: [], creditsSpent: 0, mapUrlCount: 0, offBoundaryCount: 0, calls, missingUrls: [] };
+  }
 
   // 1. map
   const mapUrls: string[] = [];
@@ -247,7 +255,12 @@ export async function collectProjectPages({
   const inBoundary = [...new Set(mapUrls.filter((u) => withinBoundary(u, boundary)))];
   const pageLike = inBoundary.filter((u) => isPageLike(u));
   const ordered = [startUrl, ...pageLike.filter((u) => u !== startUrl)];
-  const toExtract = [...new Set(ordered)].filter((u) => withinBoundary(u, boundary)).slice(0, extractCap);
+  const candidates = [...new Set(ordered)].filter((u) => withinBoundary(u, boundary));
+  const toExtract: string[] = [];
+  for (const u of candidates) {
+    if (toExtract.length >= extractCap) break;
+    if (!allowUrl || (await allowUrl(u))) toExtract.push(u);
+  }
 
   const byUrl = new Map<string, string>();
   const failedUrls: string[] = [];

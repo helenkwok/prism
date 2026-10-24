@@ -157,6 +157,16 @@ async function robotsForUrl(
 }
 
 /**
+ * robots.txt gate for another collector (the Tavily path): one cache per collection, so each
+ * origin's robots.txt is fetched once, before any page of it is requested.
+ */
+export function robotsGate({ fetchImpl = fetch, resolver }: { fetchImpl?: FetchImpl; resolver?: Resolver } = {}) {
+  const cache = new Map<string, RobotsGroup[] | "missing">();
+  const opts = { fetchImpl, calls: [] as CollectCallResult[], hostThrottle: new Map<string, HostThrottle>(), resolver };
+  return async (url: string): Promise<boolean> => (await robotsForUrl(url, cache, opts)).allowed;
+}
+
+/**
  * Collect a project's own pages without Tavily (D-66).
  * Shape matches CollectProjectPagesResult so run.ts can swap collectors.
  */

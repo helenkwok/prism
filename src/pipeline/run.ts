@@ -21,7 +21,7 @@ import pLimit from "p-limit";
 import { resolveDataDir, getDb } from "../app/server/db.ts";
 import { deriveBoundary, hostClass, withinBoundary, type Boundary } from "./evidence/boundary.ts";
 import { collectProjectPages, type CollectProjectPagesResult, type FetchImpl as TavilyFetchImpl } from "./evidence/tavily.ts";
-import { collectOwnSitePages, type FetchImpl as OwnSiteFetchImpl } from "./evidence/own-site.ts";
+import { collectOwnSitePages, robotsGate, type FetchImpl as OwnSiteFetchImpl } from "./evidence/own-site.ts";
 import { createGithubClient, fetchRepoEvidence, type FetchImpl as GithubFetchImpl, type RepoEvidence } from "./evidence/github.ts";
 import { redactText } from "./evidence/redact.ts";
 import { renderTextAsync, type RenderImplAsync } from "./evidence/render.ts";
@@ -85,6 +85,8 @@ interface Overrides {
    * Set true only for Phase-7 / single-project Tavily bonus path (--use-tavily).
    */
   useTavily?: boolean;
+  /** Live run (BYOK): check robots.txt (through ownSiteFetchImpl) before Tavily maps or extracts a URL. */
+  tavilyRobotsFirst?: boolean;
   /** D-67: Token Factory dollar cap; required for live TF (CLI --budget / PRISM_TF_BUDGET). */
   tfBudget?: number | DollarBudget;
   /** 07-13: live-run stage events (Collect, Code, Gate); absent → no behaviour change. */
@@ -265,6 +267,7 @@ async function processProject(
         startUrl,
         apiKey: apiKeys.tavily,
         fetchImpl: overrides.tavilyFetchImpl,
+        allowUrl: overrides.tavilyRobotsFirst ? robotsGate({ fetchImpl: overrides.ownSiteFetchImpl }) : undefined,
       });
     }
     return collectOwnSitePages({ boundary: b, startUrl, fetchImpl: overrides.ownSiteFetchImpl });

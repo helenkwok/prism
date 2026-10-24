@@ -12,8 +12,14 @@ async function deps() {
   return { db: getDb(), live };
 }
 
+// BYOK: keys arrive only in this POST body. They go into the job object in memory and nowhere
+// else (no database, no log, no URL); live-run.ts validates their shape and the allow-listed ids.
+type StartInput = { url: string; modelKey?: string; tavilyKey?: string; provider?: string; collector?: string };
 export const startLiveRun = createServerFn({ method: "POST" })
-  .validator((d: { url: string }) => ({ url: typeof d?.url === "string" ? d.url : "" }))
+  .validator((d: StartInput) => {
+    const { url, ...options } = (d ?? {}) as StartInput;
+    return { url: typeof url === "string" ? url : "", options };
+  })
   .handler(async ({ data }) => {
     const session = await requireRole("admin");
     const { getRequestHeaders, setResponseStatus } = await import("@tanstack/react-start/server");
@@ -21,7 +27,7 @@ export const startLiveRun = createServerFn({ method: "POST" })
     const { runner } = live.runnerFromEnv();
     const resolver = process.env.PRISM_LIVE_RUNNER === "fixture" ? live.fixtureResolver : undefined;
     try {
-      return await live.startLiveRunCore(session, getRequestHeaders() as unknown as Headers, data.url, { db, runner, resolver });
+      return await live.startLiveRunCore(session, getRequestHeaders() as unknown as Headers, data.url, { db, runner, resolver }, data.options);
     } catch (err) {
       if (err instanceof AccessError) setResponseStatus(err.status);
       throw err;

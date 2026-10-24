@@ -23,6 +23,22 @@ import { AccessError, checkRole } from "./access.ts";
 import { preflightLiveUrl, type PreflightRefusal } from "./live-preflight.ts";
 import { BudgetExceededError, DollarBudget, formatBudgetLine } from "../../pipeline/coding/spend-guards.ts";
 import type { Boundary } from "../../pipeline/evidence/boundary.ts";
+import { scrubSecrets } from "../../pipeline/evidence/redact.ts";
+import {
+  COLLECTORS,
+  DEFAULT_PROVIDER,
+  MEDIAN_RUN_SECONDS,
+  MODEL_NAME,
+  MODEL_PROVIDERS,
+  PAID_BY,
+  PROVIDER_NAME,
+  STAGE_MODEL,
+  type CollectorId,
+  type KeySource,
+  type ProviderId,
+  type ReceiptLine,
+  type RunReceipt,
+} from "./live-options.ts";
 
 export const STAGES = ["queued", "screen", "collect", "code", "gate", "confirm", "report"] as const;
 export type Stage = (typeof STAGES)[number];
@@ -46,8 +62,59 @@ export const NOT_CONFIGURED = "Live run is not configured on this server";
 export const FIXTURE_ADDRESS = "93.184.216.34";
 const EPS = 1e-9;
 
-export type Refusal = PreflightRefusal | "budget" | "not-configured";
-export type StartResult = { jobId: number } | { refused: Refusal };
+export type Refusal = PreflightRefusal | "budget" | "not-configured" | "bad-option";
+/** `position`: jobs ahead of this one (0 = it runs now); `waitSeconds` a rough estimate (J7). */
+export type StartResult = { jobId: number; position: number; waitSeconds: number } | { refused: Refusal };
+
+// ---- bring your own key ----------------------------------------------------------
+
+/** Keys live only here, in the job object in memory, for one run. Never written anywhere. */
+export interface LiveKeys {
+  model?: string;
+  tavily?: string;
+}
+export interface LiveOptions {
+  provider: ProviderId;
+  collector: CollectorId;
+  keySource: KeySource;
+  keys: LiveKeys;
+}
+export const SERVER_OPTIONS: LiveOptions = { provider: DEFAULT_PROVIDER, collector: "own-site", keySource: "server", keys: {} };
+
+const keyShape = z.string().min(8).max(512).regex(/^[\x21-\x7e]+$/); // printable ASCII, no whitespace
+const optionalKey = z.preprocess((v) => (v === "" || v == null ? undefined : v), keyShape.optional());
+const optionsSchema = z
+  .object({
+    modelKey: optionalKey,
+    tavilyKey: optionalKey,
+    provider: z.enum(Object.keys(MODEL_PROVIDERS) as [ProviderId, ...ProviderId[]]).optional(),
+    collector: z.enum(Object.keys(COLLECTORS) as [CollectorId, ...CollectorId[]]).optional(),
+  })
+  .strict(); // an unknown field (a base URL, say) is refused, not ignored
+
+/**
+ * The form's key and choice fields, or null (refused). A provider other than the default needs
+ * a model key; the Tavily collector needs a Tavily key; a Tavily key alone selects Tavily.
+ * Never put the raw input in an error: it may hold a key.
+ */
+export function parseLiveOptions(raw: unknown): LiveOptions | null {
+  const p = optionsSchema.safeParse(raw ?? {});
+  if (!p.success) return null;
+  const { modelKey, tavilyKey } = p.data;
+  const provider = p.data.provider ?? DEFAULT_PROVIDER;
+  const collector = p.data.collector ?? (tavilyKey ? "tavily" : "own-site");
+  if (provider !== DEFAULT_PROVIDER && !modelKey) return null;
+  if (collector === "tavily" && !tavilyKey) return null;
+  if (collector !== "tavily" && tavilyKey) return null;
+  const keys: LiveKeys = {};
+  if (modelKey) keys.model = modelKey;
+  if (tavilyKey) keys.tavily = tavilyKey;
+  return { provider, collector, keySource: modelKey ? "user" : "server", keys };
+}
+
+/** Ledger row for a run: the server cap's own row, or one per provider for user-key spend. */
+export const ledgerScope = (o: { keySource: KeySource; provider: ProviderId }) =>
+  o.keySource === "server" ? LEDGER_SCOPE : `${LEDGER_SCOPE}:user:${o.provider}`;
 
 /** Idempotent: safe at every server start. */
 export async function ensureLiveRunSchema(db: Kysely<any>): Promise<void> {
@@ -86,6 +153,30 @@ export async function ensureLiveRunSchema(db: Kysely<any>): Promise<void> {
     .addColumn("spent_usd", "real", (c) => c.notNull().defaultTo(0))
     .addColumn("reserved_usd", "real", (c) => c.notNull().defaultTo(0))
     .execute();
+  // J2 receipt: one row per model call. Model, provider, key source, tokens, list-price dollars. Never a key.
+  await db.schema
+    .createTable("app_job_usage")
+    .ifNotExists()
+    .addColumn("job_id", "integer", (c) => c.notNull())
+    .addColumn("stage", "text", (c) => c.notNull())
+    .addColumn("model", "text", (c) => c.notNull())
+    .addColumn("provider", "text", (c) => c.notNull())
+    .addColumn("key_source", "text", (c) => c.notNull())
+    .addColumn("tokens_in", "integer", (c) => c.notNull())
+    .addColumn("tokens_out", "integer", (c) => c.notNull())
+    .addColumn("usd", "real", (c) => c.notNull())
+    .execute();
+  // BYOK (2026-10-24): which key paid, which provider and which collector. Never key material.
+  await addColumnIfMissing(db, "app_job", "key_source", "'server'");
+  await addColumnIfMissing(db, "app_job", "provider", `'${DEFAULT_PROVIDER}'`);
+  await addColumnIfMissing(db, "app_job", "collector", "'own-site'");
+  await addColumnIfMissing(db, "app_spend_ledger", "key_source", "'server'");
+  await addColumnIfMissing(db, "app_spend_ledger", "provider", `'${DEFAULT_PROVIDER}'`);
+}
+
+async function addColumnIfMissing(db: Kysely<any>, table: string, column: string, defaultSql: string): Promise<void> {
+  const cols = (await sql<{ name: string }>`select name from pragma_table_info(${table})`.execute(db)).rows.map((r) => r.name);
+  if (!cols.includes(column)) await sql.raw(`alter table ${table} add column ${column} text not null default ${defaultSql}`).execute(db);
 }
 
 // ---- runners -------------------------------------------------------------------
@@ -95,6 +186,8 @@ export interface RunJob {
   url: string;
   host: string;
   projectRef: string | null;
+  /** BYOK: the run's choices; `options.keys` is cleared when the job ends. Absent = server key, own-site. */
+  options?: LiveOptions;
 }
 export interface RunContext {
   db: Kysely<any>;
@@ -105,6 +198,11 @@ export interface RunContext {
   budget: DollarBudget;
   /** Records that a report view exists for this project (call it once the gate has run). */
   setReport(projectRef: string): Promise<void>;
+  /**
+   * J2: wraps a model fetch so each call's usage lands in the receipt under the current stage.
+   * `toPipelineId` turns a provider's model id back into the pipeline's.
+   */
+  meter?(f: typeof fetch | undefined, toPipelineId?: (model: string) => string): typeof fetch;
 }
 /** `notAnalysed`: the screen excluded the project; the job ends with that message and no report. */
 export type LiveRunner = (ctx: RunContext) => Promise<{ projectRef: string; notAnalysed?: string }>;
@@ -165,10 +263,7 @@ export async function ensureA9Table(db: Kysely<any>): Promise<void> {
 export interface RealRunnerDeps {
   apiKey: string;
   githubToken: string;
-  /** OpenAI-compatible inference host (default Token Factory) and model-id map for a provider swap. */
-  baseUrl?: string;
-  modelMap?: Record<string, string>;
-  hostLabel?: string;
+  /** Fetch for the server key's calls (tests). The URL is always Token Factory's: no base-URL override. */
   modelFetch?: typeof fetch;
   /** Collector connections; default pinnedFetch (D-80). */
   siteFetch?: typeof fetch;
@@ -180,6 +275,27 @@ export interface RealRunnerDeps {
   /** A9 sign-off record lines; default the app database's app_a9_signoff table. */
   a9Lines?: (db: Kysely<any>) => Promise<string[]>;
   keepScratch?: boolean;
+  /** Tavily connection (tests); default fetch. Used only with a user's Tavily key. */
+  tavilyFetch?: typeof fetch;
+  /** Raw fetch under a user-key provider (tests); the provider's own wrapper still applies. Default fetch. */
+  userModelFetch?: typeof fetch;
+}
+
+/**
+ * The fixed provider list behind MODEL_PROVIDERS: base URL, model map and fetch wrapper are
+ * chosen here on the server, by id. The client can never supply a URL (SSRF).
+ */
+async function userProvider(id: ProviderId, rawFetch: typeof fetch = fetch) {
+  const { PINNED_BASE_URL } = await import("../../pipeline/coding/nebius-client.ts");
+  if (id === "openrouter") {
+    const p = await import("../../pipeline/validate/providers.ts");
+    // Prices come from OpenRouter's public model list (no key sent), so the run budget prices each call.
+    const res = await rawFetch(`${p.OPENROUTER_BASE_URL}/models`);
+    if (!res.ok) throw new Error(`OpenRouter model list: status ${res.status}`);
+    p.registerOpenRouterPrices(((await res.json()) as any)?.data ?? []);
+    return { baseUrl: p.OPENROUTER_BASE_URL, modelMap: p.OPENROUTER_MODEL_MAP, fetchImpl: p.openRouterFetch({ fetchImpl: rawFetch }) };
+  }
+  return { baseUrl: PINNED_BASE_URL, modelMap: undefined, fetchImpl: rawFetch };
 }
 
 /**
@@ -189,7 +305,7 @@ export interface RealRunnerDeps {
  * job's scratch database; the app database receives the ReportView and its snapshots.
  */
 export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
-  return async ({ db, job, emit, budget, setReport }) => {
+  return async ({ db, job, emit, budget, setReport, meter }) => {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const { default: Database } = await import("better-sqlite3");
@@ -213,15 +329,27 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
     if (!access) throw new Error("no access row for this site");
     const projectRef = String(access.project_id);
     const title = String(access.title ?? job.host);
+    const opts = job.options ?? SERVER_OPTIONS;
+    const user = opts.keys.model ? await userProvider(opts.provider, deps.userModelFetch) : null;
+    const model = user
+      ? { apiKey: opts.keys.model!, baseUrl: user.baseUrl, modelMap: user.modelMap, fetchImpl: user.fetchImpl, host: PROVIDER_NAME[opts.provider] }
+      : // PRISM's own key only ever goes to Token Factory (hackathon platform rule): no URL or map override.
+        { apiKey: deps.apiKey, baseUrl: PINNED_BASE_URL, modelMap: undefined, fetchImpl: deps.modelFetch, host: PROVIDER_NAME["token-factory"] };
+    const useTavily = opts.collector === "tavily";
+    if (meter) {
+      const back = new Map(Object.entries(model.modelMap ?? {}).map(([k, v]) => [v, k]));
+      model.fetchImpl = meter(model.fetchImpl, (m) => back.get(m) ?? m);
+    }
     const client = createClient({
-      baseUrl: deps.baseUrl ?? PINNED_BASE_URL,
-      apiKey: deps.apiKey,
-      fetchImpl: deps.modelFetch,
-      modelMap: deps.modelMap,
+      baseUrl: model.baseUrl,
+      apiKey: model.apiKey,
+      fetchImpl: model.fetchImpl,
+      modelMap: model.modelMap,
       budget,
       concurrency: 1,
     });
-    const host = deps.hostLabel ?? "Nebius Token Factory";
+    const host = model.host;
+    const runLine = { collector: COLLECTORS[opts.collector], paidBy: PAID_BY[opts.keySource], provider: host };
 
     await emit("screen", "running");
     const screen = await screenCandidate(client, 1, { title, url: job.url }, { thinking: STAGE1_THINKING });
@@ -247,7 +375,7 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
 
       const accounting = await runPipeline({
         sliceProjectsPath: slice,
-        apiKeys: { tavily: "", nebius: deps.apiKey, github: deps.githubToken },
+        apiKeys: { tavily: useTavily ? opts.keys.tavily! : "", nebius: model.apiKey, github: deps.githubToken },
         concurrency: 1,
         cacheDir: path.join(scratch, "cache"),
         dataDir: scratch,
@@ -256,9 +384,12 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
         overrides: {
           ownSiteFetchImpl: deps.siteFetch ?? pinnedFetch,
           githubFetchImpl: deps.githubFetch ?? pinnedFetch,
-          nebiusFetchImpl: deps.modelFetch,
-          nebiusBaseUrl: deps.baseUrl,
-          modelMap: deps.modelMap,
+          nebiusFetchImpl: model.fetchImpl,
+          nebiusBaseUrl: model.baseUrl,
+          modelMap: model.modelMap,
+          useTavily,
+          tavilyRobotsFirst: true,
+          tavilyFetchImpl: deps.tavilyFetch,
           renderImpl: async () => "",
           gateSpawnImpl: deps.gateSpawnImpl as any,
           pythonPath: deps.pythonPath,
@@ -292,6 +423,7 @@ export function createRealRunner(deps: RealRunnerDeps): LiveRunner {
             coding: { role: "coder", modelId: PINNED_MODEL, host },
             confirmation: { role: "confirmer", modelId: conf.CONFIRMER_MODEL, host },
             humanEdits: "none",
+            run: { ...runLine, receipt: await readRunReceipt(db, job.id) },
           },
         });
         const view = await buildReportView(source, { codebook, gatesPath, runGate: gate as any, gapText });
@@ -410,10 +542,13 @@ export async function startLiveRunCore(
   headers: Headers,
   rawUrl: unknown,
   { db, runner, resolver, env = process.env }: StartDeps,
+  rawOptions?: unknown,
 ): Promise<StartResult> {
   await assertTrustedOrigin(headers, env);
   const cap = parseCap(env);
   if (cap === null) return { refused: "not-configured" };
+  const options = parseLiveOptions(rawOptions);
+  if (!options) return { refused: "bad-option" };
   const parsed = urlSchema.safeParse(rawUrl);
   if (!parsed.success) return { refused: "bad-url" };
   const list = await liveBoundaries(db);
@@ -425,27 +560,40 @@ export async function startLiveRunCore(
   if (!pre.ok) return { refused: pre.reason };
   const projectRef = list.find((l) => l.boundary === pre.boundary)!.projectId;
   const url = new URL(parsed.data).toString();
-  if (!(await reserveRun(db, cap))) return { refused: "budget" };
+  // A user's own model key pays for its run: the server cap is not reserved, the run budget still applies.
+  const server = options.keySource === "server";
+  if (server && !(await reserveRun(db, cap))) return { refused: "budget" };
   let jobId: number;
   try {
     const inserted = await db
       .insertInto("app_job")
-      .values({ project_ref: projectRef, url, host: new URL(url).hostname, status: "queued", created_by: session.user.id, created_at: now() })
+      .values({
+        project_ref: projectRef,
+        url,
+        host: new URL(url).hostname,
+        status: "queued",
+        created_by: session.user.id,
+        created_at: now(),
+        key_source: options.keySource,
+        provider: options.provider,
+        collector: options.collector,
+      })
       .executeTakeFirstOrThrow();
     jobId = Number(inserted.insertId);
   } catch (err) {
-    await settleRun(db, 0); // no job, so nothing spent: give the reservation back
+    if (server) await settleRun(db, LEDGER_SCOPE, 0); // no job, so nothing spent: give the reservation back
     throw err;
   }
   await addEvent(db, jobId, "queued", "running", "Waiting for the runner.");
-  enqueue(db, jobId, runner);
-  return { jobId };
+  const position = await queuePosition(db, jobId);
+  enqueue(db, jobId, runner, options);
+  return { jobId, position, waitSeconds: position * MEDIAN_RUN_SECONDS };
 }
 
 /** Unit-test entry: the same checks the server function makes, with injected headers. */
-export async function startLiveRunAs(headers: Headers, rawUrl: unknown, deps: StartDeps): Promise<StartResult> {
+export async function startLiveRunAs(headers: Headers, rawUrl: unknown, deps: StartDeps, rawOptions?: unknown): Promise<StartResult> {
   const session = await checkRole({ headers, roles: ["admin"] });
-  return startLiveRunCore(session, headers, rawUrl, deps);
+  return startLiveRunCore(session, headers, rawUrl, deps, rawOptions);
 }
 
 // ---- ledger --------------------------------------------------------------------
@@ -485,16 +633,32 @@ async function reserveRun(db: Kysely<any>, cap: number): Promise<boolean> {
   return Number(r.numUpdatedRows) === 1;
 }
 
-/** Releases one run's reservation and charges what it spent (never negative). */
-async function settleRun(db: Kysely<any>, charged: number): Promise<void> {
+/**
+ * Releases one run's reservation and charges what it spent (never negative). A user-key scope has
+ * no reservation and no cap: its row only records what users' own keys spent, per provider.
+ */
+async function settleRun(db: Kysely<any>, scope: string, charged: number, o?: { keySource: KeySource; provider: ProviderId }): Promise<void> {
+  if (scope !== LEDGER_SCOPE) {
+    await db
+      .insertInto("app_spend_ledger")
+      .values({ scope, cap_usd: 0, spent_usd: 0, reserved_usd: 0, key_source: o?.keySource ?? "user", provider: o?.provider ?? DEFAULT_PROVIDER })
+      .onConflict((oc) => oc.column("scope").doNothing())
+      .execute();
+  }
   await db
     .updateTable("app_spend_ledger")
     .set({
-      reserved_usd: sql`max(0, reserved_usd - ${RUN_BUDGET_USD})`,
+      reserved_usd: scope === LEDGER_SCOPE ? sql`max(0, reserved_usd - ${RUN_BUDGET_USD})` : sql`reserved_usd`,
       spent_usd: sql`spent_usd + ${Math.max(0, charged)}`,
     })
-    .where("scope", "=", LEDGER_SCOPE)
+    .where("scope", "=", scope)
     .execute();
+}
+
+/** Every ledger row: scope, key source ("server" | "user"), provider and spend. No key material. */
+export async function readLedgerRows(db: Kysely<any>) {
+  const rows = await db.selectFrom("app_spend_ledger").selectAll().orderBy("scope").execute();
+  return rows.map((r: any) => ({ scope: String(r.scope), keySource: r.key_source as KeySource, provider: r.provider as ProviderId, spent: Number(r.spent_usd), reserved: Number(r.reserved_usd) }));
 }
 
 const RESTARTED = "The server restarted during this run.";
@@ -505,9 +669,9 @@ const RESTARTED = "The server restarted during this run.";
  * the ledger. Idempotent: a second boot finds nothing to change.
  */
 export async function markInterruptedJobs(db: Kysely<any>): Promise<number> {
-  const open = await db.selectFrom("app_job").select("id").where("status", "in", [...ACTIVE]).orderBy("id").execute();
+  const open = await db.selectFrom("app_job").select(["id", "key_source", "provider"]).where("status", "in", [...ACTIVE]).orderBy("id").execute();
   let n = 0;
-  for (const { id } of open as { id: number }[]) {
+  for (const { id, key_source, provider } of open as { id: number; key_source: KeySource; provider: ProviderId }[]) {
     const last = await db.selectFrom("app_job_event").select("stage").where("job_id", "=", id).orderBy("seq", "desc").executeTakeFirst();
     const stage = (last?.stage as Stage | undefined) ?? "queued";
     const r = await db
@@ -518,7 +682,8 @@ export async function markInterruptedJobs(db: Kysely<any>): Promise<number> {
       .executeTakeFirst();
     if (Number(r.numUpdatedRows) !== 1) continue;
     await addEvent(db, id, stage, "interrupted", RESTARTED);
-    await settleRun(db, RUN_BUDGET_USD);
+    const o = { keySource: key_source ?? "server", provider: provider ?? DEFAULT_PROVIDER };
+    await settleRun(db, ledgerScope(o), RUN_BUDGET_USD, o);
     n += 1;
   }
   return n;
@@ -536,6 +701,10 @@ export interface BudgetSummary {
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 
+/** Shown once the server cap is reached: a user key still runs (it never touches PRISM's budget). */
+export const BUDGET_SPENT_NOTICE =
+  "PRISM's shared demo budget is used up, so runs on PRISM's key are closed. You can still run with your own key: a Nebius Token Factory API key (or an OpenRouter key as the alternative), and optionally a Tavily key. Or read the recorded reports.";
+
 /** The /run meter, its line and whether the form is disabled (07-UI-SPEC). */
 export function budgetSummary(s: { configured: boolean; cap: number; spent: number; reserved: number }): BudgetSummary {
   const used = Math.round((s.spent + s.reserved) * 1e6) / 1e6;
@@ -549,7 +718,7 @@ export function budgetSummary(s: { configured: boolean; cap: number; spent: numb
     used,
     line: `Live-run budget: ${usd(used)} of ${usd(s.cap)} spent`,
     disabled,
-    notice: disabled ? `The live-run budget is spent (${usd(used)} of ${usd(s.cap)}). Raise the cap in the server settings to run again.` : null,
+    notice: disabled ? BUDGET_SPENT_NOTICE : null,
   };
 }
 
@@ -564,8 +733,8 @@ export async function readBudgetSummary(db: Kysely<any>, env: NodeJS.ProcessEnv 
 const limit = pLimit(1);
 const inFlight = new Set<Promise<void>>();
 
-function enqueue(db: Kysely<any>, jobId: number, runner: LiveRunner): void {
-  const p = limit(() => runJob(db, jobId, runner)).catch((err) => {
+function enqueue(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions = SERVER_OPTIONS): void {
+  const p = limit(() => runJob(db, jobId, runner, options)).catch((err) => {
     console.error(`[prism] live run ${jobId}: runner bookkeeping failed: ${err instanceof Error ? err.name : "error"}`);
   });
   inFlight.add(p);
@@ -577,28 +746,73 @@ export async function whenIdle(): Promise<void> {
   while (inFlight.size) await Promise.all([...inFlight]);
 }
 
-async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promise<void> {
+async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions): Promise<void> {
+  try {
+    await runJobInner(db, jobId, runner, options);
+  } finally {
+    options.keys = {}; // success, stop, error or skipped: the keys leave memory with the job
+  }
+}
+
+async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, options: LiveOptions): Promise<void> {
   const started = await db.updateTable("app_job").set({ status: "running" }).where("id", "=", jobId).where("status", "=", "queued").executeTakeFirst();
   if (Number(started.numUpdatedRows) !== 1) return; // interrupted at boot, or gone
   const row = await db.selectFrom("app_job").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
   await addEvent(db, jobId, "queued", "done", "Started.");
-  // The parent holds everything else the ledger has committed; this run's own
-  // $0.10 is already reserved there, so the child cap is the binding one.
-  const l = await readLedger(db);
-  const ledger = new DollarBudget(Math.max(l.cap, RUN_BUDGET_USD), { initialSpent: Math.max(0, l.spent + l.reserved - RUN_BUDGET_USD) });
-  const budget = new DollarBudget(RUN_BUDGET_USD, { parent: ledger });
+  // Every message that leaves the runner (events, the job row) passes this: a provider error that
+  // echoes a request header can never carry a user's key into the database.
+  const secrets = [options.keys.model, options.keys.tavily].filter((k): k is string => !!k);
+  const clean = (m: string | null) => (m == null ? m : scrubSecrets(m, secrets));
+  // Server key: the parent holds everything else the ledger has committed; this run's own
+  // $0.10 is already reserved there, so the child cap is the binding one. User key: the
+  // run budget alone protects the user's credit.
+  let budget: DollarBudget;
+  if (options.keySource === "server") {
+    const l = await readLedger(db);
+    const ledger = new DollarBudget(Math.max(l.cap, RUN_BUDGET_USD), { initialSpent: Math.max(0, l.spent + l.reserved - RUN_BUDGET_USD) });
+    budget = new DollarBudget(RUN_BUDGET_USD, { parent: ledger });
+  } else budget = new DollarBudget(RUN_BUDGET_USD);
   let stage = "queued" as Stage; // set by emit, inside the runner
   let reportReady = false;
-  const job: RunJob = { id: jobId, url: row.url, host: row.host, projectRef: row.project_ref };
+  const job: RunJob = { id: jobId, url: row.url, host: row.host, projectRef: row.project_ref, options };
+  const provider = PROVIDER_NAME[options.keySource === "user" ? options.provider : DEFAULT_PROVIDER];
+  const meter = (f: typeof fetch = fetch, toPipelineId: (m: string) => string = (m) => m): typeof fetch =>
+    (async (input: any, init: any) => {
+      const res = await f(input, init);
+      try {
+        const sent = JSON.parse(String(init?.body ?? "null"))?.model;
+        const usage = (await res.clone().json())?.usage;
+        if (typeof sent === "string" && usage) {
+          const tokensIn = Number(usage.prompt_tokens ?? 0);
+          const tokensOut = Number(usage.completion_tokens ?? 0);
+          const { priceOf } = await import("../../pipeline/coding/spend-guards.ts");
+          let usd = 0;
+          try {
+            const p = priceOf(sent);
+            usd = tokensIn * p.prompt + tokensOut * p.completion;
+          } catch {
+            // no list price: tokens still count, dollars show 0
+          }
+          await db
+            .insertInto("app_job_usage")
+            .values({ job_id: jobId, stage, model: toPipelineId(sent), provider, key_source: options.keySource, tokens_in: tokensIn, tokens_out: tokensOut, usd })
+            .execute();
+        }
+      } catch {
+        // a reply without JSON usage is not metered
+      }
+      return res;
+    }) as typeof fetch;
   let end: Record<string, unknown>;
   try {
     const result = await runner({
       db,
       job,
       budget,
+      meter,
       emit: async (s, status, message = null) => {
         stage = s;
-        await addEvent(db, jobId, s, status, message);
+        await addEvent(db, jobId, s, status, clean(message));
       },
       setReport: async (projectRef) => {
         reportReady = true;
@@ -616,7 +830,7 @@ async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promi
       // A report exists only if the runner built one after the gate.
       end = { status: "stopped", stop_stage: at, message, report_ready: reportReady && (at === "confirm" || at === "report") ? 1 : 0 };
     } else {
-      const message = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+      const message = clean(err instanceof Error ? err.message : String(err))!.slice(0, 300);
       await addEvent(db, jobId, at, "error", message);
       end = { status: "error", stop_stage: at, message, report_ready: 0 };
     }
@@ -630,7 +844,7 @@ async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promi
     .where("status", "=", "running")
     .executeTakeFirst();
   // ponytail: two statements; a crash between them leaves this $0.10 reserved for good (over-counts, never under).
-  if (Number(finished.numUpdatedRows) === 1) await settleRun(db, budget.spent);
+  if (Number(finished.numUpdatedRows) === 1) await settleRun(db, ledgerScope(options), budget.spent, options);
   console.log(`[prism] live run ${jobId} ${String(end.status)} ${formatBudgetLine({ estimated: budget.estimated, spent: budget.spent, cap: budget.cap })}`);
 }
 
@@ -639,6 +853,8 @@ async function runJob(db: Kysely<any>, jobId: number, runner: LiveRunner): Promi
 export interface StageView {
   stage: Stage;
   label: string;
+  /** J2: what does the work, e.g. "Nemotron 3.5 Lightning on Nebius Token Factory". */
+  detail: string | null;
   status: StageStatus;
   message: string | null;
   at: string | null;
@@ -655,10 +871,18 @@ export interface JobView {
   projectRef: string | null;
   createdAt: string;
   finishedAt: string | null;
+  /** The receipt: which collector ran, which provider answered, which key paid. */
+  collector: string;
+  provider: string;
+  paidBy: string;
 }
 export interface RunStatus {
   job: JobView;
   stages: StageView[];
+  /** J7: while queued, the jobs ahead and a rough wait. */
+  queue: { position: number; waitSeconds: number } | null;
+  /** J2: per-call usage summed by stage; empty until a model is called. */
+  receipt: RunReceipt;
   /** Set when a report was built (done, or stopped after Gate). */
   report: { projectRef: string; pages: number; pass: number; fixture: boolean } | null;
 }
@@ -677,6 +901,9 @@ function jobView(r: any): JobView {
     projectRef: r.project_ref ?? null,
     createdAt: r.created_at,
     finishedAt: r.finished_at ?? null,
+    collector: COLLECTORS[r.collector as CollectorId] ?? COLLECTORS["own-site"],
+    provider: PROVIDER_NAME[r.provider as ProviderId] ?? PROVIDER_NAME[DEFAULT_PROVIDER],
+    paidBy: PAID_BY[(r.key_source as KeySource) ?? "server"] ?? PAID_BY.server,
   };
 }
 
@@ -692,7 +919,7 @@ export async function readRunStatus(db: Kysely<any>, jobId: number): Promise<Run
   const stages = STAGES.map((stage): StageView => {
     const e = latest.get(stage);
     const status: StageStatus = e ? e.status : active ? "waiting" : "skipped";
-    return { stage, label: STAGE_LABELS[stage], status, message: e?.message ?? null, at: e?.at ?? null };
+    return { stage, label: STAGE_LABELS[stage], detail: stageDetail(stage, job), status, message: e?.message ?? null, at: e?.at ?? null };
   });
   let report: RunStatus["report"] = null;
   if (job.projectRef && (job.status === "done" || job.status === "stopped")) {
@@ -702,7 +929,46 @@ export async function readRunStatus(db: Kysely<any>, jobId: number): Promise<Run
       report = { projectRef: job.projectRef, pages: v.collection.pages, pass: v.checks.filter((c) => c.published === "pass").length, fixture: v.fixture };
     }
   }
-  return { job, stages, report };
+  const queue = job.status === "queued" ? await queuePosition(db, jobId).then((position) => ({ position, waitSeconds: position * MEDIAN_RUN_SECONDS })) : null;
+  return { job, stages, report, queue, receipt: await readRunReceipt(db, jobId) };
+}
+
+function stageDetail(stage: Stage, job: JobView): string | null {
+  if (stage === "collect") return job.collector;
+  if (stage === "gate") return "deterministic gate, no model";
+  const model = STAGE_MODEL[stage];
+  return model ? `${MODEL_NAME[model] ?? model} on ${job.provider}` : null;
+}
+
+/** Jobs ahead of this one: queued or running with a smaller id (the queue runs one job at a time, in order). */
+export async function queuePosition(db: Kysely<any>, jobId: number): Promise<number> {
+  const r = await db
+    .selectFrom("app_job")
+    .select((eb) => eb.fn.countAll().as("n"))
+    .where("status", "in", [...ACTIVE])
+    .where("id", "<", jobId)
+    .executeTakeFirst();
+  return Number((r as any)?.n ?? 0);
+}
+
+/** J2: the receipt from the usage rows, by stage in run order, with a total and the all-Ultra estimate. */
+export async function readRunReceipt(db: Kysely<any>, jobId: number): Promise<RunReceipt> {
+  const rows = await db.selectFrom("app_job_usage").selectAll().where("job_id", "=", jobId).execute();
+  const by = new Map<string, ReceiptLine>();
+  for (const r of rows as any[]) {
+    const k = `${r.stage}|${r.model}|${r.provider}|${r.key_source}`;
+    const l = by.get(k) ?? { stage: r.stage, model: MODEL_NAME[r.model] ?? r.model, provider: r.provider, paidBy: PAID_BY[r.key_source as KeySource] ?? r.key_source, calls: 0, tokensIn: 0, tokensOut: 0, usd: 0 };
+    l.calls += 1;
+    l.tokensIn += Number(r.tokens_in);
+    l.tokensOut += Number(r.tokens_out);
+    l.usd += Number(r.usd);
+    by.set(k, l);
+  }
+  const lines = [...by.values()].sort((a, b) => STAGES.indexOf(a.stage as Stage) - STAGES.indexOf(b.stage as Stage));
+  const total = lines.reduce((t, l) => ({ calls: t.calls + l.calls, tokensIn: t.tokensIn + l.tokensIn, tokensOut: t.tokensOut + l.tokensOut, usd: t.usd + l.usd }), { calls: 0, tokensIn: 0, tokensOut: 0, usd: 0 });
+  const { priceOf } = await import("../../pipeline/coding/spend-guards.ts");
+  const ultra = priceOf(STAGE_MODEL.confirm); // Token Factory list price
+  return { lines, total, ultraEstimateUsd: total.tokensIn * ultra.prompt + total.tokensOut * ultra.completion };
 }
 
 /** Newest 20 first; ties broken by job id. */
