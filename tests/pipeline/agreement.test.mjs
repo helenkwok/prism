@@ -126,10 +126,58 @@ describe("four-state AC1 (R06 secondary)", () => {
     assert.equal(r.n, 6);
     assert.equal(r.pa, 4 / 6);
     assert.equal(Number(r.ac1.toFixed(4)), 0.5583);
+    assert.equal(r.kappa, (4 / 6 - 1 / 4) / (1 - 1 / 4));
+  });
+  test("constant four-state agreement leaves kappa undefined rather than inventing a value", () => {
+    const result = fourState(["claimed", "claimed"], ["claimed", "claimed"]);
+    assert.equal(result.pa, 1); assert.equal(result.ac1, 1); assert.equal(result.kappa, null);
   });
 });
 
 describe("agreementByCheck and pooled", () => {
+  test("bootstrap preserves every replacement occurrence of each project and its whole cluster", () => {
+    const rows = Array.from({ length: 20 }, (_, i) => [
+      { projectN: i + 1, checkId: "c1", a: i < 10 ? "pass" : "unknown", b: i < 5 ? "pass" : "unknown" },
+      { projectN: i + 1, checkId: "c2", a: i % 3 === 0 ? "pass" : "claimed", b: i % 4 === 0 ? "pass" : "fail" },
+    ]).flat();
+    const seed = "audit-fixture";
+    const out = agreementByCheck(rows, ["c1", "c2"], seed);
+    for (const entry of [...out.checks, out.pooled]) {
+      const selectedRows = entry.checkId === "pooled" ? rows : rows.filter(row => row.checkId === entry.checkId);
+      const expected = bootstrapCI(Array.from({ length: 20 }, (_, i) => String(i + 1)), sample => {
+        const drawn = sample.flatMap(id => selectedRows.filter(row => row.projectN === Number(id)));
+        return binary(drawn.map(row => row.a === "pass"), drawn.map(row => row.b === "pass")).precision;
+      }, seed, 2000);
+      assert.deepEqual(entry.precisionCI, expected, entry.checkId);
+    }
+  });
+  test("binary and four-state intervals use the same replacement-preserving reference stream", () => {
+    const rows = [
+      { projectN: 1, checkId: "c1", a: "pass", b: "pass" },
+      { projectN: 1, checkId: "c2", a: "claimed", b: "fail" },
+      { projectN: 2, checkId: "c1", a: "fail", b: "claimed" },
+      { projectN: 2, checkId: "c2", a: "pass", b: "pass" },
+      { projectN: 3, checkId: "c1", a: "unknown", b: "unknown" },
+      { projectN: 3, checkId: "c2", a: "claimed", b: "claimed" },
+      { projectN: 4, checkId: "c1", a: "pass", b: "fail" },
+      { projectN: 4, checkId: "c2", a: "unknown", b: "pass" },
+    ];
+    const seed = "four-state-fixture"; const B = 200;
+    const out = agreementByCheck(rows, ["c1", "c2"], seed, B);
+    for (const entry of [...out.checks, out.pooled]) {
+      const cluster = entry.checkId === "pooled" ? rows : rows.filter(row => row.checkId === entry.checkId);
+      const four = fourState(cluster.map(row => row.a), cluster.map(row => row.b));
+      assert.equal(entry.fourStatePa, four.pa); assert.equal(entry.fourStateKappa, four.kappa); assert.equal(entry.fourStateAc1, four.ac1);
+      for (const [key, state, metric] of [["paCI", "binary", "pa"], ["ac1CI", "binary", "ac1"], ["kappaCI", "binary", "kappa"], ["recallCI", "binary", "recall"], ["fourStatePaCI", "four", "pa"], ["fourStateKappaCI", "four", "kappa"], ["fourStateAc1CI", "four", "ac1"]]) {
+        const expected = bootstrapCI(["1", "2", "3", "4"], sample => {
+          const drawn = sample.flatMap(id => cluster.filter(row => row.projectN === Number(id)));
+          const value = state === "binary" ? binary(drawn.map(row => row.a === "pass"), drawn.map(row => row.b === "pass")) : fourState(drawn.map(row => row.a), drawn.map(row => row.b));
+          return value[metric];
+        }, seed, B);
+        assert.deepEqual(entry[key], expected, `${entry.checkId}/${key}`);
+      }
+    }
+  });
   test("per-check order, binary+fourState, estimable, bootstrap CIs; pooled separate; empty check safe", () => {
     const rows = [
       { projectN: 1, checkId: "c1", a: "pass", b: "pass" },
@@ -158,6 +206,7 @@ describe("agreementByCheck and pooled", () => {
     const missing = out.checks[2];
     assert.equal(missing.n, 0);
     assert.equal(missing.estimable, false);
+    assert.equal(missing.fourStateKappa, null); assert.equal(missing.fourStatePaCI, null); assert.equal(missing.fourStateKappaCI, null); assert.equal(missing.fourStateAc1CI, null);
 
     const pooledBefore = JSON.stringify(out.checks);
     assert.ok(out.pooled);
