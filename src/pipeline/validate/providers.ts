@@ -211,7 +211,7 @@ export function ollamaClient({
         if (actual > projectedUsd + 1e-12) throw new ReservationExceededError(dollarBudget.snapshot());
         const blob = res.ok ? "" : `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
         const concurrent = res.status === 429 || /too many concurrent/.test(blob);
-        const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage/.test(blob);
+        const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage|insufficient.*credit|credit.*(?:exhausted|insufficient)|out of credits/.test(blob);
         if (usageCap || res.status === 402 || res.status === 403) {
           counters.limit_hits += 1;
           throw new QuotaStop(res.status, `OLLAMA usage-cap: stop and report (${formatOllamaSummary(counters)})`);

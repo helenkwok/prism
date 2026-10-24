@@ -14,13 +14,15 @@ import { assertA8Signed } from "../signoff/a8.ts";
 import { SIGNOFF_MODEL, signOff } from "../signoff/signoff.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
-import { openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
+import { APPROVED_CAPS, openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
 import { runApprovedStage } from "./approved-stages.ts";
 import { runApprovedConfirmation, validateSpikeReview } from "./approved-confirm.ts";
 import { measurePromptSizes } from "./prompt-size.ts";
 import { ollamaClient, formatOllamaSummary, type RoleSpec } from "./providers.ts";
 import { approvedConfirmationTokenCap, assertConfirmationProjectionInputs } from "./confirmation-cap.ts";
 import { readPositives } from "../confirm/confirm.ts";
+import { assertIncludedCredit } from "./included-credit.ts";
+import { createRollingProjection } from "./rolling-projection.ts";
 
 export function summarizeCacheUsage(observations: UsageObservation[]) {
   const groups = new Map<string, UsageObservation[]>();
@@ -57,14 +59,14 @@ export function validateSecondCoderEnvelopeReport(report: any): boolean {
 
 export function assertFullConfirmationProjection(report: any, ledgerSpent: unknown): void {
   const amount = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
-  if (!report || report.version !== 1 || report.stage !== "full-confirm" || report.provider !== "ollama" || report.model !== "nemotron-3-ultra:cloud" || report.thinking !== true || report.cap !== 5 ||
+  if (!report || report.version !== 1 || report.stage !== "full-confirm" || report.provider !== "ollama" || report.model !== "nemotron-3-ultra:cloud" || report.thinking !== true || report.cap !== APPROVED_CAPS["full-confirm"] ||
       ![report.total, report.completed, report.remaining].every(value => Number.isSafeInteger(value) && value >= 0) || report.total <= 0 || report.completed + report.remaining !== report.total ||
       !/^[a-f0-9]{64}$/.test(report.fullInputDigest) || !/^[a-f0-9]{64}$/.test(report.fullRequestDigest) || !Array.isArray(report.remainingPrompts) || report.remainingPrompts.length !== report.remaining ||
       !amount(ledgerSpent) || !amount(report.completedUsage?.spentUsd) || Math.abs(report.completedUsage.spentUsd - Number(ledgerSpent)) > 1e-9 ||
       ![report.projectedTotalUsd, report.projectedRemainingInputUsd, report.projectedRemainingOutputUsd].every(amount) ||
       Math.abs(report.projectedTotalUsd - (report.completedUsage.spentUsd + report.projectedRemainingInputUsd + report.projectedRemainingOutputUsd)) > 1e-6) throw new Error("full confirmation requires a current consistent cost projection");
-  if (report.withinCap !== true || report.projectedTotalUsd > 5) {
-    const error = new Error("projected full confirmation cost exceeds the unchanged five-dollar cap");
+  if (report.withinCap !== true || report.projectedTotalUsd > APPROVED_CAPS["full-confirm"]) {
+    const error = new Error("projected full confirmation cost exceeds the approved run cap");
     error.name = "ProjectedBudgetExceededError"; throw error;
   }
 }
@@ -75,6 +77,7 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
   const validation = path.join(dataDir, "validation");
   let fullSetting: boolean | undefined;
   let fullProjection: any;
+  let fullFunding: any;
   if (stage === "full-confirm") {
     const reviewPath = path.join(validation, "confirmation-spike-review.json");
     const spikePath = path.join(validation, "confirmation-spike.json");
@@ -82,6 +85,8 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
     const projection = JSON.parse(fs.readFileSync(path.join(validation, "full-confirm-cost-projection.json"), "utf8"));
     const ledger = JSON.parse(fs.readFileSync(path.join(validation, "approved-budget-2026-10-23.json"), "utf8"));
     assertFullConfirmationProjection(projection, ledger.stages?.["full-confirm"]?.spent);
+    fullFunding = JSON.parse(fs.readFileSync(path.join(validation, "confirmation-included-credit-approval.json"), "utf8"));
+    assertIncludedCredit(fullFunding, projection.projectedTotalUsd, ledger.stages?.["full-confirm"]?.spent);
     fullProjection = projection;
     const review = JSON.parse(fs.readFileSync(reviewPath, "utf8"));
     validateSpikeReview(review, fs.readFileSync(spikePath, "utf8"), { model: "nemotron-3-ultra:cloud", reasoning: review.selectedSetting });
@@ -186,8 +191,15 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
       const gateFile = loadGateFile(resolveGatesPath());
       db ??= getDb();
+      const projectionTracker = stage === "full-confirm" ? createRollingProjection(fullProjection, { onCheckpoint: report => {
+        const file = path.join(validation, "full-confirm-cost-projection.json");
+        const next = `${file}.next`;
+        fs.writeFileSync(next, JSON.stringify(report, null, 2) + "\n", { mode: 0o600 });
+        fs.renameSync(next, file);
+        log(`COST_PROJECTION: ${JSON.stringify({ stage, completed: report.completed, remaining: report.remaining, estimated: report.projectedTotalUsd, cap: report.cap, withinCap: report.withinCap, spent: report.completedUsage.spentUsd + report.unattributedSpentUsd, includedCreditLeftEstimate: fullFunding.includedBalanceUsd - (report.completedUsage.spentUsd + report.unattributedSpentUsd - fullFunding.runSpentAtBalanceUsd), reason: report.checkpointReason })}`);
+      } }) : undefined;
       const accounting = stage === "full-confirm"
-        ? await runApprovedConfirmation({ db, dataDir, client, codebook: loadCodebook(), model: role.model, reasoning: fullSetting!, entries: selected, goldOrder: sortPilotCandidates(entries.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), log })
+        ? await runApprovedConfirmation({ db, dataDir, client, codebook: loadCodebook(), model: role.model, reasoning: fullSetting!, entries: selected, goldOrder: sortPilotCandidates(entries.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), log, projectionTracker })
         : await runApprovedStage({ stage, concurrency: stage === "recode" ? 1 : 2, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });
       if (!accounting.ok) throw new Error(`stage incomplete: ${accounting.reason ?? accounting.failed}`);
     }

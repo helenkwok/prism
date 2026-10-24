@@ -4,13 +4,15 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Kysely } from "kysely";
 import type { Codebook } from "../coding/codebook-prompt.ts";
-import { DollarBudget } from "../coding/spend-guards.ts";
+import { DollarBudget, estimateMessagesTokens } from "../coding/spend-guards.ts";
 import {
-  confirmationStatus, confirmedStateFor, confirmWithModel, effectiveStates,
+  confirmationStatus, confirmedStateFor, confirmMessages, confirmWithModel, effectiveStates,
   ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans, readPositives,
   recordConfirmation, type Positive,
 } from "../confirm/confirm.ts";
 import { ARTCRAFT_HN_ID } from "../select/draw-sample.ts";
+import { APPROVED_CAPS } from "./approved-budget.ts";
+import type { ProjectionTracker } from "./rolling-projection.ts";
 
 type SpikeOutcome = { projectN: number; checkId: string; state: string; setting: boolean; failed?: boolean; decision: string | null; spans: unknown; flaggedSpanIds?: string[] };
 export type SpikeReview = {
@@ -73,6 +75,7 @@ export type FullConfirmationOptions = {
   reasoning: boolean; entries: { n: number; hn_id: string }[]; goldOrder: string[];
   log?: (line: string) => void;
   concurrency?: 1 | 2;
+  projectionTracker?: ProjectionTracker;
 };
 
 function validCachedDecision(row: any, p: Positive): boolean {
@@ -87,7 +90,7 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
   const concurrency = o.concurrency ?? 2;
   if (concurrency !== 1 && concurrency !== 2) throw new Error("full confirmation concurrency must be 1–2");
   if (canonicalModel(o.model) !== "nemotron-3-ultra" || typeof o.reasoning !== "boolean") throw new Error("approved full confirmer requires pinned model and boolean setting");
-  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > 5) throw new Error("full confirmation requires the approved budget, capped at five dollars");
+  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > APPROVED_CAPS["full-confirm"]) throw new Error("full confirmation requires the approved seven-dollar budget");
   const spikePath = path.join(o.dataDir, "validation", "confirmation-spike.json");
   const reviewPath = path.join(o.dataDir, "validation", "confirmation-spike-review.json");
   const spikeText = fs.readFileSync(spikePath, "utf8");
@@ -145,16 +148,25 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
         continue;
       }
       out.attempted++;
+      const attemptUsage: unknown[] = [];
+      let persisted = false;
+      const measuredClient = { ...guardedClient, request: async (...args: any[]) => {
+        const response = await guardedClient.request(...args);
+        attemptUsage.push(response.json?.usage);
+        return response;
+      } };
       try {
-        const result = await confirmWithModel(guardedClient, o.codebook, p, o.model, 3, o.reasoning);
+        const result = await confirmWithModel(measuredClient, o.codebook, p, o.model, 3, o.reasoning);
         await recordConfirmation(o.db, { projectN: p.projectN, checkId: p.checkId, decision: result.decision, confirmedState: confirmedStateFor(result.decision, p.state), reason: result.reason, confirmerId, confirmerKind: "agent", modelId: o.model, decidedAt: new Date().toISOString(), inputDigest: s.digest, spanIds: p.spans.map(span => span.id) });
         out.valid++; out.accounted++; out[result.decision]++;
+        persisted = true;
         log(`CONFIRMATION: ${JSON.stringify({ stage: out.stage, projectN: p.projectN, checkId: p.checkId, decision: result.decision, valid: out.valid, total: out.total })}`);
+        o.projectionTracker?.complete({ projectN: p.projectN, checkId: p.checkId, estimatedInputTokens: estimateMessagesTokens(confirmMessages(o.codebook, p)), attempts: attemptUsage });
       } catch (error) {
         const name = (error as Error).name;
         stop = true;
         out.reason ??= name;
-        if (!["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError", "ConfirmationStoppedError"].includes(name)) { out.failed++; out.accounted++; }
+        if (!persisted && !["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError", "ConfirmationStoppedError"].includes(name)) { out.failed++; out.accounted++; }
       }
     }
     };
@@ -165,6 +177,8 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
     const failed = settled.find(result => result.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
   } catch (error) { out.reason = (error as Error).message; }
+  try { o.projectionTracker?.checkpoint(out.reason ?? "final", o.client.dollarBudget.spent); }
+  catch (error) { out.reason ??= (error as Error).name; }
   out.remaining = out.total - out.valid;
   out.stopped = Math.max(0, out.total - out.accounted);
   out.ok = out.total > 0 && !out.reason && !out.failed && !out.awaitingGold && out.valid === out.total;

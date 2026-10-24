@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Codebook } from "../coding/codebook-prompt.ts";
 import { estimateMessagesTokens } from "../coding/spend-guards.ts";
 import { buildConfirmationBody, inputDigest, type Positive } from "../confirm/confirm.ts";
+import { APPROVED_CAPS, APPROVED_OLLAMA_CAP } from "./approved-budget.ts";
 
 export function confirmationRequestDigest(body: unknown): string {
   return crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
@@ -21,7 +22,7 @@ export function approvedConfirmationTokenCap({ plan, positives, codebook, stage,
   if (stage !== "full-confirm" || model !== "nemotron-3-ultra:cloud" || reasoning !== true ||
       !plan || plan.approved !== true || plan.approvalDate !== "2026-10-24" || plan.stage !== stage || plan.model !== model ||
       plan.currentCap !== 20_000 || plan.proposedCap !== 50_000 || plan.otherRequestsKeepCap !== 20_000 ||
-      plan.outputLimit !== 8192 || plan.stageBudget !== 5 || plan.sharedOllamaBudget !== 10.75 ||
+      plan.outputLimit !== 8192 || plan.stageBudget !== APPROVED_CAPS["full-confirm"] || plan.sharedOllamaBudget !== APPROVED_OLLAMA_CAP ||
       plan.preserveAllCitedText !== true || plan.confirmationEnvelopeParser !== false || !Array.isArray(plan.scope) || plan.scope.length !== 9) fail();
   const allowed = new Set<string>(); const identities = new Set<string>(); let max = 0;
   for (const row of plan.scope) {

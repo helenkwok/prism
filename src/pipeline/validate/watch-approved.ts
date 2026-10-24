@@ -2,10 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { APPROVED_CAPS, APPROVED_OLLAMA_CAP } from "./approved-budget.ts";
 
 const COUNTS = ["total", "accounted", "cached", "attempted", "valid", "failed", "stopped", "remaining", "awaitingGold", "confirmed", "rejected", "downgraded", "flagged", "excludedA3"] as const;
-const STAGE_CAP = 5;
-const HOST_CAP = 10.75;
+const STAGE_CAP = APPROVED_CAPS["full-confirm"];
+const HOST_CAP = APPROVED_OLLAMA_CAP;
 const EPSILON = 1e-9;
 type RecordLine = { index: number; value: Record<string, any> };
 

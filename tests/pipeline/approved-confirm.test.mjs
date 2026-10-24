@@ -8,8 +8,9 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 import { runApprovedConfirmation, validateSpikeReview } from "../../src/pipeline/validate/approved-confirm.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
-import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
-import { inputDigest, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
+import { DollarBudget, estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
+import { confirmMessages, inputDigest, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
+import { createRollingProjection } from "../../src/pipeline/validate/rolling-projection.ts";
 import { ensurePipelineSchema } from "../../src/pipeline/store/results.ts";
 import { ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
 import { ARTCRAFT_HN_ID } from "../../src/pipeline/select/draw-sample.ts";
@@ -49,7 +50,7 @@ async function fixture({ flagged = false } = {}) {
   const lines = [];
   return { dataDir, db, codebook, entries, goldOrder: entries.map(e => e.hn_id), model, reasoning: false, concurrency: 1, log: line => lines.push(line), lines, spike, review, text };
 }
-const client = request => ({ request, dollarBudget: new DollarBudget(5) });
+const client = request => ({ request, dollarBudget: new DollarBudget(7) });
 
 test("review guard binds exact bytes, setting, thirty identical pairs and sixty reviewed outcomes", () => {
   const decisions = Array.from({ length: 30 }, (_, n) => [true, false].map(setting => ({ projectN: n, checkId: ids[0], state: "pass", setting, decision: "rejected", spans: [], flaggedSpanIds: [] }))).flat();
@@ -147,7 +148,7 @@ test("excluded worked case stays outside the full confirmation denominator", asy
 
 test("full stage refuses an oversized budget before any requests", async () => {
   const f = await fixture(); let calls = 0;
-  await assert.rejects(() => runApprovedConfirmation({ ...f, client: { dollarBudget: new DollarBudget(6), request: async () => { calls++; } } }), /approved budget/);
+  await assert.rejects(() => runApprovedConfirmation({ ...f, client: { dollarBudget: new DollarBudget(7.01), request: async () => { calls++; } } }), /approved.*budget/);
   assert.equal(calls, 0);
   await f.db.destroy();
 });
@@ -221,4 +222,40 @@ test("pool size is restricted to one or two before requests", async () => {
   const f = await fixture(); let calls = 0;
   for (const concurrency of [0, 3, 1.5]) await assert.rejects(runApprovedConfirmation({ ...f, concurrency, client: client(async () => { calls++; }) }), /concurrency must be 1–2/);
   assert.equal(calls, 0); await f.db.destroy();
+});
+
+function projection(f, onCheckpoint) {
+  const remainingPrompts = f.spike.selected.map(row => {
+    const p = f.spike.decisions.find(p => p.projectN === row.projectN && p.checkId === row.checkId);
+    return { projectN: p.projectN, checkId: p.checkId, estimatedInputTokens: estimateMessagesTokens(confirmMessages(codebook, p)) };
+  });
+  return createRollingProjection({ stage: "full-confirm", provider: "ollama", model, thinking: true, total: remainingPrompts.length, completed: 0, remaining: remainingPrompts.length, cap: 7, completedUsage: { requests: 0, inputTokens: 0, outputTokens: 0, estimatedInputTokens: 0, spentUsd: 0 }, remainingPromptTokens: remainingPrompts.reduce((sum, p) => sum + p.estimatedInputTokens, 0), remainingPrompts }, { onCheckpoint });
+}
+const measuredReply = (inputTokens = 100, outputTokens = 10) => ({ ...reply({ decision: "rejected", reason: "p1-s001 is insufficient fixture evidence." }), json: { ...reply({ decision: "rejected", reason: "p1-s001 is insufficient fixture evidence." }).json, usage: { prompt_tokens: inputTokens, completion_tokens: outputTokens } } });
+
+test("rolling projection stops after saving a valid decision without counting it as failed", async () => {
+  const f = await fixture(); const reports = []; const tracker = projection(f, report => reports.push(report)); let calls = 0;
+  const out = await runApprovedConfirmation({ ...f, projectionTracker: tracker, client: client(async () => { calls++; return measuredReply(100, 100_000); }) });
+  assert.equal(calls, 1); assert.equal(out.valid, 1); assert.equal(out.failed, 0); assert.equal(out.accounted, 1); assert.equal(out.stopped, 29); assert.equal(out.reason, "ProjectedBudgetExceededError");
+  assert.equal((await f.db.selectFrom("pipeline_confirmations").selectAll().execute()).length, 1); assert.equal(tracker.snapshot().completed, 1); assert.ok(reports.some(report => report.projectedTotalUsd > 7));
+  await f.db.destroy();
+});
+
+test("missing usage and persistence hook errors stop after preserving valid decisions", async () => {
+  for (const hookFailure of [false, true]) {
+    const f = await fixture(); const tracker = projection(f, hookFailure ? () => { throw new Error("fixture checkpoint failure"); } : undefined);
+    let calls = 0;
+    const out = await runApprovedConfirmation({ ...f, projectionTracker: tracker, client: client(async () => { calls++; return hookFailure ? measuredReply(100, 100_000) : reply({ decision: "rejected", reason: "p1-s001 synthetic fixture." }); }) });
+    assert.equal(calls, 1); assert.equal(out.valid, 1); assert.equal(out.failed, 0); assert.equal(out.ok, false);
+    assert.equal((await f.db.selectFrom("pipeline_confirmations").selectAll().execute()).length, 1);
+    await f.db.destroy();
+  }
+});
+
+test("a below-cap rolling projection continues and finalizes all valid outcomes", async () => {
+  const f = await fixture(); const reports = []; const tracker = projection(f, report => reports.push(report));
+  const out = await runApprovedConfirmation({ ...f, projectionTracker: tracker, client: client(async () => measuredReply()) });
+  assert.equal(out.ok, true); assert.equal(out.valid, 30); assert.equal(tracker.snapshot().completed, 30); assert.equal(tracker.snapshot().remaining, 0);
+  assert.equal(reports.length, 2); assert.equal(reports[0].checkpointReason, "twenty-completed"); assert.equal(reports[1].checkpointReason, "final");
+  await f.db.destroy();
 });

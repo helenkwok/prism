@@ -7,8 +7,8 @@ import { validateLines, watchApproved } from "../../src/pipeline/validate/watch-
 
 const complete = { stage: "full-confirm", total: 10, accounted: 10, cached: 2, attempted: 8, valid: 10, failed: 0, stopped: 0, remaining: 0, awaitingGold: 0, confirmed: 1, rejected: 8, downgraded: 1, flagged: 1, excludedA3: 1, reason: null, ok: true, complete: true };
 const partial = { ...complete, accounted: 4, cached: 1, attempted: 5, valid: 4, stopped: 6, remaining: 6, confirmed: 1, rejected: 3, downgraded: 0, reason: "BudgetExceededError", ok: false, complete: false };
-function lines(out = complete, { stageSpent = 4, hostSpent = 7 } = {}) {
-  return [`BUDGET: ${JSON.stringify({ estimated: 0, spent: 0, cap: 5 })}`, `CONFIRMATION: ${JSON.stringify(out)}`, `ACCOUNTING: ${JSON.stringify(out)}`, `BUDGET: ${JSON.stringify({ estimated: 6, spent: stageSpent, cap: 5 })}`, `HOST_BUDGET: ${JSON.stringify({ host: "ollama", estimated: 10, spent: hostSpent, cap: 10.75 })}`].join("\n") + "\n";
+function lines(out = complete, { stageSpent = 4, hostSpent = 7, stageCap = 5 } = {}) {
+  return [`BUDGET: ${JSON.stringify({ estimated: 0, spent: 0, cap: stageCap })}`, `CONFIRMATION: ${JSON.stringify(out)}`, `ACCOUNTING: ${JSON.stringify(out)}`, `BUDGET: ${JSON.stringify({ estimated: 6, spent: stageSpent, cap: stageCap })}`, `HOST_BUDGET: ${JSON.stringify({ host: "ollama", estimated: 10, spent: hostSpent, cap: 10.75 })}`].join("\n") + "\n";
 }
 function fixture(text, reserved = 0) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-observer-"));
@@ -22,6 +22,8 @@ function fixture(text, reserved = 0) {
 test("printed identities prove completion or an explicitly partial cap stop", () => {
   const done = validateLines(lines()); assert.equal(done.complete, true); assert.equal(done.verifiedPrintedLines, true);
   const stopped = validateLines(lines(partial)); assert.equal(stopped.status, "partial"); assert.equal(stopped.complete, false); assert.equal(stopped.valid, 4); assert.equal(stopped.remaining, 6); assert.equal(stopped.reason, "BudgetExceededError");
+  const increased = validateLines(lines(complete, { stageCap: 7, stageSpent: 6.7, hostSpent: 9.7 })); assert.equal(increased.complete, true); assert.equal(increased.stageCap, 7);
+  assert.throws(() => validateLines(lines(complete, { stageCap: 7, stageSpent: 7.01, hostSpent: 10.01 })), /budget-overspend/);
 });
 
 test("all failed, over budget, missing terminal and inconsistent accounting never validate", () => {
