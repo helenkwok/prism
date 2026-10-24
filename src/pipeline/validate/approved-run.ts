@@ -12,13 +12,15 @@ import { A9_ITEMS, a9Section, assertA9Signed } from "../signoff/a9.ts";
 import { A10_ITEMS, a10Section, assertA10Signed } from "../signoff/a10.ts";
 import { assertA8Signed } from "../signoff/a8.ts";
 import { SIGNOFF_MODEL, signOff } from "../signoff/signoff.ts";
-import { GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
+import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sample.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { openApprovedBudget, type ApprovedStage } from "./approved-budget.ts";
 import { runApprovedStage } from "./approved-stages.ts";
 import { runApprovedConfirmation, validateSpikeReview } from "./approved-confirm.ts";
 import { measurePromptSizes } from "./prompt-size.ts";
 import { ollamaClient, formatOllamaSummary, type RoleSpec } from "./providers.ts";
+import { approvedConfirmationTokenCap, assertConfirmationProjectionInputs } from "./confirmation-cap.ts";
+import { readPositives } from "../confirm/confirm.ts";
 
 export function summarizeCacheUsage(observations: UsageObservation[]) {
   const groups = new Map<string, UsageObservation[]>();
@@ -53,15 +55,34 @@ export function validateSecondCoderEnvelopeReport(report: any): boolean {
     report.envelopeValid + report.envelopeFailed === report.envelopeCount && report.envelopeValid <= report.valid && report.envelopeFailed <= report.failed;
 }
 
+export function assertFullConfirmationProjection(report: any, ledgerSpent: unknown): void {
+  const amount = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+  if (!report || report.version !== 1 || report.stage !== "full-confirm" || report.provider !== "ollama" || report.model !== "nemotron-3-ultra:cloud" || report.thinking !== true || report.cap !== 5 ||
+      ![report.total, report.completed, report.remaining].every(value => Number.isSafeInteger(value) && value >= 0) || report.total <= 0 || report.completed + report.remaining !== report.total ||
+      !/^[a-f0-9]{64}$/.test(report.fullInputDigest) || !/^[a-f0-9]{64}$/.test(report.fullRequestDigest) || !Array.isArray(report.remainingPrompts) || report.remainingPrompts.length !== report.remaining ||
+      !amount(ledgerSpent) || !amount(report.completedUsage?.spentUsd) || Math.abs(report.completedUsage.spentUsd - Number(ledgerSpent)) > 1e-9 ||
+      ![report.projectedTotalUsd, report.projectedRemainingInputUsd, report.projectedRemainingOutputUsd].every(amount) ||
+      Math.abs(report.projectedTotalUsd - (report.completedUsage.spentUsd + report.projectedRemainingInputUsd + report.projectedRemainingOutputUsd)) > 1e-6) throw new Error("full confirmation requires a current consistent cost projection");
+  if (report.withinCap !== true || report.projectedTotalUsd > 5) {
+    const error = new Error("projected full confirmation cost exceeds the unchanged five-dollar cap");
+    error.name = "ProjectedBudgetExceededError"; throw error;
+  }
+}
+
 export async function runApproved(stage: ApprovedStage, options: { splitNemotronThinking?: boolean } = {}) {
   if (!["signoff", "recode", "gold", "second-coder", "spike", "full-confirm"].includes(stage)) throw new Error("explicit approved stage required");
   const dataDir = resolveDataDir();
   const validation = path.join(dataDir, "validation");
   let fullSetting: boolean | undefined;
+  let fullProjection: any;
   if (stage === "full-confirm") {
     const reviewPath = path.join(validation, "confirmation-spike-review.json");
     const spikePath = path.join(validation, "confirmation-spike.json");
     if (!fs.existsSync(reviewPath) || !fs.existsSync(spikePath)) throw new Error("full confirmation is held until the paired spike decisions are reported and reviewed");
+    const projection = JSON.parse(fs.readFileSync(path.join(validation, "full-confirm-cost-projection.json"), "utf8"));
+    const ledger = JSON.parse(fs.readFileSync(path.join(validation, "approved-budget-2026-10-23.json"), "utf8"));
+    assertFullConfirmationProjection(projection, ledger.stages?.["full-confirm"]?.spent);
+    fullProjection = projection;
     const review = JSON.parse(fs.readFileSync(reviewPath, "utf8"));
     validateSpikeReview(review, fs.readFileSync(spikePath, "utf8"), { model: "nemotron-3-ultra:cloud", reasoning: review.selectedSetting });
     fullSetting = review.selectedSetting;
@@ -108,7 +129,18 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       role = { provider: "token-factory", model: stage === "signoff" ? SIGNOFF_MODEL : PINNED_MODEL, reasoning: false };
     } else {
       role = { provider: "ollama", model: stage === "gold" ? "glm-5.3-flash:cloud" : stage === "second-coder" ? "nemotron-3-super:cloud" : "nemotron-3-ultra:cloud", reasoning: stage === "gold" ? "low" : stage === "full-confirm" ? fullSetting! : false };
+      let tokenCapForRequest: ((body: any) => number) | undefined;
+      if (stage === "full-confirm") {
+        const plan = JSON.parse(fs.readFileSync(path.join(validation, "confirmation-request-cap-plan.json"), "utf8"));
+        const sample: { n: number; hn_id: string }[] = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "sample-projects.json"), "utf8"));
+        const codebook = loadCodebook(); db = getDb();
+        const current = await readPositives(db, dataDir, { sampleNs: sample.filter(e => String(e.hn_id) !== ARTCRAFT_HN_ID).map(e => e.n), codebookVersion: codebook.codebookVersion });
+        if (current.awaitingGold.length) throw new Error("request-cap approval cannot bypass the gold lock");
+        assertConfirmationProjectionInputs(fullProjection, current.positives, codebook, role.model, fullSetting!);
+        tokenCapForRequest = approvedConfirmationTokenCap({ plan, positives: current.positives, codebook, stage, model: role.model, reasoning: fullSetting! });
+      }
       client = ollamaClient({ budget: opened.budget, concurrency: 2, maxRetries: 1, onUsage, stage,
+        tokenCapForRequest,
         splitNemotronThinking,
         onThinkingEnvelope: splitNemotronThinking ? audit => {
           const auditPath = path.join(validation, "thinking-envelope-audit.jsonl");
@@ -153,7 +185,7 @@ export async function runApproved(stage: ApprovedStage, options: { splitNemotron
       if (stage === "gold" || stage === "second-coder") selected = sortPilotCandidates(selected.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), stage === "gold" ? GOLD_SEED : SECOND_MODEL_SEED);
       if (entries.length !== 300 || (stage === "second-coder" && selected.length !== 100)) throw new Error("approved sample size mismatch");
       const gateFile = loadGateFile(resolveGatesPath());
-      db = getDb();
+      db ??= getDb();
       const accounting = stage === "full-confirm"
         ? await runApprovedConfirmation({ db, dataDir, client, codebook: loadCodebook(), model: role.model, reasoning: fullSetting!, entries: selected, goldOrder: sortPilotCandidates(entries.map((e: { hn_id: string }) => ({ ...e, id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), log })
         : await runApprovedStage({ stage, concurrency: stage === "recode" ? 1 : 2, dataDir, db, entries: selected, codebook: loadCodebook(), contract: buildContract(gateFile.checkIds), gateFile, client, role, log });

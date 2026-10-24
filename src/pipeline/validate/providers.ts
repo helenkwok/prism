@@ -99,6 +99,7 @@ export function ollamaClient({
   counters = createOllamaCounters(),
   budget = 5,
   tokenCap = DEFAULT_TOKEN_CAP,
+  tokenCapForRequest,
   onUsage, stage,
   splitNemotronThinking = false, onThinkingEnvelope,
 }: {
@@ -109,6 +110,7 @@ export function ollamaClient({
   counters?: OllamaUsageCounters;
   budget?: number | DollarBudget;
   tokenCap?: number;
+  tokenCapForRequest?: (body: any) => number;
   onUsage?: UsageObserver;
   stage?: string;
   splitNemotronThinking?: boolean;
@@ -162,7 +164,13 @@ export function ollamaClient({
     await acquire();
     try {
       for (let attempt = 1; ; attempt += 1) {
-        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap: tokenCap, completionTokens: maxTokens, reservationTokens: reservationInputTokens(ollamaBody) });
+        let cap = Math.min(tokenCap, DEFAULT_TOKEN_CAP);
+        if (tokenCapForRequest && stage === "full-confirm" && /^nemotron-3-ultra(?::cloud)?$/.test(body.model)) {
+          const approvedCap = tokenCapForRequest(body);
+          if (approvedCap !== DEFAULT_TOKEN_CAP && approvedCap !== 50_000) throw new Error("invalid approved request cap");
+          if (approvedCap === 50_000) cap = approvedCap;
+        }
+        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap, completionTokens: maxTokens, reservationTokens: reservationInputTokens(ollamaBody) });
         dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
         const started = Date.now();

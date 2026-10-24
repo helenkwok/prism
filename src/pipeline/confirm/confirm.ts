@@ -476,13 +476,17 @@ export type ConfirmationResponseDiagnostic = {
   spanIds: string[]; requestDigest: string; finishReason: string | null; content: string | null;
 };
 
+export function buildConfirmationBody(codebook: Codebook, p: Positive, model: string, reasoning: boolean | "low") {
+  return buildChatBody({ model, messages: confirmMessages(codebook, p), mode: "json_schema", schema: { name: "confirm", schema: REPLY_SCHEMA, strict: true }, thinking: reasoning === true, ...(reasoning === "low" ? { reasoningEffort: "low" } : {}), maxTokens: 8192 });
+}
+
 export async function confirmWithModel(client: any, codebook: Codebook, p: Positive, model = CONFIRMER_MODEL, attempts = 3, reasoning: boolean | "low" = true, options: { onResponse?: (response: ConfirmationResponseDiagnostic) => void } = {}) {
   if ([PINNED_MODEL, SECOND_CODER_MODEL, "nemotron-3-super"].includes(model.replace(/:cloud$/, ""))) throw new Error(`A2: ${model} coded these projects and cannot confirm them`);
   let last: unknown;
   let failureReason: "json-parse" | "off-contract" = "off-contract";
   let flaggedHits = 0;
   for (let i = 0; i < attempts; i++) {
-    const body = buildChatBody({ model, messages: confirmMessages(codebook, p), mode: "json_schema", schema: { name: "confirm", schema: REPLY_SCHEMA, strict: true }, thinking: reasoning === true, ...(reasoning === "low" ? { reasoningEffort: "low" } : {}), maxTokens: 8192 });
+    const body = buildConfirmationBody(codebook, p, model, reasoning);
     const res = await client.request("/chat/completions", { method: "POST", body });
     options.onResponse?.({ projectN: p.projectN, checkId: p.checkId, spanIds: p.spans.map(s => s.id), setting: reasoning, attempt: i + 1, requestDigest: crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex"), finishReason: res.json?.choices?.[0]?.finish_reason ?? null, content: typeof res.json?.choices?.[0]?.message?.content === "string" ? res.json.choices[0].message.content : null });
     if (res.outcome === "too-large") {
