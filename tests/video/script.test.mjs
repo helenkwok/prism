@@ -83,3 +83,14 @@ test("framing guards: no runtime-Tavily or every-positive claims; injection labe
   assert.match(inj.narration, /synthetic fixture/i);
   assert.match(beats.at(-1).narration, /Built and proven on Nebius Token Factory and Tavily, and designed to scale by plugging in other providers/);
 });
+
+// J3 (judges' review): the video opens on the outcome. A finished gate-first report is on
+// screen before t = 30 s, counting each earlier beat at the longer of its slot and its
+// narration at 2.6 words per second plus build.sh's 0.6 s tail.
+test("J3: the gate-first report beat starts before 30 seconds", () => {
+  const i = beats.findIndex((b) => b.sc1Item === "gate-first-report");
+  assert.ok(i >= 0, "no gate-first-report beat");
+  const start = beats.slice(0, i).reduce((t, b) => t + Math.max(b.seconds, words(b.narration) / 2.6 + 0.6), 0);
+  assert.ok(start < 30, `report beat starts at ${start.toFixed(1)} s`);
+  assert.equal(beats[i].method, "cdp", "the report beat shows the app, not a card");
+});

@@ -5,6 +5,23 @@
   "decisions": "08-DECISIONS-HELEN.md (2026-10-24): s1 with 08-FRAMING.md wording, n1 say, m1 headless, t4 no runtime Tavily, p3 no new paid runs, i2 synthetic fixture",
   "beats": [
     {
+      "id": "B6",
+      "title": "Open on the outcome: a finished gate-first report",
+      "seconds": 17,
+      "criterion": [
+        "Design",
+        "Quality of the Idea"
+      ],
+      "sc1Item": "gate-first-report",
+      "sub04": null,
+      "narration": "This is a finished PRISM report. Each decision shows the gate's verdict, then what would change it. Underneath sits the evidence: each check's quote, linked to the archived page, and the standards it maps to. Here is how PRISM got there.",
+      "onScreen": "Verdict, then what would change it; a deterministic gate decides",
+      "source": "https://prism.helenkwok.dev/p/$projectId (J1 layout: verdict and 'What would change it' per decision, then the evidence opened: quote cards, snapshot links, crosswalk chips; scope disclaimer)",
+      "method": "cdp",
+      "pending": "the report from the B5 run on Helen's own project; needs the 07-13 run",
+      "placeholders": {}
+    },
+    {
       "id": "B1",
       "title": "The question",
       "seconds": 10,
@@ -114,23 +131,6 @@
       "source": "https://prism.helenkwok.dev/run then /run/$jobId, and scripts/demo-replay.mjs steps (buildSteps, markScript) over that run's report",
       "method": "cdp",
       "pending": "needs the recorded 07-13 run on Helen's own project; 07-13 has not been run (Phase 4 merge first)",
-      "placeholders": {}
-    },
-    {
-      "id": "B6",
-      "title": "The gate's verdict leads the report",
-      "seconds": 17,
-      "criterion": [
-        "Design",
-        "Quality of the Idea"
-      ],
-      "sc1Item": "gate-first-report",
-      "sub04": null,
-      "narration": "The report leads with the gate's verdict for each decision. Below it, every check shows its quote with a link to the archived page, the standards it maps to, and what would close the gap. A scope note says what public pages cannot show.",
-      "onScreen": "Verdict on top: a deterministic gate decides; each value quoted or unknown",
-      "source": "https://prism.helenkwok.dev/p/$projectId (verdict rows, quote cards, snapshot links, crosswalk chips, scope disclaimer)",
-      "method": "cdp",
-      "pending": "same report as B5; needs the 07-13 run",
       "placeholders": {}
     },
     {
