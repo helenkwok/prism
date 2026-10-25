@@ -583,15 +583,15 @@
       "sc1Item": null,
       "sub04": null,
       "narration": "Built and proven on Nebius Token Factory and Tavily, and designed to scale by plugging in other providers, without changing what counts as evidence.",
-      "onScreen": "findings.helenkwok.dev · github.com/helenkwok/prism · code Apache-2.0, data CC BY 4.0",
+      "onScreen": "prism.helenkwok.dev · github.com/helenkwok/prism · code Apache-2.0, data CC BY 4.0",
       "source": "title card",
       "method": "card",
       "fixtureData": false,
       "placeholders": {},
       "ending": {
         "kicker": "PRISM",
-        "title": "findings.helenkwok.dev",
-        "sub": "github.com/helenkwok/prism · code Apache-2.0 · data CC BY 4.0"
+        "title": "prism.helenkwok.dev",
+        "sub": "The findings, and the private app at /app · github.com/helenkwok/prism · code Apache-2.0 · data CC BY 4.0"
       }
     }
   ],

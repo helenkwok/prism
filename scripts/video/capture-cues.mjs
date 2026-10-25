@@ -6,13 +6,15 @@
 // For every beat with "shots", writes <out>/<id>/shot-<n>.png (1920 px wide) and
 // <out>/<id>/shots.json: each shot with its cue boxes measured from the DOM at
 // capture time, in output pixels. A shot is { base: "prod"|"local", url, viewport,
-// clip, scroll, offset, actions, cues }; a { video } shot passes through unchanged.
+// clip, scroll, offset, actions, cues }, its url an app path under the base (base-path.mjs); a { video } shot
+// passes through unchanged.
 // prod signs in as prism-admin (password from its mode-600 key file, never
 // printed); local signs in as the seeded admin of e2e/serve.mjs (E2E_PORT, E2E_DIR).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "@playwright/test";
+import { BASE_PREFIX } from "../../base-path.mjs";
 
 const [scriptPath, outDir, ...only] = process.argv.slice(2);
 if (!scriptPath || !outDir) {
@@ -22,13 +24,13 @@ if (!scriptPath || !outDir) {
 const W = 1920;
 const BASES = {
   prod: () => ({
-    url: "https://prism.helenkwok.dev",
+    url: `https://prism.helenkwok.dev${BASE_PREFIX}`,
     email: "prism-admin@helenkwok.dev",
     password: fs.readFileSync(path.join(os.homedir(), "Library/Application Support/prism/prod-admin.key"), "utf8").trim(),
   }),
   local: () => {
     const { admin } = JSON.parse(fs.readFileSync(path.join(process.env.E2E_DIR, "creds.json"), "utf8"));
-    return { url: `http://127.0.0.1:${process.env.E2E_PORT}`, email: admin.email, password: admin.password };
+    return { url: `http://127.0.0.1:${process.env.E2E_PORT}${BASE_PREFIX}`, email: admin.email, password: admin.password };
   },
 };
 
