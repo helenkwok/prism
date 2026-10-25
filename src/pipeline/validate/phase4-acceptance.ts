@@ -79,6 +79,14 @@ export async function runAcceptanceChecks(checks: { id: string; run: () => unkno
   return { passed, failed, ok: passed === 11 && failed === 0 };
 }
 
+export function acceptanceCorrectionProof(dataDir: string, protocolPath: string, priorApprovalProofPath?: string) {
+  const revalidationProofPath = path.join(dataDir, "validation", "revalidation-proof.json");
+  let exists = false;
+  try { fs.lstatSync(revalidationProofPath); exists = true; } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  requireEvidence(!exists || priorApprovalProofPath, "correction-proof-requires-detached-prior-approval");
+  return exists ? { priorApprovalProofPath: priorApprovalProofPath!, protocolPath, revalidationProofPath } : undefined;
+}
+
 export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), log = console.log, priorApprovalProofPath, signoffPath: requestedSignoffPath }: { dataDir: string; repoRoot?: string; log?: (line: string) => void; priorApprovalProofPath?: string; signoffPath?: string }) {
   const { getDb } = await import("../../app/server/db.ts");
   const { loadCodebook } = await import("../coding/codebook-prompt.ts");
@@ -147,7 +155,8 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
     { id: "C4", run: async () => {
       const entries = sample(); const review = readJson(path.join(validation, "confirmation-spike-review.json")); const lines: string[] = []; let requests = 0;
       const { runApprovedConfirmation } = await import("./approved-confirm.ts");
-      const result = await runApprovedConfirmation({ db, dataDir, codebook, entries, model: review.model, reasoning: review.selectedSetting, goldOrder: sortPilotCandidates(entries.map(e => ({ id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), client: { dollarBudget: new DollarBudget(APPROVED_CAPS["full-confirm"]), request: async () => { requests++; throw new Error("offline-acceptance-refuses-model-call"); } }, log: line => lines.push(line) });
+      const correctionProof = acceptanceCorrectionProof(dataDir, protocolPath, approvalPaths.priorApprovalProofPath);
+      const result = await runApprovedConfirmation({ db, dataDir, codebook, entries, model: review.model, reasoning: review.selectedSetting, correctionProof, goldOrder: sortPilotCandidates(entries.map(e => ({ id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), client: { dollarBudget: new DollarBudget(APPROVED_CAPS["full-confirm"]), request: async () => { requests++; throw new Error("offline-acceptance-refuses-model-call"); } }, log: line => lines.push(line) });
       for (const line of lines) log(line); assertCachedConfirmation(result, requests);
       const { loadProbeInput, projectProbe, assertProbeApproval } = await import("./live-probe.ts");
       const p = loadProbeInput(dataDir, path.join(validation, "irrelevant-citation-probe-input.json")); const plan = projectProbe(codebook, p); const approval = readJson(path.join(validation, "irrelevant-citation-cost-plan.json")); assertProbeApproval(plan, approval);

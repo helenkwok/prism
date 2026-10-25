@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
-import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, assertGoldSubset, acceptanceApprovalPaths, assertInheritedGoldApproval, verifyGoldApproval, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
+import { assertTapSuccess, assertCachedConfirmation, assertScreeningAudit, assertRecall, assertExportQuotes, assertGoldOutcome, assertGoldSubset, acceptanceApprovalPaths, acceptanceCorrectionProof, assertInheritedGoldApproval, verifyGoldApproval, runAcceptanceChecks } from "../../src/pipeline/validate/phase4-acceptance.ts";
 
 test("gold scheduling excludes the registered project only when it is actually in the sample", () => {
   assert.doesNotThrow(() => assertGoldSubset(["a", "b"], { goldOrder: ["b", "a"], a3Excluded: [] }, "excluded"));
@@ -82,4 +85,18 @@ test("all eleven checks execute after failures and nothing implicitly counts as 
   assert.equal(called.length, 11); assert.equal(result.passed, 9); assert.equal(result.failed, 2); assert.equal(result.ok, false); assert.equal(lines.filter(line => line.startsWith("FAIL ")).length, 2);
   const undefinedRun = [...checks]; undefinedRun[0] = { id: "C1", run: async () => undefined };
   assert.equal((await runAcceptanceChecks(undefinedRun, () => {})).failed, 2);
+});
+
+test("cached confirmation forwards retained correction evidence only with detached approval", t => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-acceptance-proof-"));
+  t.after(() => fs.rmSync(dataDir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dataDir, "validation"));
+  const protocol = path.join(dataDir, "PROTOCOL.md"), prior = path.join(dataDir, "validation/release-approvals.json");
+  assert.equal(acceptanceCorrectionProof(dataDir, protocol, prior), undefined);
+  const config = path.join(dataDir, "validation/revalidation-proof.json");
+  fs.writeFileSync(config, "invalid retained configuration");
+  assert.throws(() => acceptanceCorrectionProof(dataDir, protocol), /detached-prior-approval/);
+  assert.deepEqual(acceptanceCorrectionProof(dataDir, protocol, prior), { priorApprovalProofPath: prior, protocolPath: protocol, revalidationProofPath: config });
+  fs.unlinkSync(config); fs.symlinkSync(path.join(dataDir, "absent.json"), config);
+  assert.throws(() => acceptanceCorrectionProof(dataDir, protocol), /detached-prior-approval/);
 });
