@@ -44,10 +44,22 @@ const PSL = { allowPrivateDomains: true };
 
 const urlKey = (u: string) => u.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
 
+/**
+ * Single English dictionary words ("modular", "overflow") cannot identify a launch on their own and occur in
+ * ordinary release prose, so a title form that is one such word is not an identifier. Without a word list the
+ * scan stays at its stricter behaviour.
+ */
+const DICT_FILE = "/usr/share/dict/words";
+let dict: Set<string> | null | undefined;
+function dictionaryWord(t: string): boolean {
+  if (dict === undefined) dict = fs.existsSync(DICT_FILE) ? new Set(fs.readFileSync(DICT_FILE, "utf8").toLowerCase().split("\n")) : null;
+  return !!dict && /^[a-z]+$/.test(t) && dict.has(t);
+}
+
 /** The full title, the title without "Show HN:", and the name before the first separator. */
 function titleForms(title: string): string[] {
   const bare = title.replace(/^\s*show hn\s*:\s*/i, "");
-  return [title, bare, bare.split(/\s[–—-]\s|:\s/)[0]!].map((t) => t.trim().toLowerCase()).filter((t) => t.length >= MIN_TITLE);
+  return [title, bare, bare.split(/\s[–—-]\s|:\s/)[0]!].map((t) => t.trim().toLowerCase()).filter((t) => t.length >= MIN_TITLE && !dictionaryWord(t));
 }
 
 export function buildIdentifierSet({
@@ -78,7 +90,34 @@ export function buildIdentifierSet({
   return set;
 }
 
+/** Every identifier the private store knows: the sample, the whole screening log, the frame and the worked case (D-77). */
+export function buildIdentifierSetFromStore(dataDir: string): IdentifierSet {
+  const read = (f: string) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null);
+  const pipe = path.join(dataDir, "pipeline");
+  const frame = read(path.join(pipe, "frame.json"))?.posts ?? [];
+  const byId = new Map(frame.map((p: IdentifierSource) => [String(p.id), p]));
+  const log = read(path.join(pipe, "sample-screening-log.json"))?.log ?? [];
+  const picks = read(path.join(dataDir, "reddit", "picks.json")) ?? [];
+  const worked = read(path.join(dataDir, "casework", "artcraft", "data", "pipeline", "slice-projects.json")) ?? [];
+  return buildIdentifierSet({
+    projects: [...(read(path.join(pipe, "sample-projects.json")) ?? []), ...picks],
+    frame: log.map((e: { id: string }) => byId.get(String(e.id)) ?? { id: e.id }),
+    // unscreened frame posts give ids, URLs and hosts; their titles ("GitHub", "Baseline") are not used, since
+    // PRISM never processed them and their one-word names collide with ordinary release prose
+    extra: [...frame.map(({ title: _t, ...rest }: IdentifierSource) => rest), ...(Array.isArray(worked) ? worked : [])],
+  });
+}
+
 // ponytail: substring scan per identifier, O(identifiers x text); index with Aho-Corasick if a full-site scan gets slow.
+/** v occurs in t as whole words (no letter or digit right before or after it). */
+function hasWords(t: string, v: string): boolean {
+  const word = /[a-z0-9]/;
+  for (let i = t.indexOf(v); i >= 0; i = t.indexOf(v, i + 1)) {
+    if (!word.test(t[i - 1] ?? "") && !word.test(t[i + v.length] ?? "")) return true;
+  }
+  return false;
+}
+
 function rulesIn(text: string, set: IdentifierSet): Rule[] {
   const t = text.toLowerCase();
   const out: Rule[] = [];
@@ -86,7 +125,12 @@ function rulesIn(text: string, set: IdentifierSet): Rule[] {
     for (const v of s) if (t.includes(v)) return true;
     return false;
   };
-  if (any(set.titles)) out.push("title");
+  const anyWords = (s: Set<string>) => {
+    for (const v of s) if (hasWords(t, v)) return true;
+    return false;
+  };
+  // titles match as whole words: "debugg" (a name) is not a hit inside "debugging"
+  if (anyWords(set.titles)) out.push("title");
   if (any(set.urls)) out.push("url");
   if (any(set.hosts)) out.push("hostname");
   if ((t.match(/\d+/g) ?? []).some((d) => set.hnIds.has(d))) out.push("hn-id");
@@ -114,15 +158,20 @@ function listFiles(p: string): string[] {
 }
 
 function main(argv: string[]): number {
-  const i = argv.indexOf("--store");
-  const storePath = i >= 0 ? argv[i + 1] : undefined;
+  const flag = argv.includes("--data-dir") ? "--data-dir" : "--store";
+  const i = argv.indexOf(flag);
+  const source = i >= 0 ? argv[i + 1] : undefined;
   const paths = argv.filter((_, j) => i < 0 || (j !== i && j !== i + 1));
-  if (!storePath || !paths.length) {
-    console.error("usage: node src/publish/identifiers.ts --store <store.json> <path>...");
+  if (!source || !paths.length) {
+    console.error("usage: node src/publish/identifiers.ts (--store <store.json> | --data-dir <dir>) <path>...");
     return 2;
   }
-  const store = JSON.parse(fs.readFileSync(storePath, "utf8"));
-  const set = buildIdentifierSet({ projects: store.projects ?? [], frame: store.frame ?? [], extra: store.extra ?? [] });
+  let set: IdentifierSet;
+  if (flag === "--data-dir") set = buildIdentifierSetFromStore(source);
+  else {
+    const store = JSON.parse(fs.readFileSync(source, "utf8"));
+    set = buildIdentifierSet({ projects: store.projects ?? [], frame: store.frame ?? [], extra: store.extra ?? [] });
+  }
   const texts = paths
     .flatMap(listFiles)
     .map((f) => ({ file: path.relative(process.cwd(), f), buf: fs.readFileSync(f) }))

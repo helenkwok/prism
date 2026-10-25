@@ -11,10 +11,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { PublishedBasis, PublishedState } from "../pipeline/confirm/confirm.ts";
+import { PUBLISHABLE as GATE_PUBLISHABLE } from "../pipeline/validate/gate.ts";
 
-// Local copy of the 04-11 gate contract (Pitfall 5: the gate module is not built yet).
-export const PUBLISHABLE = ["released", "released-not-estimable", "corrected-revalidated", "person-coded"] as const;
-export type GateStatus = (typeof PUBLISHABLE)[number] | "missed" | "withheld";
+/** The 04-11 gate contract, from gate.ts (one source of truth). */
+export const PUBLISHABLE: readonly string[] = [...GATE_PUBLISHABLE];
+export type GateStatus = "released" | "released-not-estimable" | "corrected-revalidated" | "person-coded" | "missed" | "withheld";
 
 export interface GateCheck {
   checkId: string;

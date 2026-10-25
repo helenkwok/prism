@@ -84,8 +84,9 @@ describe("task 1: synthetic store to an audited release", () => {
     assert.equal(committed.manifest.kind, "fixture");
     assert.equal(committed.manifest.audit.pass, true);
     assert.deepEqual(committed.manifest.audit.priors, ["all", "interior"]);
-    // 23 publishable checks (one is missed) x 2 states x 7 partitions with launches
-    assert.equal(toTruth(buildTables(expandFixture(raw()))).tuples.length, 23 * 2 * 7);
+    // 23 publishable checks (one is missed) x 2 states x 5 partitions: the 6 Reddit launches are under
+    // SOURCE_SPLIT_MIN_GROUP (10, decision B), so the source split is not published
+    assert.equal(toTruth(buildTables(expandFixture(raw()))).tuples.length, 23 * 2 * 5);
     assert.equal(committed.release.kind, "fixture");
     assert.equal(committed.release.date, "2026-10-30");
     assert.equal(committed.release.n, 300);
@@ -151,10 +152,10 @@ describe("task 2: partitions, display rows, ledger, planted cells", () => {
     assert.equal(r.reason, "no GitHub-only launches met the inclusion criteria");
   });
 
-  test("the Reddit group (n 6) is suppressed in every cell and the export still succeeds", () => {
+  test("the Reddit group (n 6) is under the source split minimum: every source row is absent, never a number", () => {
     const reddit = rowsOf(committed.release).filter((r) => r.id.startsWith("chk|") && r.id.endsWith("|src:reddit") && !r.id.includes(MISSED));
     assert.equal(reddit.length, 23 * 2);
-    assert.ok(reddit.every((r) => r.state === "lt10"));
+    assert.ok(reddit.every((r) => r.state === "absent" && r.c === undefined));
   });
 
   test("display-rows: every <10 tuple carries c <= 9 and every suppressed tuple c >= 10", async () => {

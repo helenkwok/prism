@@ -165,8 +165,14 @@
         {
           "id": "chk|operating-cost-known|pass|all",
           "label": "The relevant operating-cost boundary is known well enough for the decision.",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 85,
+          "n": 300,
+          "pct": 28,
+          "ci": [
+            24,
+            34
+          ]
         }
       ]
     },
@@ -406,13 +412,14 @@
         {
           "id": "dec|explore|PASS|src:show-hn",
           "label": "Show HN",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|explore|PASS|src:reddit",
           "label": "Reddit",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|explore|PASS|src:github-only",
@@ -457,12 +464,14 @@
         {
           "id": "dec|rely|PASS|src:show-hn",
           "label": "Show HN",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|rely|PASS|src:reddit",
           "label": "Reddit",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|rely|PASS|src:github-only",
@@ -507,12 +516,14 @@
         {
           "id": "dec|operate|PASS|src:show-hn",
           "label": "Show HN",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|operate|PASS|src:reddit",
           "label": "Reddit",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|operate|PASS|src:github-only",
@@ -557,12 +568,14 @@
         {
           "id": "dec|measure-outcome|PASS|src:show-hn",
           "label": "Show HN",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|measure-outcome|PASS|src:reddit",
           "label": "Reddit",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|measure-outcome|PASS|src:github-only",
@@ -607,12 +620,14 @@
         {
           "id": "dec|scale-renew-stop|PASS|src:show-hn",
           "label": "Show HN",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|scale-renew-stop|PASS|src:reddit",
           "label": "Reddit",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "dec|scale-renew-stop|PASS|src:github-only",
@@ -641,8 +656,14 @@
         {
           "id": "chk|assumptions-catalogued|claimed|all",
           "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 54,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
         },
         {
           "id": "chk|assumptions-catalogued|pass|all",
@@ -659,8 +680,14 @@
         {
           "id": "chk|intended-use-defined|claimed|all",
           "label": "The intended use and boundaries are explicit. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 19,
+          "n": 300,
+          "pct": 6,
+          "ci": [
+            4,
+            10
+          ]
         },
         {
           "id": "chk|intended-use-defined|pass|all",
@@ -677,8 +704,14 @@
         {
           "id": "chk|acceptance-criteria-defined|claimed|all",
           "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 40,
+          "n": 300,
+          "pct": 13,
+          "ci": [
+            10,
+            18
+          ]
         },
         {
           "id": "chk|acceptance-criteria-defined|pass|all",
@@ -695,8 +728,14 @@
         {
           "id": "chk|acceptance-criteria-met|claimed|all",
           "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 41,
+          "n": 300,
+          "pct": 14,
+          "ci": [
+            10,
+            18
+          ]
         },
         {
           "id": "chk|acceptance-criteria-met|pass|all",
@@ -706,8 +745,14 @@
         {
           "id": "chk|failure-modes-tested|claimed|all",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 29,
+          "n": 300,
+          "pct": 10,
+          "ci": [
+            7,
+            14
+          ]
         },
         {
           "id": "chk|failure-modes-tested|pass|all",
@@ -724,8 +769,14 @@
         {
           "id": "chk|limitations-stated|claimed|all",
           "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 54,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
         },
         {
           "id": "chk|limitations-stated|pass|all",
@@ -754,8 +805,14 @@
         {
           "id": "chk|operational-owner-assigned|claimed|all",
           "label": "Operational ownership is explicit. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 57,
+          "n": 300,
+          "pct": 19,
+          "ci": [
+            15,
+            24
+          ]
         },
         {
           "id": "chk|operational-owner-assigned|pass|all",
@@ -772,8 +829,14 @@
         {
           "id": "chk|assurance-defined|claimed|all",
           "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 27,
+          "n": 300,
+          "pct": 9,
+          "ci": [
+            6,
+            13
+          ]
         },
         {
           "id": "chk|assurance-defined|pass|all",
@@ -790,8 +853,14 @@
         {
           "id": "chk|fallback-defined|claimed|all",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 54,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
         },
         {
           "id": "chk|fallback-defined|pass|all",
@@ -808,8 +877,15 @@
         {
           "id": "chk|recovery-tested|claimed|all",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 14,
+          "n": 300,
+          "pct": 5,
+          "ci": [
+            3,
+            8
+          ],
+          "note": "agreement not estimable: fewer than ten gold passes"
         },
         {
           "id": "chk|recovery-tested|pass|all",
@@ -827,8 +903,14 @@
         {
           "id": "chk|support-maintenance-defined|claimed|all",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
         },
         {
           "id": "chk|support-maintenance-defined|pass|all",
@@ -845,20 +927,38 @@
         {
           "id": "chk|operating-cost-known|claimed|all",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 55,
+          "n": 300,
+          "pct": 18,
+          "ci": [
+            14,
+            23
+          ]
         },
         {
           "id": "chk|operating-cost-known|pass|all",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 85,
+          "n": 300,
+          "pct": 28,
+          "ci": [
+            24,
+            34
+          ]
         },
         {
           "id": "chk|outcome-measure-defined|claimed|all",
           "label": "The outcome measure is defined. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 28,
+          "n": 300,
+          "pct": 9,
+          "ci": [
+            7,
+            13
+          ]
         },
         {
           "id": "chk|outcome-measure-defined|pass|all",
@@ -875,8 +975,14 @@
         {
           "id": "chk|baseline-defined|claimed|all",
           "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 30,
+          "n": 300,
+          "pct": 10,
+          "ci": [
+            7,
+            14
+          ]
         },
         {
           "id": "chk|baseline-defined|pass|all",
@@ -893,8 +999,14 @@
         {
           "id": "chk|outcome-measured|claimed|all",
           "label": "The outcome was measured after the intervention. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 38,
+          "n": 300,
+          "pct": 13,
+          "ci": [
+            9,
+            17
+          ]
         },
         {
           "id": "chk|outcome-measured|pass|all",
@@ -911,8 +1023,14 @@
         {
           "id": "chk|measurement-definition-consistent|claimed|all",
           "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
         },
         {
           "id": "chk|measurement-definition-consistent|pass|all",
@@ -929,8 +1047,14 @@
         {
           "id": "chk|important-confounds-named|claimed|all",
           "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 49,
+          "n": 300,
+          "pct": 16,
+          "ci": [
+            13,
+            21
+          ]
         },
         {
           "id": "chk|important-confounds-named|pass|all",
@@ -947,8 +1071,14 @@
         {
           "id": "chk|outcome-evidence-available|claimed|all",
           "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 69,
+          "n": 300,
+          "pct": 23,
+          "ci": [
+            19,
+            28
+          ]
         },
         {
           "id": "chk|outcome-evidence-available|pass|all",
@@ -965,8 +1095,14 @@
         {
           "id": "chk|full-cost-accounted|claimed|all",
           "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 57,
+          "n": 300,
+          "pct": 19,
+          "ci": [
+            15,
+            24
+          ]
         },
         {
           "id": "chk|full-cost-accounted|pass|all",
@@ -983,8 +1119,14 @@
         {
           "id": "chk|risk-tradeoffs-assessed|claimed|all",
           "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 36,
+          "n": 300,
+          "pct": 12,
+          "ci": [
+            9,
+            16
+          ]
         },
         {
           "id": "chk|risk-tradeoffs-assessed|pass|all",
@@ -1001,8 +1143,14 @@
         {
           "id": "chk|alternatives-compared|claimed|all",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 56,
+          "n": 300,
+          "pct": 19,
+          "ci": [
+            15,
+            23
+          ]
         },
         {
           "id": "chk|alternatives-compared|pass|all",
@@ -1019,8 +1167,14 @@
         {
           "id": "chk|value-rule-explicit|claimed|all",
           "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 50,
+          "n": 300,
+          "pct": 17,
+          "ci": [
+            13,
+            21
+          ]
         },
         {
           "id": "chk|value-rule-explicit|pass|all",
@@ -1495,8 +1649,14 @@
         {
           "id": "chk|failure-modes-tested|claimed|q2",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (quarter 2)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
         },
         {
           "id": "chk|failure-modes-tested|claimed|q3",
@@ -1595,8 +1755,14 @@
         {
           "id": "chk|limitations-stated|claimed|q4",
           "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
         },
         {
           "id": "chk|deliverable-gate-passed|pass|q1",
@@ -1733,8 +1899,14 @@
         {
           "id": "chk|operational-owner-assigned|claimed|q4",
           "label": "Operational ownership is explicit. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
         },
         {
           "id": "chk|assurance-defined|pass|q1",
@@ -1862,26 +2034,50 @@
         {
           "id": "chk|fallback-defined|claimed|q1",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
         },
         {
           "id": "chk|fallback-defined|claimed|q2",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 2)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
         },
         {
           "id": "chk|fallback-defined|claimed|q3",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 3)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
         },
         {
           "id": "chk|fallback-defined|claimed|q4",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
         },
         {
           "id": "chk|recovery-tested|pass|q1",
@@ -1938,22 +2134,26 @@
         {
           "id": "chk|recovery-tested|claimed|q1",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 1)",
-          "state": "lt10"
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
         },
         {
           "id": "chk|recovery-tested|claimed|q2",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 2)",
-          "state": "lt10"
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
         },
         {
           "id": "chk|recovery-tested|claimed|q3",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 3)",
-          "state": "lt10"
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
         },
         {
           "id": "chk|recovery-tested|claimed|q4",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 4)",
-          "state": "lt10"
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
         },
         {
           "id": "chk|support-maintenance-defined|pass|q1",
@@ -1992,8 +2192,14 @@
         {
           "id": "chk|support-maintenance-defined|claimed|q1",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
         },
         {
           "id": "chk|support-maintenance-defined|claimed|q2",
@@ -2058,8 +2264,14 @@
         {
           "id": "chk|operating-cost-known|pass|q3",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (quarter 3)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 19,
+          "n": 75,
+          "pct": 25,
+          "ci": [
+            17,
+            36
+          ]
         },
         {
           "id": "chk|operating-cost-known|pass|q4",
@@ -2076,8 +2288,14 @@
         {
           "id": "chk|operating-cost-known|claimed|q1",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
         },
         {
           "id": "chk|operating-cost-known|claimed|q2",
@@ -2371,8 +2589,14 @@
         {
           "id": "chk|measurement-definition-consistent|claimed|q1",
           "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 10,
+          "n": 75,
+          "pct": 13,
+          "ci": [
+            7,
+            23
+          ]
         },
         {
           "id": "chk|measurement-definition-consistent|claimed|q2",
@@ -2461,8 +2685,14 @@
         {
           "id": "chk|important-confounds-named|claimed|q1",
           "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
         },
         {
           "id": "chk|important-confounds-named|claimed|q2",
@@ -2472,8 +2702,14 @@
         {
           "id": "chk|important-confounds-named|claimed|q3",
           "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 3)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
         },
         {
           "id": "chk|important-confounds-named|claimed|q4",
@@ -2568,8 +2804,14 @@
         {
           "id": "chk|outcome-evidence-available|claimed|q4",
           "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
         },
         {
           "id": "chk|full-cost-accounted|pass|q1",
@@ -2645,8 +2887,14 @@
         {
           "id": "chk|full-cost-accounted|claimed|q4",
           "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
         },
         {
           "id": "chk|risk-tradeoffs-assessed|pass|q1",
@@ -2768,26 +3016,50 @@
         {
           "id": "chk|alternatives-compared|claimed|q1",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 1)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 14,
+          "n": 75,
+          "pct": 19,
+          "ci": [
+            11,
+            29
+          ]
         },
         {
           "id": "chk|alternatives-compared|claimed|q2",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 2)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
         },
         {
           "id": "chk|alternatives-compared|claimed|q3",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 3)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 15,
+          "n": 75,
+          "pct": 20,
+          "ci": [
+            13,
+            30
+          ]
         },
         {
           "id": "chk|alternatives-compared|claimed|q4",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
         },
         {
           "id": "chk|value-rule-explicit|pass|q1",
@@ -2851,14 +3123,26 @@
         {
           "id": "chk|value-rule-explicit|claimed|q3",
           "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 3)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 12,
+          "n": 75,
+          "pct": 16,
+          "ci": [
+            9,
+            26
+          ]
         },
         {
           "id": "chk|value-rule-explicit|claimed|q4",
           "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 4)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
         }
       ]
     },
@@ -2870,13 +3154,14 @@
         {
           "id": "chk|output-reproducible|pass|src:show-hn",
           "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|output-reproducible|pass|src:reddit",
           "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|output-reproducible|pass|src:github-only",
@@ -2887,12 +3172,14 @@
         {
           "id": "chk|output-reproducible|claimed|src:show-hn",
           "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (Show HN)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|output-reproducible|claimed|src:reddit",
           "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|output-reproducible|claimed|src:github-only",
@@ -2903,13 +3190,14 @@
         {
           "id": "chk|assumptions-catalogued|pass|src:show-hn",
           "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assumptions-catalogued|pass|src:reddit",
           "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assumptions-catalogued|pass|src:github-only",
@@ -2920,13 +3208,14 @@
         {
           "id": "chk|assumptions-catalogued|claimed|src:show-hn",
           "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assumptions-catalogued|claimed|src:reddit",
           "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assumptions-catalogued|claimed|src:github-only",
@@ -2937,13 +3226,14 @@
         {
           "id": "chk|intended-use-defined|pass|src:show-hn",
           "label": "The intended use and boundaries are explicit. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|intended-use-defined|pass|src:reddit",
           "label": "The intended use and boundaries are explicit. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|intended-use-defined|pass|src:github-only",
@@ -2954,13 +3244,14 @@
         {
           "id": "chk|intended-use-defined|claimed|src:show-hn",
           "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|intended-use-defined|claimed|src:reddit",
           "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|intended-use-defined|claimed|src:github-only",
@@ -2971,13 +3262,14 @@
         {
           "id": "chk|acceptance-criteria-defined|pass|src:show-hn",
           "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-defined|pass|src:reddit",
           "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-defined|pass|src:github-only",
@@ -2988,13 +3280,14 @@
         {
           "id": "chk|acceptance-criteria-defined|claimed|src:show-hn",
           "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-defined|claimed|src:reddit",
           "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-defined|claimed|src:github-only",
@@ -3005,12 +3298,14 @@
         {
           "id": "chk|acceptance-criteria-met|pass|src:show-hn",
           "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (Show HN)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-met|pass|src:reddit",
           "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-met|pass|src:github-only",
@@ -3021,13 +3316,14 @@
         {
           "id": "chk|acceptance-criteria-met|claimed|src:show-hn",
           "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-met|claimed|src:reddit",
           "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|acceptance-criteria-met|claimed|src:github-only",
@@ -3038,13 +3334,14 @@
         {
           "id": "chk|failure-modes-tested|pass|src:show-hn",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|failure-modes-tested|pass|src:reddit",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|failure-modes-tested|pass|src:github-only",
@@ -3055,13 +3352,14 @@
         {
           "id": "chk|failure-modes-tested|claimed|src:show-hn",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|failure-modes-tested|claimed|src:reddit",
           "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|failure-modes-tested|claimed|src:github-only",
@@ -3072,13 +3370,14 @@
         {
           "id": "chk|limitations-stated|pass|src:show-hn",
           "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|limitations-stated|pass|src:reddit",
           "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|limitations-stated|pass|src:github-only",
@@ -3089,13 +3388,14 @@
         {
           "id": "chk|limitations-stated|claimed|src:show-hn",
           "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|limitations-stated|claimed|src:reddit",
           "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|limitations-stated|claimed|src:github-only",
@@ -3142,13 +3442,14 @@
         {
           "id": "chk|operational-owner-assigned|pass|src:show-hn",
           "label": "Operational ownership is explicit. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operational-owner-assigned|pass|src:reddit",
           "label": "Operational ownership is explicit. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operational-owner-assigned|pass|src:github-only",
@@ -3159,19 +3460,14 @@
         {
           "id": "chk|operational-owner-assigned|claimed|src:show-hn",
           "label": "Operational ownership is explicit. (claimed, no artefact linked) (Show HN)",
-          "state": "released",
-          "c": 57,
-          "n": 294,
-          "pct": 19,
-          "ci": [
-            15,
-            24
-          ]
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operational-owner-assigned|claimed|src:reddit",
           "label": "Operational ownership is explicit. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operational-owner-assigned|claimed|src:github-only",
@@ -3182,13 +3478,14 @@
         {
           "id": "chk|assurance-defined|pass|src:show-hn",
           "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assurance-defined|pass|src:reddit",
           "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assurance-defined|pass|src:github-only",
@@ -3199,13 +3496,14 @@
         {
           "id": "chk|assurance-defined|claimed|src:show-hn",
           "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assurance-defined|claimed|src:reddit",
           "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|assurance-defined|claimed|src:github-only",
@@ -3216,13 +3514,14 @@
         {
           "id": "chk|fallback-defined|pass|src:show-hn",
           "label": "Fallback or escalation is defined. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|fallback-defined|pass|src:reddit",
           "label": "Fallback or escalation is defined. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|fallback-defined|pass|src:github-only",
@@ -3233,13 +3532,14 @@
         {
           "id": "chk|fallback-defined|claimed|src:show-hn",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|fallback-defined|claimed|src:reddit",
           "label": "Fallback or escalation is defined. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|fallback-defined|claimed|src:github-only",
@@ -3250,13 +3550,14 @@
         {
           "id": "chk|recovery-tested|pass|src:show-hn",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|recovery-tested|pass|src:reddit",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|recovery-tested|pass|src:github-only",
@@ -3267,13 +3568,14 @@
         {
           "id": "chk|recovery-tested|claimed|src:show-hn",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|recovery-tested|claimed|src:reddit",
           "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|recovery-tested|claimed|src:github-only",
@@ -3284,13 +3586,14 @@
         {
           "id": "chk|support-maintenance-defined|pass|src:show-hn",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|support-maintenance-defined|pass|src:reddit",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|support-maintenance-defined|pass|src:github-only",
@@ -3301,13 +3604,14 @@
         {
           "id": "chk|support-maintenance-defined|claimed|src:show-hn",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|support-maintenance-defined|claimed|src:reddit",
           "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|support-maintenance-defined|claimed|src:github-only",
@@ -3318,19 +3622,14 @@
         {
           "id": "chk|operating-cost-known|pass|src:show-hn",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (Show HN)",
-          "state": "released",
-          "c": 85,
-          "n": 294,
-          "pct": 29,
-          "ci": [
-            24,
-            34
-          ]
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operating-cost-known|pass|src:reddit",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operating-cost-known|pass|src:github-only",
@@ -3341,13 +3640,14 @@
         {
           "id": "chk|operating-cost-known|claimed|src:show-hn",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operating-cost-known|claimed|src:reddit",
           "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|operating-cost-known|claimed|src:github-only",
@@ -3358,13 +3658,14 @@
         {
           "id": "chk|outcome-measure-defined|pass|src:show-hn",
           "label": "The outcome measure is defined. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measure-defined|pass|src:reddit",
           "label": "The outcome measure is defined. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measure-defined|pass|src:github-only",
@@ -3375,13 +3676,14 @@
         {
           "id": "chk|outcome-measure-defined|claimed|src:show-hn",
           "label": "The outcome measure is defined. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measure-defined|claimed|src:reddit",
           "label": "The outcome measure is defined. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measure-defined|claimed|src:github-only",
@@ -3392,13 +3694,14 @@
         {
           "id": "chk|baseline-defined|pass|src:show-hn",
           "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|baseline-defined|pass|src:reddit",
           "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|baseline-defined|pass|src:github-only",
@@ -3409,13 +3712,14 @@
         {
           "id": "chk|baseline-defined|claimed|src:show-hn",
           "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|baseline-defined|claimed|src:reddit",
           "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|baseline-defined|claimed|src:github-only",
@@ -3426,13 +3730,14 @@
         {
           "id": "chk|outcome-measured|pass|src:show-hn",
           "label": "The outcome was measured after the intervention. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measured|pass|src:reddit",
           "label": "The outcome was measured after the intervention. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measured|pass|src:github-only",
@@ -3443,13 +3748,14 @@
         {
           "id": "chk|outcome-measured|claimed|src:show-hn",
           "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measured|claimed|src:reddit",
           "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-measured|claimed|src:github-only",
@@ -3460,13 +3766,14 @@
         {
           "id": "chk|measurement-definition-consistent|pass|src:show-hn",
           "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|measurement-definition-consistent|pass|src:reddit",
           "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|measurement-definition-consistent|pass|src:github-only",
@@ -3477,13 +3784,14 @@
         {
           "id": "chk|measurement-definition-consistent|claimed|src:show-hn",
           "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|measurement-definition-consistent|claimed|src:reddit",
           "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|measurement-definition-consistent|claimed|src:github-only",
@@ -3494,13 +3802,14 @@
         {
           "id": "chk|important-confounds-named|pass|src:show-hn",
           "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|important-confounds-named|pass|src:reddit",
           "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|important-confounds-named|pass|src:github-only",
@@ -3511,13 +3820,14 @@
         {
           "id": "chk|important-confounds-named|claimed|src:show-hn",
           "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|important-confounds-named|claimed|src:reddit",
           "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|important-confounds-named|claimed|src:github-only",
@@ -3528,13 +3838,14 @@
         {
           "id": "chk|outcome-evidence-available|pass|src:show-hn",
           "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-evidence-available|pass|src:reddit",
           "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-evidence-available|pass|src:github-only",
@@ -3545,13 +3856,14 @@
         {
           "id": "chk|outcome-evidence-available|claimed|src:show-hn",
           "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-evidence-available|claimed|src:reddit",
           "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|outcome-evidence-available|claimed|src:github-only",
@@ -3562,13 +3874,14 @@
         {
           "id": "chk|full-cost-accounted|pass|src:show-hn",
           "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|full-cost-accounted|pass|src:reddit",
           "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|full-cost-accounted|pass|src:github-only",
@@ -3579,19 +3892,14 @@
         {
           "id": "chk|full-cost-accounted|claimed|src:show-hn",
           "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (Show HN)",
-          "state": "released",
-          "c": 57,
-          "n": 294,
-          "pct": 19,
-          "ci": [
-            15,
-            24
-          ]
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|full-cost-accounted|claimed|src:reddit",
           "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|full-cost-accounted|claimed|src:github-only",
@@ -3602,13 +3910,14 @@
         {
           "id": "chk|risk-tradeoffs-assessed|pass|src:show-hn",
           "label": "Material risks and trade-offs are assessed. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|risk-tradeoffs-assessed|pass|src:reddit",
           "label": "Material risks and trade-offs are assessed. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|risk-tradeoffs-assessed|pass|src:github-only",
@@ -3619,13 +3928,14 @@
         {
           "id": "chk|risk-tradeoffs-assessed|claimed|src:show-hn",
           "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|risk-tradeoffs-assessed|claimed|src:reddit",
           "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|risk-tradeoffs-assessed|claimed|src:github-only",
@@ -3636,13 +3946,14 @@
         {
           "id": "chk|alternatives-compared|pass|src:show-hn",
           "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|alternatives-compared|pass|src:reddit",
           "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|alternatives-compared|pass|src:github-only",
@@ -3653,13 +3964,14 @@
         {
           "id": "chk|alternatives-compared|claimed|src:show-hn",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|alternatives-compared|claimed|src:reddit",
           "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|alternatives-compared|claimed|src:github-only",
@@ -3670,13 +3982,14 @@
         {
           "id": "chk|value-rule-explicit|pass|src:show-hn",
           "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|value-rule-explicit|pass|src:reddit",
           "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|value-rule-explicit|pass|src:github-only",
@@ -3687,13 +4000,14 @@
         {
           "id": "chk|value-rule-explicit|claimed|src:show-hn",
           "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (Show HN)",
-          "state": "suppressed",
-          "reason": "suppressed so that small counts cannot be worked out"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|value-rule-explicit|claimed|src:reddit",
           "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (Reddit)",
-          "state": "lt10"
+          "state": "absent",
+          "reason": "the source split is published only when every source has at least ten included launches"
         },
         {
           "id": "chk|value-rule-explicit|claimed|src:github-only",
@@ -4180,8 +4494,11 @@
         }
       },
       "operating-cost-known": {
-        "ac1": null,
-        "ac1CI": null,
+        "ac1": 0.82,
+        "ac1CI": [
+          0.76,
+          0.88
+        ],
         "precision": {
           "id": "prec|operating-cost-known",
           "label": "Pass precision: The relevant operating-cost boundary is known well enough for the decision.",
@@ -5428,9 +5745,19 @@
       "text": "At least 182 of 300 launches publicly evidence `assumptions-catalogued` (61%, 95% CI 55–66%)."
     },
     {
+      "id": "claims:assumptions-catalogued",
+      "kind": "finding",
+      "text": "54 of 300 launches claim `assumptions-catalogued` without linking an artefact (18%); at least 182 of 300 publicly evidence it (61%)."
+    },
+    {
       "id": "share:intended-use-defined",
       "kind": "finding",
       "text": "At least 145 of 300 launches publicly evidence `intended-use-defined` (48%, 95% CI 43–54%)."
+    },
+    {
+      "id": "claims:intended-use-defined",
+      "kind": "finding",
+      "text": "19 of 300 launches claim `intended-use-defined` without linking an artefact (6%); at least 145 of 300 publicly evidence it (48%)."
     },
     {
       "id": "share:acceptance-criteria-defined",
@@ -5438,9 +5765,19 @@
       "text": "At least 187 of 300 launches publicly evidence `acceptance-criteria-defined` (62%, 95% CI 57–68%)."
     },
     {
+      "id": "claims:acceptance-criteria-defined",
+      "kind": "finding",
+      "text": "40 of 300 launches claim `acceptance-criteria-defined` without linking an artefact (13%); at least 187 of 300 publicly evidence it (62%)."
+    },
+    {
       "id": "share:failure-modes-tested",
       "kind": "finding",
       "text": "At least 129 of 300 launches publicly evidence `failure-modes-tested` (43%, 95% CI 38–49%)."
+    },
+    {
+      "id": "claims:failure-modes-tested",
+      "kind": "finding",
+      "text": "29 of 300 launches claim `failure-modes-tested` without linking an artefact (10%); at least 129 of 300 publicly evidence it (43%)."
     },
     {
       "id": "share:limitations-stated",
@@ -5448,9 +5785,19 @@
       "text": "At least 102 of 300 launches publicly evidence `limitations-stated` (34%, 95% CI 29–40%)."
     },
     {
+      "id": "claims:limitations-stated",
+      "kind": "finding",
+      "text": "54 of 300 launches claim `limitations-stated` without linking an artefact (18%); at least 102 of 300 publicly evidence it (34%)."
+    },
+    {
       "id": "share:operational-owner-assigned",
       "kind": "finding",
       "text": "At least 53 of 300 launches publicly evidence `operational-owner-assigned` (18%, 95% CI 14–22%)."
+    },
+    {
+      "id": "claims:operational-owner-assigned",
+      "kind": "finding",
+      "text": "57 of 300 launches claim `operational-owner-assigned` without linking an artefact (19%); at least 53 of 300 publicly evidence it (18%)."
     },
     {
       "id": "share:assurance-defined",
@@ -5458,9 +5805,19 @@
       "text": "At least 105 of 300 launches publicly evidence `assurance-defined` (35%, 95% CI 30–41%)."
     },
     {
+      "id": "claims:assurance-defined",
+      "kind": "finding",
+      "text": "27 of 300 launches claim `assurance-defined` without linking an artefact (9%); at least 105 of 300 publicly evidence it (35%)."
+    },
+    {
       "id": "share:fallback-defined",
       "kind": "finding",
       "text": "At least 197 of 300 launches publicly evidence `fallback-defined` (66%, 95% CI 60–71%)."
+    },
+    {
+      "id": "claims:fallback-defined",
+      "kind": "finding",
+      "text": "54 of 300 launches claim `fallback-defined` without linking an artefact (18%); at least 197 of 300 publicly evidence it (66%)."
     },
     {
       "id": "share:recovery-tested",
@@ -5468,9 +5825,29 @@
       "text": "At least 152 of 300 launches publicly evidence `recovery-tested` (51%, 95% CI 45–56%)."
     },
     {
+      "id": "claims:recovery-tested",
+      "kind": "finding",
+      "text": "14 of 300 launches claim `recovery-tested` without linking an artefact (5%); at least 152 of 300 publicly evidence it (51%)."
+    },
+    {
       "id": "share:support-maintenance-defined",
       "kind": "finding",
       "text": "At least 31 of 300 launches publicly evidence `support-maintenance-defined` (10%, 95% CI 7–14%)."
+    },
+    {
+      "id": "claims:support-maintenance-defined",
+      "kind": "finding",
+      "text": "44 of 300 launches claim `support-maintenance-defined` without linking an artefact (15%); at least 31 of 300 publicly evidence it (10%)."
+    },
+    {
+      "id": "share:operating-cost-known",
+      "kind": "finding",
+      "text": "At least 85 of 300 launches publicly evidence `operating-cost-known` (28%, 95% CI 24–34%)."
+    },
+    {
+      "id": "claims:operating-cost-known",
+      "kind": "finding",
+      "text": "55 of 300 launches claim `operating-cost-known` without linking an artefact (18%); at least 85 of 300 publicly evidence it (28%)."
     },
     {
       "id": "share:outcome-measure-defined",
@@ -5478,9 +5855,19 @@
       "text": "At least 200 of 300 launches publicly evidence `outcome-measure-defined` (67%, 95% CI 61–72%)."
     },
     {
+      "id": "claims:outcome-measure-defined",
+      "kind": "finding",
+      "text": "28 of 300 launches claim `outcome-measure-defined` without linking an artefact (9%); at least 200 of 300 publicly evidence it (67%)."
+    },
+    {
       "id": "share:baseline-defined",
       "kind": "finding",
       "text": "At least 187 of 300 launches publicly evidence `baseline-defined` (62%, 95% CI 57–68%)."
+    },
+    {
+      "id": "claims:baseline-defined",
+      "kind": "finding",
+      "text": "30 of 300 launches claim `baseline-defined` without linking an artefact (10%); at least 187 of 300 publicly evidence it (62%)."
     },
     {
       "id": "share:outcome-measured",
@@ -5488,9 +5875,19 @@
       "text": "At least 166 of 300 launches publicly evidence `outcome-measured` (55%, 95% CI 50–61%)."
     },
     {
+      "id": "claims:outcome-measured",
+      "kind": "finding",
+      "text": "38 of 300 launches claim `outcome-measured` without linking an artefact (13%); at least 166 of 300 publicly evidence it (55%)."
+    },
+    {
       "id": "share:measurement-definition-consistent",
       "kind": "finding",
       "text": "At least 36 of 300 launches publicly evidence `measurement-definition-consistent` (12%, 95% CI 9–16%)."
+    },
+    {
+      "id": "claims:measurement-definition-consistent",
+      "kind": "finding",
+      "text": "44 of 300 launches claim `measurement-definition-consistent` without linking an artefact (15%); at least 36 of 300 publicly evidence it (12%)."
     },
     {
       "id": "share:important-confounds-named",
@@ -5498,9 +5895,19 @@
       "text": "At least 128 of 300 launches publicly evidence `important-confounds-named` (43%, 95% CI 37–48%)."
     },
     {
+      "id": "claims:important-confounds-named",
+      "kind": "finding",
+      "text": "49 of 300 launches claim `important-confounds-named` without linking an artefact (16%); at least 128 of 300 publicly evidence it (43%)."
+    },
+    {
       "id": "share:outcome-evidence-available",
       "kind": "finding",
       "text": "At least 139 of 300 launches publicly evidence `outcome-evidence-available` (46%, 95% CI 41–52%)."
+    },
+    {
+      "id": "claims:outcome-evidence-available",
+      "kind": "finding",
+      "text": "69 of 300 launches claim `outcome-evidence-available` without linking an artefact (23%); at least 139 of 300 publicly evidence it (46%)."
     },
     {
       "id": "share:full-cost-accounted",
@@ -5508,9 +5915,19 @@
       "text": "At least 51 of 300 launches publicly evidence `full-cost-accounted` (17%, 95% CI 13–22%)."
     },
     {
+      "id": "claims:full-cost-accounted",
+      "kind": "finding",
+      "text": "57 of 300 launches claim `full-cost-accounted` without linking an artefact (19%); at least 51 of 300 publicly evidence it (17%)."
+    },
+    {
       "id": "share:risk-tradeoffs-assessed",
       "kind": "finding",
       "text": "At least 98 of 300 launches publicly evidence `risk-tradeoffs-assessed` (33%, 95% CI 28–38%)."
+    },
+    {
+      "id": "claims:risk-tradeoffs-assessed",
+      "kind": "finding",
+      "text": "36 of 300 launches claim `risk-tradeoffs-assessed` without linking an artefact (12%); at least 98 of 300 publicly evidence it (33%)."
     },
     {
       "id": "share:alternatives-compared",
@@ -5518,9 +5935,19 @@
       "text": "At least 119 of 300 launches publicly evidence `alternatives-compared` (40%, 95% CI 34–45%)."
     },
     {
+      "id": "claims:alternatives-compared",
+      "kind": "finding",
+      "text": "56 of 300 launches claim `alternatives-compared` without linking an artefact (19%); at least 119 of 300 publicly evidence it (40%)."
+    },
+    {
       "id": "share:value-rule-explicit",
       "kind": "finding",
       "text": "At least 160 of 300 launches publicly evidence `value-rule-explicit` (53%, 95% CI 48–59%)."
+    },
+    {
+      "id": "claims:value-rule-explicit",
+      "kind": "finding",
+      "text": "50 of 300 launches claim `value-rule-explicit` without linking an artefact (17%); at least 160 of 300 publicly evidence it (53%)."
     },
     {
       "id": "decision:explore",
@@ -5576,6 +6003,16 @@
       "id": "method:source-types-overlap",
       "kind": "method",
       "text": "One launch can count under several source types, so the shares do not sum to 100%."
+    },
+    {
+      "id": "absent:show-hn",
+      "kind": "method",
+      "text": "not in this release: the source split is published only when every source has at least ten included launches"
+    },
+    {
+      "id": "absent:reddit",
+      "kind": "method",
+      "text": "not in this release: the source split is published only when every source has at least ten included launches"
     },
     {
       "id": "absent:github-only",

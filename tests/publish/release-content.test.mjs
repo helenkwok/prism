@@ -165,11 +165,11 @@ describe("task 2: cohorts, sources, claims, source types, H2 and PRISMA", () => 
     for (const q of ["quarter 1", "quarter 2", "quarter 3", "quarter 4"]) assert.ok(release.statements.some((s) => s.text === `Launched in ${q}, as evidenced today.`));
   });
 
-  test("sources-absent-and-small: Show HN, Reddit (n 6, never a number) and an absent GitHub-only row", () => {
+  test("sources-absent-and-small: Show HN and Reddit (n 6) absent under the split minimum, GitHub-only absent", () => {
     for (const d of DECISIONS) {
       const [shn, reddit, gh] = release.figures[`sources:${d}`].rows;
       assert.equal(shn.id, decTuple(d, "src:show-hn"));
-      assert.ok(["lt10", "suppressed"].includes(reddit.state), reddit.state);
+      for (const r of [shn, reddit]) assert.equal(r.reason, "the source split is published only when every source has at least ten included launches");
       assert.equal(reddit.c, undefined);
       assert.equal(gh.state, "absent");
       assert.equal(gh.reason, "no GitHub-only launches met the inclusion criteria");

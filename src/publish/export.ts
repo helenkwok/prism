@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { FLOOR, MIN_VALUES, auditRelease, buildRelease, solverVersion } from "../../protocol/disclosure/audit.mjs";
 import { loadCodebook } from "../pipeline/coding/codebook-prompt.ts";
 import { wilson } from "../pipeline/validate/agreement.ts";
-import { ADDENDUM, PROCESS_FIGURES } from "./a11.ts";
+import { ADDENDUM, PROCESS_FIGURES, assertA11Signed } from "./a11.ts";
 import { failingCells } from "./closure-audit.ts";
 import {
   includedProjects,
@@ -29,7 +29,7 @@ import {
   type LedgerEntry,
 } from "./aggregate.ts";
 import { h2Permutation, testHypotheses } from "./hypotheses.ts";
-import { scanTexts, buildIdentifierSet } from "./identifiers.ts";
+import { scanTexts, buildIdentifierSet, buildIdentifierSetFromStore, type IdentifierSet } from "./identifiers.ts";
 import { lintStatements } from "./lint.ts";
 import {
   PARTITION_LABEL,
@@ -404,7 +404,9 @@ function sections(input: AggregateInput, model: Model, row: RowOf, version: stri
       const notEstimable = g.status === "released-not-estimable";
       const precision = model.precision.includes(c)
         ? row(`prec|${c}`, `Pass precision: ${labels[c]}`)
-        : ({ id: `prec|${c}`, label: `Pass precision: ${labels[c]}`, state: "not-estimable", reason: notEstimable ? NOT_ESTIMABLE_NOTE : "pass precision not estimable for this check" } as Row);
+        : model.precisionWithheld.includes(c)
+          ? ({ id: `prec|${c}`, label: `Pass precision: ${labels[c]}`, state: "withheld", reason: "too few coder passes to publish under the disclosure rule" } as Row)
+          : ({ id: `prec|${c}`, label: `Pass precision: ${labels[c]}`, state: "not-estimable", reason: notEstimable ? NOT_ESTIMABLE_NOTE : "pass precision not estimable for this check" } as Row);
       return [c, { ac1: shown && g.ac1 != null ? r2(g.ac1) : null, ac1CI: shown && g.ac1CI ? g.ac1CI.map(r2) : null, precision, ...(notEstimable ? { status: "not-estimable", note: NOT_ESTIMABLE_NOTE } : {}) }];
     }),
   );
@@ -514,18 +516,21 @@ export async function exportRelease({
   ledger,
   split = true,
   sourceMinGroup,
+  identifiers,
 }: {
   input: AggregateInput;
   outDir: string;
   ledger?: LedgerEntry[];
   split?: boolean;
   sourceMinGroup?: number;
+  /** The full identifier set (sample, screening log, frame, worked case); the input's projects by default. */
+  identifiers?: IdentifierSet;
 }) {
   const t0 = performance.now();
   const rules = loadDecisionRules();
   refuseInput(input, outDir, rules);
   // fast path: hand-written text is linted and scanned before the solve; the full release is checked again below
-  const ids = buildIdentifierSet({ projects: input.projects });
+  const ids = identifiers ?? buildIdentifierSet({ projects: input.projects });
   const early = lintStatements((input.notes ?? []) as S.Statement[]);
   if (early.length) throw new RefusalError("lint", [...new Set(early.map((e) => `${e.id}:${e.rule}`))].join(","));
   if (scanTexts([{ file: "input text", text: JSON.stringify([input.labels ?? {}, input.notes ?? []]) }], ids).length) throw new RefusalError("identifier", "input text");
@@ -615,19 +620,48 @@ export async function exportRelease({
   return { line, release, manifest, ledger: ledgerOut, model };
 }
 
+/**
+ * Real input may be written only into a private preview inside the data dir, or into the repo's
+ * public-data/, and the latter only once addendum A14 is signed digest-bound (D-83).
+ */
+export function refuseRealOut(dataDir: string, outDir: string, { repo = REPO, a14 = () => assertA11Signed() } = {}): void {
+  const out = real(outDir);
+  const inside = (root: string) => out === root || out.startsWith(root + path.sep);
+  const pd = real(path.join(repo, "public-data"));
+  if (inside(pd)) {
+    try {
+      a14();
+    } catch (err) {
+      throw new RefusalError("unsigned-a14", (err as Error).message);
+    }
+    return;
+  }
+  if (!inside(real(dataDir))) throw new RefusalError("out-dir", "real input writes only into the data dir or public-data/");
+}
+
 async function main(argv: string[]): Promise<number> {
   const arg = (name: string) => {
     const i = argv.indexOf(name);
     return i >= 0 ? argv[i + 1] : undefined;
   };
   const store = arg("--store");
+  const dataDir = arg("--data-dir");
+  const date = arg("--date");
   const out = arg("--out");
-  if (!store || !out) {
-    console.error("usage: node src/publish/export.ts --store <fixture.json> --out <dir>");
+  if (!out || (!store && !(dataDir && date)) || (store && dataDir)) {
+    console.error("usage: node src/publish/export.ts (--store <fixture.json> | --data-dir <dir> --date <YYYY-MM-DD>) --out <dir>");
     return 2;
   }
   try {
-    const { line } = await exportRelease({ input: loadFixture(store), outDir: out });
+    let input: AggregateInput;
+    let identifiers: IdentifierSet | undefined;
+    if (dataDir) {
+      refuseRealOut(dataDir, out);
+      const { readStore } = await import("./read-store.ts");
+      input = await readStore(path.resolve(dataDir), { date: date! });
+      identifiers = buildIdentifierSetFromStore(path.resolve(dataDir));
+    } else input = loadFixture(store!);
+    const { line } = await exportRelease({ input, outDir: out, identifiers });
     console.log(`EXPORT: ${JSON.stringify(line)}`);
     return 0;
   } catch (err) {

@@ -60,6 +60,12 @@
     "version": "v1"
   },
   {
+    "id": "chk|operating-cost-known|pass|all",
+    "n": 300,
+    "c": 85,
+    "version": "v1"
+  },
+  {
     "id": "chk|outcome-measure-defined|pass|all",
     "n": 300,
     "c": 200,
@@ -117,6 +123,138 @@
     "id": "chk|value-rule-explicit|pass|all",
     "n": 300,
     "c": 160,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assumptions-catalogued|claimed|all",
+    "n": 300,
+    "c": 54,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|all",
+    "n": 300,
+    "c": 19,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-defined|claimed|all",
+    "n": 300,
+    "c": 40,
+    "version": "v1"
+  },
+  {
+    "id": "chk|acceptance-criteria-met|claimed|all",
+    "n": 300,
+    "c": 41,
+    "version": "v1"
+  },
+  {
+    "id": "chk|failure-modes-tested|claimed|all",
+    "n": 300,
+    "c": 29,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|claimed|all",
+    "n": 300,
+    "c": 54,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|all",
+    "n": 300,
+    "c": 57,
+    "version": "v1"
+  },
+  {
+    "id": "chk|assurance-defined|claimed|all",
+    "n": 300,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|claimed|all",
+    "n": 300,
+    "c": 54,
+    "version": "v1"
+  },
+  {
+    "id": "chk|recovery-tested|claimed|all",
+    "n": 300,
+    "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|all",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|all",
+    "n": 300,
+    "c": 55,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measure-defined|claimed|all",
+    "n": 300,
+    "c": 28,
+    "version": "v1"
+  },
+  {
+    "id": "chk|baseline-defined|claimed|all",
+    "n": 300,
+    "c": 30,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-measured|claimed|all",
+    "n": 300,
+    "c": 38,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|all",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|claimed|all",
+    "n": 300,
+    "c": 49,
+    "version": "v1"
+  },
+  {
+    "id": "chk|outcome-evidence-available|claimed|all",
+    "n": 300,
+    "c": 69,
+    "version": "v1"
+  },
+  {
+    "id": "chk|full-cost-accounted|claimed|all",
+    "n": 300,
+    "c": 57,
+    "version": "v1"
+  },
+  {
+    "id": "chk|risk-tradeoffs-assessed|claimed|all",
+    "n": 300,
+    "c": 36,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|claimed|all",
+    "n": 300,
+    "c": 56,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|claimed|all",
+    "n": 300,
+    "c": 50,
     "version": "v1"
   },
   {
@@ -252,6 +390,36 @@
     "version": "v1"
   },
   {
+    "id": "chk|fallback-defined|claimed|q1",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|support-maintenance-defined|claimed|q1",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q1",
+    "n": 75,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "chk|measurement-definition-consistent|claimed|q1",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|important-confounds-named|claimed|q1",
+    "n": 75,
+    "c": 14,
+    "version": "v1"
+  },
+  {
     "id": "chk|outcome-evidence-available|claimed|q1",
     "n": 75,
     "c": 22,
@@ -261,6 +429,12 @@
     "id": "chk|full-cost-accounted|claimed|q1",
     "n": 75,
     "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|claimed|q1",
+    "n": 75,
+    "c": 14,
     "version": "v1"
   },
   {
@@ -378,6 +552,12 @@
     "version": "v1"
   },
   {
+    "id": "chk|failure-modes-tested|claimed|q2",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
     "id": "chk|limitations-stated|claimed|q2",
     "n": 75,
     "c": 16,
@@ -387,6 +567,12 @@
     "id": "chk|operational-owner-assigned|claimed|q2",
     "n": 75,
     "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|claimed|q2",
+    "n": 75,
+    "c": 17,
     "version": "v1"
   },
   {
@@ -423,6 +609,12 @@
     "id": "chk|full-cost-accounted|claimed|q2",
     "n": 75,
     "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|claimed|q2",
+    "n": 75,
+    "c": 11,
     "version": "v1"
   },
   {
@@ -483,6 +675,12 @@
     "id": "chk|support-maintenance-defined|pass|q3",
     "n": 75,
     "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q3",
+    "n": 75,
+    "c": 19,
     "version": "v1"
   },
   {
@@ -570,6 +768,12 @@
     "version": "v1"
   },
   {
+    "id": "chk|fallback-defined|claimed|q3",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
     "id": "chk|support-maintenance-defined|claimed|q3",
     "n": 75,
     "c": 12,
@@ -594,6 +798,12 @@
     "version": "v1"
   },
   {
+    "id": "chk|important-confounds-named|claimed|q3",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
     "id": "chk|outcome-evidence-available|claimed|q3",
     "n": 75,
     "c": 18,
@@ -603,6 +813,18 @@
     "id": "chk|full-cost-accounted|claimed|q3",
     "n": 75,
     "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "chk|alternatives-compared|claimed|q3",
+    "n": 75,
+    "c": 15,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|claimed|q3",
+    "n": 75,
+    "c": 12,
     "version": "v1"
   },
   {
@@ -732,6 +954,24 @@
     "version": "v1"
   },
   {
+    "id": "chk|limitations-stated|claimed|q4",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operational-owner-assigned|claimed|q4",
+    "n": 75,
+    "c": 10,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|claimed|q4",
+    "n": 75,
+    "c": 14,
+    "version": "v1"
+  },
+  {
     "id": "chk|support-maintenance-defined|claimed|q4",
     "n": 75,
     "c": 10,
@@ -756,21 +996,27 @@
     "version": "v1"
   },
   {
-    "id": "chk|operating-cost-known|pass|src:show-hn",
-    "n": 294,
-    "c": 85,
+    "id": "chk|outcome-evidence-available|claimed|q4",
+    "n": 75,
+    "c": 14,
     "version": "v1"
   },
   {
-    "id": "chk|operational-owner-assigned|claimed|src:show-hn",
-    "n": 294,
-    "c": 57,
+    "id": "chk|full-cost-accounted|claimed|q4",
+    "n": 75,
+    "c": 12,
     "version": "v1"
   },
   {
-    "id": "chk|full-cost-accounted|claimed|src:show-hn",
-    "n": 294,
-    "c": 57,
+    "id": "chk|alternatives-compared|claimed|q4",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|value-rule-explicit|claimed|q4",
+    "n": 75,
+    "c": 17,
     "version": "v1"
   },
   {

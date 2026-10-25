@@ -33,6 +33,7 @@ import {
   type Share,
 } from "./aggregate.ts";
 import { mergeSmallReasons } from "./prisma.ts";
+import { FLOOR, MIN_VALUES } from "../../protocol/disclosure/audit.mjs";
 
 export interface Tuple {
   id: string;
@@ -81,10 +82,10 @@ export interface Figure {
 
 /**
  * Minimum included launches per source before the source partition is published at all.
- * 1 = publish every non-empty source (as planned; small groups are suppressed cell by cell).
- * Set to 10 to publish the source split only when every source has at least 10 launches (Helen's open choice).
+ * 10 (Helen's decision B, 2026-10-24): the source split is published only when every non-empty source
+ * has at least 10 launches.
  */
-export const SOURCE_SPLIT_MIN_GROUP = 1;
+export const SOURCE_SPLIT_MIN_GROUP = 10;
 
 export interface Tables {
   checkIds: string[];
@@ -200,6 +201,8 @@ export interface Model {
   prisma: { identified: number; screened: number; merged: Record<string, number>; boxes: string[]; exclusions: string[] };
   confirmation: { proposed: number; changed: number; rejected: number; downgraded: number; perCheck: Record<string, { proposed: number; changed: number }> };
   precision: string[]; // checks with a prec tuple
+  /** Checks whose precision cell, standing alone, could not keep MIN_VALUES feasible values once suppressed: no tuple. */
+  precisionWithheld: string[];
   community: string[] | null;
 }
 
@@ -312,9 +315,14 @@ export function buildModel(input: AggregateInput, tables: Tables, rules: Map<str
 
   // pass precision against the independent labeller (c = gold-confirmed passes, n = coder passes)
   const precision: string[] = [];
+  const precisionWithheld: string[] = [];
   for (const g of input.gate.checks) {
     const pr = (g as GateCheck & { precision?: { c: number; m: number } }).precision;
     if (!pr) continue;
+    if (loneCellValues(pr.c, pr.m) < MIN_VALUES) {
+      precisionWithheld.push(g.checkId);
+      continue;
+    }
     T(`prec|${g.checkId}`, pr.m, pr.c);
     precision.push(g.checkId);
   }
@@ -361,8 +369,18 @@ export function buildModel(input: AggregateInput, tables: Tables, rules: Map<str
     prisma: { identified: input.screening?.identified ?? 0, screened, merged, boxes, exclusions },
     confirmation: { proposed, changed, rejected, downgraded, perCheck },
     precision,
+    precisionWithheld,
     community,
   };
+}
+
+/**
+ * Feasible values of a cell that no row links to anything: all n + 1 when published, else the values its
+ * display state allows ("<10": c <= 9; "suppressed": c >= 10 with n - c < 10).
+ */
+export function loneCellValues(c: number, n: number): number {
+  if (c >= FLOOR && n - c >= FLOOR) return n + 1;
+  return c < FLOOR ? Math.min(FLOOR - 1, n) + 1 : n - Math.max(FLOOR, n - FLOOR + 1) + 1;
 }
 
 const pct = (x: number) => Math.round(100 * x);
@@ -376,7 +394,10 @@ export function rowResolver(release: Release, display: Map<string, "lt10" | "sup
     const t = byId.get(id);
     if (!t) throw new Error(`no tuple ${id}`);
     if (t.c === null) {
-      return display.get(id) === "lt10" ? { id, label, state: "lt10" } : { id, label, state: "suppressed", reason: SUPPRESSED_REASON };
+      // a not-estimable check keeps its label note whatever the count's display state (never shown as validated)
+      const r: Row = display.get(id) === "lt10" ? { id, label, state: "lt10" } : { id, label, state: "suppressed", reason: SUPPRESSED_REASON };
+      if (opts.note) r.note = opts.note;
+      return r;
     }
     const [lo, hi] = wilson(t.c, t.n);
     const row: Row = { id, label, state: "released", c: t.c, n: t.n, pct: t.n ? pct(t.c / t.n) : 0, ci: [pct(lo), pct(hi)] };
