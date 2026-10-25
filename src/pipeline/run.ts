@@ -297,6 +297,30 @@ export function preflightGuidedCorrections(projects: SliceEntryLike[], ctx: Para
   return { projects: projects.length, chunks };
 }
 
+async function currentCorrectionStates(project: SliceEntryLike, input: ReturnType<typeof correctionInputs>, ctx: {
+  db: ReturnType<typeof getDb>; contract: ReturnType<typeof buildContract>; codebook: Codebook; guidance: CodingGuidance;
+}) {
+  const prior = await ctx.db.selectFrom("pipeline_project_results").selectAll().where("project_n", "=", project.n).executeTakeFirst();
+  let snapshots: unknown;
+  try { snapshots = JSON.parse(prior?.snapshot_hashes_json ?? "null"); } catch { /* Refused below. */ }
+  if (!prior || String(prior.hn_id) !== String(project.hn_id) || prior.codebook_version !== ctx.codebook.codebookVersion || prior.model_id !== PINNED_MODEL ||
+      !Number.isFinite(Date.parse(prior.completed_at)) || digestJson(snapshots) !== digestJson(input.manifest.snapshotHashesInCollectionOrder)) throw new Error(`project ${project.n}: missing or stale current coding record`);
+  const previous = input.manifest.codingCorrection;
+  if (previous && (previous.version !== ctx.guidance.version || !Array.isArray(previous.checks) || !previous.checks.length || new Set(previous.checks).size !== previous.checks.length ||
+      previous.checks.some((id: string) => !ctx.contract.checkIds.includes(id)) || (previous.inputDigest !== undefined && previous.inputDigest !== spansDigest(input.spans)))) throw new Error(`project ${project.n}: stale or mismatched prior correction`);
+  const rows = await ctx.db.selectFrom("pipeline_check_states").selectAll().where("project_n", "=", project.n).execute();
+  let entries: CheckEntry[];
+  try { entries = rows.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) })) as CheckEntry[]; }
+  catch { throw new Error(`project ${project.n}: incompatible current coding states`); }
+  if (!isSchemaValid(JSON.stringify({ checks: entries }), input.spanIds, ctx.contract.zodSchema).valid) throw new Error(`project ${project.n}: incompatible current coding states`);
+  const filtered = applyQuoteOrUnknownFilter(entries, input.spanIds);
+  if (rows.some(row => {
+    const expected = filtered.find(entry => entry.checkId === row.check_id);
+    return !expected || expected.proposedState !== row.filtered_state || JSON.stringify(expected.spanIds) !== JSON.stringify(JSON.parse(row.span_ids_json));
+  })) throw new Error(`project ${project.n}: incompatible current coding states`);
+  return { prior, entries, previous };
+}
+
 async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<typeof processProject>[1]): Promise<ProjectOutcome> {
   const { db, cacheDir, codebook, overrides } = ctx;
   const input = correctionInputs(project, ctx);
@@ -304,21 +328,8 @@ async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<
   const contract = buildContract(checks);
   const guidance = { version: ctx.guidance!.version, byCheck: Object.fromEntries(checks.map(id => [id, ctx.guidance!.byCheck[id]])) };
   const inputDigest = spansDigest(input.spans);
-  const previous = input.manifest.codingCorrection;
-  const prior = await db.selectFrom("pipeline_project_results").selectAll().where("project_n", "=", project.n).executeTakeFirst();
-  const retained = new Map<string, CheckEntry>();
-  if (previous) {
-    if (previous.version !== guidance.version || !Array.isArray(previous.checks) || !previous.checks.length || new Set(previous.checks).size !== previous.checks.length || previous.checks.some((id: string) => !ctx.contract.checkIds.includes(id)) ||
-        (previous.inputDigest !== undefined && previous.inputDigest !== inputDigest) || !prior || String(prior.hn_id) !== String(project.hn_id) || prior.codebook_version !== CODEBOOK_VERSION || prior.model_id !== PINNED_MODEL ||
-        digestJson(JSON.parse(prior.snapshot_hashes_json)) !== digestJson(input.manifest.snapshotHashesInCollectionOrder)) throw new Error(`project ${project.n}: stale or mismatched prior correction`);
-    const rows = await db.selectFrom("pipeline_check_states").selectAll().where("project_n", "=", project.n).execute();
-    const entries = rows.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) })) as CheckEntry[];
-    if (!isSchemaValid(JSON.stringify({ checks: entries }), input.spanIds, ctx.contract.zodSchema).valid) throw new Error(`project ${project.n}: incompatible prior corrected states`);
-    const filteredPrior = applyQuoteOrUnknownFilter(entries, input.spanIds);
-    if (rows.some(row => filteredPrior.find(e => e.checkId === row.check_id)?.proposedState !== row.filtered_state)) throw new Error(`project ${project.n}: incompatible prior corrected states`);
-    for (const id of previous.checks as string[]) retained.set(id, entries.find(e => e.checkId === id)!);
-  }
-  const cumulativeChecks = ctx.contract.checkIds.filter(id => checks.includes(id) || retained.has(id));
+  const { prior, entries: current, previous } = await currentCorrectionStates(project, input, { db, contract: ctx.contract, codebook, guidance });
+  const cumulativeChecks = ctx.contract.checkIds.filter(id => checks.includes(id) || previous?.checks.includes(id));
   const chunks = guidedCodingChunks(input.spans, codebook, contract, guidance);
   const messages = chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
   const guided = await withStageCache(cacheDir, String(project.hn_id), "code-guided", { model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages, guidance }, async () => {
@@ -335,7 +346,7 @@ async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<
     return { checks: mergeChunkCodings(contract.checkIds, results.map(r => r.data!.checks)), attempts: results.reduce((n, r) => n + r.attempts, 0) };
   });
   if (!isSchemaValid(JSON.stringify({ checks: guided.value.checks }), input.spanIds, contract.zodSchema).valid) throw new Error(`project ${project.n}: invalid guided cache`);
-  const codeChecks = input.baseline.map(entry => checks.includes(entry.checkId) ? guided.value.checks.find(c => c.checkId === entry.checkId)! : retained.get(entry.checkId) ?? entry);
+  const codeChecks = current.map(entry => checks.includes(entry.checkId) ? guided.value.checks.find(c => c.checkId === entry.checkId)! : entry);
   const filtered = applyQuoteOrUnknownFilter(codeChecks, input.spanIds);
   const claims = await buildClaimsForProject({ project: project.title, filteredStates: filtered, spanUrls: input.spanUrls,
     runGate: record => runGate(record, { spawnImpl: overrides.gateSpawnImpl, pythonPath: overrides.pythonPath, gateScriptPath: overrides.gateScriptPath }), gatesPath: ctx.gateFile.path });
@@ -827,7 +838,11 @@ export async function runPipeline({
   if (onlyChecks && (!guidance || !onlyChecks.length || new Set(onlyChecks).size !== onlyChecks.length || onlyChecks.some(id => !contract.checkIds.includes(id) || !guidance.byCheck[id]))) throw new Error("only-checks requires guidance for every selected check");
   const resolvedCacheDir = cacheDir ?? defaultCacheDir();
   // Check every retained baseline before scheduling even the first correction request.
-  if (onlyChecks) preflightGuidedCorrections(projects, { dataDir: resolvedDataDir, cacheDir: resolvedCacheDir, codebook, contract });
+  if (onlyChecks) {
+    const ctx = { dataDir: resolvedDataDir, cacheDir: resolvedCacheDir, codebook, contract };
+    preflightGuidedCorrections(projects, ctx);
+    for (const project of projects) await currentCorrectionStates(project, correctionInputs(project, ctx), { db: resolvedDb, contract, codebook, guidance: guidance! });
+  }
 
   let stopReason: string | undefined;
   let attemptedProjects = 0;

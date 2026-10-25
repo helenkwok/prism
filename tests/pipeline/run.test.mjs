@@ -110,6 +110,8 @@ async function correctionFixture(cacheKind = "approved") {
     const body = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(contract.checkIds, codebook, schema, spans), mode: "json_schema", schema: { name: "gate_checks", schema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
     writeCached(cacheDir, stageCacheKey(project.hn_id, "approved-recode-chunk", { digest: hash(body), provider: "token-factory" }), JSON.stringify({ checks: baseline }));
   }
+  await db.insertInto("pipeline_project_results").values({ project_n: 1, hn_id: project.hn_id, model_id: PINNED_MODEL, codebook_version: codebook.codebookVersion, snapshot_hashes_json: JSON.stringify(manifest.snapshotHashesInCollectionOrder), completed_at: "2026-10-24T00:00:00Z", coding_all_unknown: 0 }).execute();
+  await db.insertInto("pipeline_check_states").values(baseline.map(c => ({ project_n: 1, check_id: c.checkId, proposed_state: c.proposedState, filtered_state: c.proposedState, span_ids_json: JSON.stringify(c.spanIds) }))).execute();
   await recordSecondCoding(db, 1, { modelId: "fixture-second", allUnknown: false, checkStates: baseline.map(c => ({ ...c, filteredState: c.proposedState })) });
   return { db, dataDir, cacheDir, sliceProjectsPath, manifestPath, manifest, contract, codebook, project, target, untouched, spans };
 }
@@ -146,12 +148,63 @@ describe("retained-evidence coding corrections", () => {
       assert.equal(calls, 2);
       for (const correction of [{ ...current.codingCorrection, version: "stale-c0" }, { ...current.codingCorrection, inputDigest: "0".repeat(64) }]) {
         fs.writeFileSync(f.manifestPath, JSON.stringify({ ...current, codingCorrection: correction }));
-        const refused = await runPipeline({ ...options, onlyChecks: [f.untouched] });
-        assert.equal(refused.ok, false);
-        assert.match(refused.outcomes[0].error, /stale or mismatched prior correction/);
+        await assert.rejects(runPipeline({ ...options, onlyChecks: [f.untouched] }), /stale or mismatched prior correction/);
         assert.equal(calls, 2, "stale correction scope is refused before HTTP");
         assert.deepEqual(await f.db.selectFrom("pipeline_check_states").selectAll().execute(), states);
       }
+    } finally { await f.db.destroy(); }
+  });
+
+  test("first correction preserves every current untargeted row even when compatible caches disagree", async () => {
+    const f = await correctionFixture("legacy");
+    let calls = 0;
+    try {
+      const extra = f.contract.checkIds.filter(id => ![f.target, f.untouched].includes(id));
+      await f.db.updateTable("pipeline_check_states").set({ span_ids_json: JSON.stringify(f.spans.map(s => s.id)) }).where("check_id", "=", f.untouched).execute();
+      await f.db.updateTable("pipeline_check_states").set({ proposed_state: "fail", filtered_state: "fail", span_ids_json: JSON.stringify([f.spans[1].id]) }).where("check_id", "=", extra[0]).execute();
+      await f.db.updateTable("pipeline_check_states").set({ proposed_state: "pass", filtered_state: "unknown", span_ids_json: "[]" }).where("check_id", "=", extra[1]).execute();
+      const before = await f.db.selectFrom("pipeline_check_states").selectAll().orderBy("check_id").execute();
+      const result = await runPipeline({ ...f, apiKeys: { tavily: "", nebius: "fixture", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => {
+        calls++; return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: [{ checkId: f.target, proposedState: "claimed", spanIds: [f.spans[0].id] }] }) } }] });
+      } } });
+      assert.equal(result.ok, true); assert.equal(calls, 1);
+      const after = await f.db.selectFrom("pipeline_check_states").selectAll().orderBy("check_id").execute();
+      assert.deepEqual(after.filter(row => row.check_id !== f.target), before.filter(row => row.check_id !== f.target));
+      assert.equal(after.find(row => row.check_id === f.target).filtered_state, "claimed");
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath)).codingCorrection.checks, [f.target]);
+    } finally { await f.db.destroy(); }
+  });
+
+  test("missing or stale current coding refuses the whole correction before external calls", async () => {
+    for (const mutation of ["record", "model", "codebook", "snapshots", "row", "citation", "filter"]) {
+      const f = await correctionFixture(); let calls = 0;
+      try {
+        if (mutation === "record") await f.db.deleteFrom("pipeline_project_results").execute();
+        if (mutation === "model") await f.db.updateTable("pipeline_project_results").set({ model_id: "wrong" }).execute();
+        if (mutation === "codebook") await f.db.updateTable("pipeline_project_results").set({ codebook_version: "stale" }).execute();
+        if (mutation === "snapshots") await f.db.updateTable("pipeline_project_results").set({ snapshot_hashes_json: "[]" }).execute();
+        if (mutation === "row") await f.db.deleteFrom("pipeline_check_states").where("check_id", "=", f.untouched).execute();
+        if (mutation === "citation") await f.db.updateTable("pipeline_check_states").set({ span_ids_json: '["absent"]' }).where("check_id", "=", f.untouched).execute();
+        if (mutation === "filter") await f.db.updateTable("pipeline_check_states").set({ filtered_state: "fail" }).where("check_id", "=", f.untouched).execute();
+        const denied = async () => { calls++; throw new Error("external call forbidden"); };
+        await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { nebiusFetchImpl: denied, ownSiteFetchImpl: denied, tavilyFetchImpl: denied, githubFetchImpl: denied } }), /current coding/);
+        assert.equal(calls, 0); assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath)), f.manifest);
+      } finally { await f.db.destroy(); }
+    }
+  });
+
+  test("an incomplete later current project refuses before the first correction request", async () => {
+    const f = await correctionFixture("legacy"); let calls = 0;
+    try {
+      const second = { ...f.project, n: 2, hn_id: "fixture-correction-2" };
+      writeSliceProjects(f.dataDir, [f.project, second]);
+      fs.writeFileSync(path.join(f.dataDir, "pipeline/manifests/2.json"), JSON.stringify({ ...f.manifest, projectN: 2, hnId: second.hn_id }));
+      const current = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      const checks = current.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) }));
+      const codingRequestHash = crypto.createHash("sha256").update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: [buildCodingMessages(f.contract.checkIds, f.codebook, f.contract.jsonSchema, f.spans)] })).digest("hex");
+      writeCached(f.cacheDir, stageCacheKey(second.hn_id, "code", { spanIds: f.spans.map(s => s.id), hasSpans: true, codingRequestHash }), { checks, failedChunks: 0 });
+      await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; throw new Error("external call forbidden"); } } }), /project 2: missing or stale current coding/);
+      assert.equal(calls, 0); assert.deepEqual(await f.db.selectFrom("pipeline_check_states").selectAll().execute(), current);
     } finally { await f.db.destroy(); }
   });
 
@@ -265,7 +318,10 @@ describe("retained-evidence coding corrections", () => {
         assert.match(result.outcomes[0].error, /guided coding retry exhausted/);
         assert.equal(calls, n * 3);
         assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), f.manifest);
-        assert.equal((await f.db.selectFrom("pipeline_check_states").selectAll().execute()).length, 0);
+        const states = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+        assert.equal(states.length, f.contract.checkIds.length);
+        assert.equal(states.find(row => row.check_id === f.untouched).filtered_state, "pass");
+        assert.equal(states.find(row => row.check_id === f.target).filtered_state, "unknown");
       }
     } finally { await f.db.destroy(); }
   });
