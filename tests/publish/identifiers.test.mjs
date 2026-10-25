@@ -106,3 +106,15 @@ describe("SCAN CLI", () => {
     for (const part of ["synthetic-007", "007.example", "synthetic-00"]) assert.ok(!out.toLowerCase().includes(part), part);
   });
 });
+
+test("hosts match as whole host names, inflected dictionary words are not names, a baseline drops vocabulary", async () => {
+  const { buildIdentifierSet, scanTexts, withoutBaseline } = await import("../../src/publish/identifiers.ts");
+  const set = buildIdentifierSet({ projects: [{ title: "Show HN: Cleared", url: "https://zq.me/a" }, { title: "Show HN: Viewport", url: "https://vp-tool.example/" }] });
+  assert.equal(scanTexts([{ file: "t", text: "the set.method call" }], buildIdentifierSet({ projects: [{ url: "https://t.me/x" }] })).length, 0, "t.me is a shared host");
+  assert.equal(scanTexts([{ file: "t", text: "see app.zq.me today" }], set).length, 1, "a subdomain still hits");
+  assert.equal(scanTexts([{ file: "t", text: "xzq.me" }], set).length, 0, "a longer host does not");
+  assert.equal(scanTexts([{ file: "t", text: "the cleared rows" }], set).length, 0, "cleared counts through clear");
+  assert.equal(scanTexts([{ file: "t", text: '<meta name="viewport">' }], set).length, 1);
+  assert.equal(scanTexts([{ file: "t", text: '<meta name="viewport">' }], withoutBaseline(set, ['<meta name="viewport">'])).length, 0);
+  assert.equal(scanTexts([{ file: "t", text: "vp-tool.example" }], withoutBaseline(set, ['<meta name="viewport">'])).length, 1, "the baseline drops only what it contains");
+});

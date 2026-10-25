@@ -39,7 +39,7 @@ export interface Hit {
 
 const MIN_TITLE = 6;
 /** Shared hosts: many projects live under them, so only path-qualified URLs count. */
-const GENERIC = new Set(["github.com", "gitlab.com", "huggingface.co", "ycombinator.com", "reddit.com", "redd.it", "youtube.com", "x.com", "twitter.com", "google.com"]);
+const GENERIC = new Set(["github.com", "gitlab.com", "huggingface.co", "ycombinator.com", "reddit.com", "redd.it", "youtube.com", "x.com", "twitter.com", "google.com", "t.me"]);
 const PSL = { allowPrivateDomains: true };
 
 const urlKey = (u: string) => u.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
@@ -53,7 +53,10 @@ const DICT_FILE = "/usr/share/dict/words";
 let dict: Set<string> | null | undefined;
 function dictionaryWord(t: string): boolean {
   if (dict === undefined) dict = fs.existsSync(DICT_FILE) ? new Set(fs.readFileSync(DICT_FILE, "utf8").toLowerCase().split("\n")) : null;
-  return !!dict && /^[a-z]+$/.test(t) && dict.has(t);
+  if (!dict || !/^[a-z]+$/.test(t)) return false;
+  // the word list has base forms only: "cleared" counts through "clear", "pages" through "page"
+  const stems = [t, t.replace(/(ed|es|s|ing)$/, ""), t.replace(/(d|s)$/, ""), t.replace(/(ed|ing)$/, "e")];
+  return stems.some((s) => s.length >= 3 && dict!.has(s));
 }
 
 /** The full title, the title without "Show HN:", and the name before the first separator. */
@@ -109,9 +112,8 @@ export function buildIdentifierSetFromStore(dataDir: string): IdentifierSet {
 }
 
 // ponytail: substring scan per identifier, O(identifiers x text); index with Aho-Corasick if a full-site scan gets slow.
-/** v occurs in t as whole words (no letter or digit right before or after it). */
-function hasWords(t: string, v: string): boolean {
-  const word = /[a-z0-9]/;
+/** v occurs in t with no character of `word` right before or after it. */
+function hasWords(t: string, v: string, word = /[a-z0-9]/): boolean {
   for (let i = t.indexOf(v); i >= 0; i = t.indexOf(v, i + 1)) {
     if (!word.test(t[i - 1] ?? "") && !word.test(t[i + v.length] ?? "")) return true;
   }
@@ -125,14 +127,15 @@ function rulesIn(text: string, set: IdentifierSet): Rule[] {
     for (const v of s) if (t.includes(v)) return true;
     return false;
   };
-  const anyWords = (s: Set<string>) => {
-    for (const v of s) if (hasWords(t, v)) return true;
+  const anyWords = (s: Set<string>, word?: RegExp) => {
+    for (const v of s) if (hasWords(t, v, word)) return true;
     return false;
   };
-  // titles match as whole words: "debugg" (a name) is not a hit inside "debugging"
+  // titles match as whole words: "debugg" (a name) is not a hit inside "debugging";
+  // hosts match as whole host names: "t.me" is not a hit inside "set.method", "a.foo.com" still is
   if (anyWords(set.titles)) out.push("title");
   if (any(set.urls)) out.push("url");
-  if (any(set.hosts)) out.push("hostname");
+  if (anyWords(set.hosts, /[a-z0-9-]/)) out.push("hostname");
   if ((t.match(/\d+/g) ?? []).some((d) => set.hnIds.has(d))) out.push("hn-id");
   return out;
 }
@@ -157,13 +160,37 @@ function listFiles(p: string): string[] {
     .flatMap((f) => listFiles(path.join(p, f)));
 }
 
+const readTexts = (paths: string[]) =>
+  paths
+    .flatMap(listFiles)
+    .map((f) => ({ file: path.relative(process.cwd(), f), buf: fs.readFileSync(f) }))
+    .filter(({ buf }) => !buf.subarray(0, 8192).includes(0)) // text files only
+    .map(({ file, buf }) => ({ file, text: buf.toString("utf8") }));
+
+/**
+ * Drops every title and host that already occurs (as a whole word or host name) in a baseline: output built
+ * from no private data, such as the site built from the synthetic release. A word present there ("viewport" in
+ * every page's meta tag) cannot have come from the store. URLs and HN ids are never dropped.
+ */
+export function withoutBaseline(set: IdentifierSet, baseline: string[]): IdentifierSet {
+  const t = baseline.join("\n").toLowerCase();
+  return {
+    ...set,
+    titles: new Set([...set.titles].filter((v) => !hasWords(t, v))),
+    hosts: new Set([...set.hosts].filter((v) => !hasWords(t, v, /[a-z0-9-]/))),
+  };
+}
+
 function main(argv: string[]): number {
+  const b = argv.indexOf("--baseline");
+  const baseline = b >= 0 ? argv[b + 1] : undefined;
+  if (b >= 0) argv = argv.filter((_, j) => j !== b && j !== b + 1);
   const flag = argv.includes("--data-dir") ? "--data-dir" : "--store";
   const i = argv.indexOf(flag);
   const source = i >= 0 ? argv[i + 1] : undefined;
   const paths = argv.filter((_, j) => i < 0 || (j !== i && j !== i + 1));
-  if (!source || !paths.length) {
-    console.error("usage: node src/publish/identifiers.ts (--store <store.json> | --data-dir <dir>) <path>...");
+  if (!source || !paths.length || (b >= 0 && !baseline)) {
+    console.error("usage: node src/publish/identifiers.ts (--store <store.json> | --data-dir <dir>) [--baseline <dir>] <path>...");
     return 2;
   }
   let set: IdentifierSet;
@@ -172,11 +199,8 @@ function main(argv: string[]): number {
     const store = JSON.parse(fs.readFileSync(source, "utf8"));
     set = buildIdentifierSet({ projects: store.projects ?? [], frame: store.frame ?? [], extra: store.extra ?? [] });
   }
-  const texts = paths
-    .flatMap(listFiles)
-    .map((f) => ({ file: path.relative(process.cwd(), f), buf: fs.readFileSync(f) }))
-    .filter(({ buf }) => !buf.subarray(0, 8192).includes(0)) // text files only
-    .map(({ file, buf }) => ({ file, text: buf.toString("utf8") }));
+  if (baseline) set = withoutBaseline(set, readTexts([baseline]).map((x) => x.text));
+  const texts = readTexts(paths);
   const hits = scanTexts(texts, set);
   for (const h of hits) console.log(`SCAN HIT ${h.file} ${h.rule}`);
   console.log(`SCAN: ${JSON.stringify({ files: texts.length, hits: hits.length })}`);

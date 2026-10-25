@@ -6,6 +6,10 @@
 #                                       every saved rule present and TCP 22 present; on any mismatch
 #                                       write before.json back and exit non-zero
 #   bash scripts/oci-ingress.sh check   read-only: the same fields from the saved state and the live list
+#   bash scripts/oci-ingress.sh remove-stale   (plan 06-08, Helen's decision) save the list, remove only the
+#                                       stale TCP 80, 8080, 9443 and 4873 rules from 0.0.0.0/0, re-read, and
+#                                       require after = before - removed, every other saved rule present, no
+#                                       stale rule left, TCP 22 and 443 present; otherwise write before.json back
 #
 # Uses the oci CLI with ~/.oci/config. Identifiers live only in shell variables and in mode-600 files
 # inside a mode-700 state directory (~/temp-storage/scratch/prism/<YYYY-MM-DD>-oci-ingress); nothing
@@ -14,7 +18,7 @@ set -euo pipefail
 umask 077
 
 MODE=${1:-}
-case "$MODE" in apply|check) ;; *) echo "usage: oci-ingress.sh apply|check" >&2; exit 64 ;; esac
+case "$MODE" in apply|check|remove-stale) ;; *) echo "usage: oci-ingress.sh apply|check|remove-stale" >&2; exit 64 ;; esac
 
 VM_NAME=${PRISM_VM_NAME:-prism-app}
 CONFIG=${OCI_CLI_CONFIG_FILE:-$HOME/.oci/config}
@@ -22,8 +26,8 @@ PROFILE=${OCI_CLI_PROFILE:-DEFAULT}
 STATE_ROOT=${PRISM_OCI_STATE_ROOT:-$HOME/temp-storage/scratch/prism}
 
 mkdir -p "$STATE_ROOT"
-if [ "$MODE" = apply ]; then
-  SD="$STATE_ROOT/$(date +%Y-%m-%d)-oci-ingress"
+if [ "$MODE" = apply ] || [ "$MODE" = remove-stale ]; then
+  SD="$STATE_ROOT/$(date +%Y-%m-%d)-oci-$([ "$MODE" = apply ] && echo ingress || echo stale)"
   mkdir -p "$SD"
   chmod 700 "$SD"
 else
@@ -69,6 +73,20 @@ switch (op) {
       sourceType: "CIDR_BLOCK", tcpOptions: { destinationPortRange: { min: 443, max: 443 } } });
     out(JSON.stringify(rules)); break;
   }
+  case "stale": { // stale <file> keep|count: the TCP 80/8080/9443/4873 rules from anywhere
+    const stale = (r) => { r = camel(r); const d = r.tcpOptions && r.tcpOptions.destinationPortRange;
+      return r.protocol === "6" && r.source === "0.0.0.0/0" && d && d.min === d.max && [80, 8080, 9443, 4873].includes(d.min); };
+    const rules = read(args[0]);
+    out(args[1] === "count" ? String(rules.filter(stale).length) : JSON.stringify(rules.filter((r) => !stale(r)))); break;
+  }
+  case "report-stale": { // report-stale <before> <after> <removed>
+    const b = read(args[0]), a = read(args[1]), removed = Number(args[2]);
+    const ak = new Set(a.map(key)), kept = read(args[3]);
+    const others = kept.every((r) => ak.has(key(r)));
+    const p22 = a.some((r) => covers(r, 22)), p443 = a.some((r) => covers(r, 443, "0.0.0.0/0"));
+    out(`OCI_INGRESS removed=${b.length - a.length} expected=${removed} before=${b.length} after=${a.length} other_rules_present=${others} port22=${p22 ? "present" : "missing"} port443=${p443 ? "present" : "missing"}`);
+    process.exit(a.length === b.length - removed && a.length === kept.length && others && p22 && p443 ? 0 : 1);
+  }
   case "same": out(JSON.stringify(read(args[0]).map(key)) === JSON.stringify(read(args[1]).map(key)) ? "yes" : "no"); break;
   case "report": { // report <before> <after> <added 1|0>: prints the fields, exits 1 unless all hold
     const b = read(args[0]), a = read(args[1]), added = Number(args[2]);
@@ -95,6 +113,30 @@ SECLIST=$(ocij network subnet get --subnet-id "$SUBNET" | j seclist)
 
 read_ingress() { ocij network security-list get --security-list-id "$SECLIST" | j ingress > "$1"; }
 
+restore() {
+  ocij network security-list update --security-list-id "$SECLIST" \
+    --ingress-security-rules "file://$SD/before.json" --force > /dev/null || true
+  read_ingress "$SD/restored.json" || true
+  if [ "$(j same "$SD/before.json" "$SD/restored.json")" = yes ]; then
+    echo "OCI_INGRESS restored"; exit 1
+  fi
+  echo "OCI_INGRESS restore-failed: the security list does not match before.json; fix it by hand now" >&2
+  exit 2
+}
+
+if [ "$MODE" = remove-stale ]; then
+  read_ingress "$SD/before.json"
+  n=$(j stale "$SD/before.json" count)
+  j stale "$SD/before.json" keep > "$SD/desired.json"
+  if [ "$n" = 0 ]; then j report-stale "$SD/before.json" "$SD/before.json" 0 "$SD/desired.json"; exit $?; fi
+  ocij network security-list update --security-list-id "$SECLIST" \
+    --ingress-security-rules "file://$SD/desired.json" --force > /dev/null || restore
+  read_ingress "$SD/after.json" || restore
+  j report-stale "$SD/before.json" "$SD/after.json" "$n" "$SD/desired.json" || restore
+  exit 0
+fi
+
+
 if [ "$MODE" = check ]; then
   read_ingress "$SD/current.json"
   # apply-result says whether apply added the rule (+1 expected) or found it already open (unchanged expected)
@@ -114,17 +156,6 @@ fi
 
 mv "$SD/now.json" "$SD/before.json"
 j add443 "$SD/before.json" > "$SD/desired.json"
-
-restore() {
-  ocij network security-list update --security-list-id "$SECLIST" \
-    --ingress-security-rules "file://$SD/before.json" --force > /dev/null || true
-  read_ingress "$SD/restored.json" || true
-  if [ "$(j same "$SD/before.json" "$SD/restored.json")" = yes ]; then
-    echo "OCI_INGRESS restored"; exit 1
-  fi
-  echo "OCI_INGRESS restore-failed: the security list does not match before.json; fix it by hand now" >&2
-  exit 2
-}
 
 ocij network security-list update --security-list-id "$SECLIST" \
   --ingress-security-rules "file://$SD/desired.json" --force > /dev/null || restore

@@ -79,3 +79,15 @@ test("production never sets the fixture runner, and the app trusts only Caddy's 
   // Dynamic addresses never include Caddy's fixed one.
   assert.match(src, /--ip-range 172\.30\.0\.128\/25/);
 });
+
+test("plan 06-08: Caddy mounts the findings site read-only, and the findings block uses TLS-ALPN-01 only", () => {
+  const caddyRun = runs.find((l) => /--name prism-caddy\b/.test(l));
+  assert.ok(caddyRun.includes('-v "$FINDINGS:/srv/findings:ro"'), caddyRun);
+  assert.match(fnBody("cmd_caddy"), /^\s*sha_arg "\$\{1:-\}"$/m);
+  const caddyfile = fs.readFileSync("deploy/Caddyfile", "utf8");
+  const block = /findings\.helenkwok\.dev \{\n([\s\S]*?)\n\}/.exec(caddyfile)?.[1] ?? "";
+  assert.match(block, /disable_http_challenge/);
+  assert.match(block, /root \* \/srv\/findings\/current\/client/);
+  assert.doesNotMatch(block, /reverse_proxy/);
+  assert.match(caddyfile, /auto_https disable_redirects/);
+});

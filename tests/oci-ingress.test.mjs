@@ -174,3 +174,39 @@ test("an unknown mode exits non-zero without calling oci", () => {
   assert.notEqual(r.status, 0);
   assert.equal(t.read().calls.length, 0);
 });
+
+const tcp = (port, description = "stale") => ({
+  description, "icmp-options": null, "is-stateless": false, protocol: "6", source: "0.0.0.0/0", "source-type": "CIDR_BLOCK",
+  "tcp-options": { "destination-port-range": { max: port, min: port }, "source-port-range": null }, "udp-options": null,
+});
+const STALE = [9443, 8080, 80, 4873].map((p) => tcp(p));
+
+test("remove-stale removes only the TCP 80, 8080, 9443 and 4873 rules from anywhere and keeps the rest", () => {
+  const t = setup([RULE_22, RULE_ICMP, RULE_ICMP_VCN, ...STALE.slice(0, 3), RULE_443, STALE[3]]);
+  const r = t.run("remove-stale");
+  noOcid(r);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^OCI_INGRESS removed=4 expected=4 before=8 after=4 other_rules_present=true port22=present port443=present$/m);
+  const s = t.read();
+  assert.equal(updateCalls(s), 1);
+  assert.deepEqual(s.rules, [RULE_22, RULE_ICMP, RULE_ICMP_VCN, RULE_443]);
+  const [dirName] = fs.readdirSync(t.stateRoot);
+  assert.match(dirName, /^\d{4}-\d{2}-\d{2}-oci-stale$/);
+});
+
+test("remove-stale restores before.json when the update also drops TCP 22", () => {
+  const t = setup([RULE_22, RULE_443, ...STALE], "drop22");
+  const r = t.run("remove-stale");
+  noOcid(r);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stdout, /^OCI_INGRESS restored$/m);
+  assert.deepEqual(t.read().rules, [RULE_22, RULE_443, ...STALE]);
+});
+
+test("remove-stale makes no update when no stale rule is left", () => {
+  const t = setup([RULE_22, RULE_443, tcp(8443, "not stale")]);
+  const r = t.run("remove-stale");
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(updateCalls(t.read()), 0);
+  assert.match(r.stdout, /^OCI_INGRESS removed=0 expected=0 before=3 after=3 /m);
+});

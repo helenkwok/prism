@@ -23,10 +23,10 @@ export default async function findings({ page, origin, assert }) {
     checked.push('/findings/cohorts bars only, no line, banner shown')
   }
 
-  // D-75: the GitHub-only group is absent from the synthetic release and must read as words.
+  // D-75: an absent source group (GitHub-only in both releases; Reddit too in the real one) must read as words.
   if (await hasFigures(page, origin, '/findings/sources')) {
     const absent = await page.locator('figure svg g[data-row-state="absent"]').evaluateAll(gs => gs.map(g => g.textContent))
-    assert(absent.length > 0 && absent.every(t => t.includes('GitHub-only') && t.includes('not in this release')), 'GitHub-only row as "not in this release"')
+    assert(absent.length > 0 && absent.every(t => t.includes('not in this release')) && absent.some(t => t.includes('GitHub-only')), 'GitHub-only row as "not in this release"')
     assert((await page.locator('[data-h2-status]').count()) === 1, 'the H2 status line')
     checked.push('/findings/sources GitHub-only not in this release, H2 status line')
   }

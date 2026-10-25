@@ -27,6 +27,19 @@ const policy = [
   "frame-ancestors 'none'",
 ].join('; ')
 await writeFile(resolve(out, '_headers'), `/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n/*\n  Content-Security-Policy: ${policy}\n  Referrer-Policy: no-referrer\n  X-Content-Type-Options: nosniff\n`)
+// The same headers for Caddy on the VM (findings.helenkwok.dev), which does not read _headers. Written beside
+// dist/client and imported by deploy/Caddyfile; never served.
+await writeFile(resolve(out, '../caddy-headers'), [
+  'header {',
+  `\tContent-Security-Policy "${policy}"`,
+  '\tReferrer-Policy no-referrer',
+  '\tX-Content-Type-Options nosniff',
+  '\t-Server',
+  '}',
+  '@findings_assets path /assets/*',
+  'header @findings_assets Cache-Control "public, max-age=31536000, immutable"',
+  '',
+].join('\n'))
 console.log(`CSP: ${pages.length} pages, ${hashes.size} inline scripts allowed by hash`)
 // Runs in the same environment as the build, so it records which release the build read, for check.mjs's
 // digest check. Written beside dist/client, never deployed.

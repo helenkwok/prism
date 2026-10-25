@@ -1,4 +1,5 @@
-# PRISM on prism-app (plan 07-12c). TLS ends here; the app container publishes no port.
+# PRISM on prism-app (plan 07-12c) and the static findings site (plan 06-08). TLS ends here; the app
+# container publishes no port.
 # Only 443/tcp is open: no HTTP challenge, no HTTP-to-HTTPS redirect listener, no HTTP/3
 # (UDP 443 stays closed). No email and no access log (client addresses are not logged).
 {
@@ -17,4 +18,24 @@ prism.helenkwok.dev {
 	# Default forwarded headers: X-Forwarded-For (the client address; incoming values are
 	# replaced because no trusted_proxies are set), X-Forwarded-Proto https, X-Forwarded-Host.
 	reverse_proxy prism-app:3000
+}
+
+# The findings site: static files only, from a read-only mount. site/scripts/deploy.mjs puts each build in
+# /srv/prism/findings/releases/<id> and points the relative symlink current at it; caddy-headers is the
+# build's Content-Security-Policy (site/scripts/csp.mjs), the same policy as its _headers file.
+findings.helenkwok.dev {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+	root * /srv/findings/current/client
+	import /srv/findings/current/caddy-header[s]
+	file_server {
+		hide _headers
+	}
+	handle_errors 404 {
+		rewrite * /404.html
+		file_server
+	}
 }

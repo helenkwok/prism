@@ -8,6 +8,7 @@
 #   check <sha7>       checks that image before it serves; prints one CHECK line
 #   up <sha7>          (re)starts prism-app on that image and starts or reloads prism-caddy;
 #                      also the rollback: `up <older sha7>`
+#   caddy <sha7>       that tree's Caddyfile and prism-caddy only (the findings site); the app untouched
 #   op <node args>     node <args> in a one-off container from the current image, with the
 #                      rsynced tracked tree at /app/ops (operator scripts: seed, backup, views)
 #   status             the prism-* containers
@@ -21,6 +22,7 @@ ROOT=/srv/prism
 DATA=$ROOT/data
 SECRETS=$ROOT/secrets
 CADDY_DIR=$ROOT/caddy
+FINDINGS=$ROOT/findings
 APP_UID=10001
 NET=prism-net
 CADDY_IP=172.30.0.2
@@ -146,20 +148,37 @@ cmd_up() {
   [ "$up" = true ] || { docker logs --tail 20 prism-app >&2 || true; die "prism-app did not answer /sign-in within 60 s"; }
 
   ln -sfn "$ROOT/src-$sha" "$ROOT/current"
+  start_caddy "$sha"
+  echo "UP prism-app:$sha caddy=$(docker inspect -f '{{.State.Running}}' prism-caddy)"
+}
+
+# Installs that tree's Caddyfile, then reloads prism-caddy, or recreates it when its image or its read-only
+# findings mount (plan 06-08) differs. The certificate volumes are kept either way.
+start_caddy() {
   install -d -m 755 "$CADDY_DIR"
-  install -m 644 "$ROOT/src-$sha/deploy/Caddyfile" "$CADDY_DIR/Caddyfile"
+  install -d -o ubuntu -g ubuntu -m 755 "$FINDINGS" "$FINDINGS/releases"
+  install -m 644 "$ROOT/src-$1/deploy/Caddyfile" "$CADDY_DIR/Caddyfile"
 
   if [ "$(docker inspect -f '{{.State.Running}}' prism-caddy 2>/dev/null)" = true ] &&
-    [ "$(docker inspect -f '{{.Config.Image}}' prism-caddy)" = "$CADDY_IMAGE" ]; then
+    [ "$(docker inspect -f '{{.Config.Image}}' prism-caddy)" = "$CADDY_IMAGE" ] &&
+    docker inspect -f '{{range .Mounts}}{{.Destination}} {{end}}' prism-caddy | grep -qw /srv/findings; then
     docker exec prism-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
   else
     docker rm -f prism-caddy >/dev/null 2>&1 || true
     docker run -d --name prism-caddy --network "$NET" --ip "$CADDY_IP" -p 443:443/tcp \
       --cpus=0.5 --memory=256m --restart unless-stopped --log-driver local \
-      -v "$CADDY_DIR:/etc/caddy:ro" -v prism-caddy-data:/data -v prism-caddy-config:/config \
+      -v "$CADDY_DIR:/etc/caddy:ro" -v "$FINDINGS:/srv/findings:ro" -v prism-caddy-data:/data -v prism-caddy-config:/config \
       "$CADDY_IMAGE" >/dev/null
   fi
-  echo "UP prism-app:$sha caddy=$(docker inspect -f '{{.State.Running}}' prism-caddy)"
+}
+
+# Findings site only: that tree's Caddyfile and prism-caddy, the app untouched. Run after site/scripts/deploy.mjs
+# has copied a build and pointed $FINDINGS/current at it.
+cmd_caddy() {
+  sha_arg "${1:-}"
+  ensure_net
+  start_caddy "$1"
+  echo "CADDY caddy=$(docker inspect -f '{{.State.Running}}' prism-caddy) findings=$(readlink "$FINDINGS/current" || echo none)"
 }
 
 cmd_op() {
@@ -202,8 +221,9 @@ case "${1:-}" in
   build) shift; cmd_build "$@" ;;
   check) shift; cmd_check "$@" ;;
   up) shift; cmd_up "$@" ;;
+  caddy) shift; cmd_caddy "$@" ;;
   op) shift; cmd_op "$@" ;;
   status) cmd_status ;;
   session-ip-check) cmd_session_ip_check ;;
-  *) die "usage: vm-deploy.sh secrets|build <sha7>|check <sha7>|up <sha7>|op <node args>|status|session-ip-check" ;;
+  *) die "usage: vm-deploy.sh secrets|build <sha7>|check <sha7>|up <sha7>|caddy <sha7>|op <node args>|status|session-ip-check" ;;
 esac
