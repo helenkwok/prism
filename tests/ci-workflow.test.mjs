@@ -74,7 +74,7 @@ test("the site job builds the synthetic release, checks it with JS off, lints an
   for (const needle of [
     "run: npm --prefix site ci --ignore-scripts",
     "PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run build",
-    "run: npm --prefix site run check",
+    "run: PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run check",
     "run: npm --prefix site run pdf",
     "run: npm --prefix site run typecheck",
     "run: node src/publish/lint.ts site/_shots/findings-text.json",

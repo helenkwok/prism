@@ -176,7 +176,8 @@ jobs:
       - run: npm --prefix site exec -- playwright install --with-deps chromium
       - name: Build the synthetic release
         run: PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run build
-      - run: npm --prefix site run check
+      # Same release as the build, or the review check counts rare checks against no release.
+      - run: PUBLIC_DATA_DIR=../tests/fixtures/publish/public-data-synthetic npm --prefix site run check
       - name: Print the review to the dated PDF
         run: npm --prefix site run pdf
       - run: npm --prefix site run typecheck
