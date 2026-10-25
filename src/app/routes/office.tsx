@@ -45,7 +45,9 @@ function OfficeWorkspace() {
     );
   }
   return (
-    <div className="mt-6" data-office-mount="">
+    // Wider than the text column: the editors need room. Centred with a margin, not a transform, so the
+    // workspace's position:fixed skip link stays off screen until focused. At most 1400 px.
+    <div className="mt-6" style={{ width: "min(1400px, calc(100vw - 32px))", marginLeft: "calc((100% - min(1400px, calc(100vw - 32px))) / 2)" }} data-office-mount="">
       <WebOffice appsBase="/office-apps" openOnStart={FINDINGS} />
     </div>
   );

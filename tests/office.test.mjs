@@ -93,3 +93,12 @@ test("site/downloads.sha256 pins every findings file the office route opens", ()
   assert.equal(names.length, 4);
   for (const name of names) assert.match(sums.get(name) ?? "", /^[0-9a-f]{64}$/, name);
 });
+
+test("office.css styles the root's own classes as compound selectors, never as descendants", () => {
+  const css = fs.readFileSync(path.join(repoRoot, "src/app/components/office/office.css"), "utf8");
+  const tsx = fs.readFileSync(path.join(repoRoot, "src/app/components/office/WebOffice.tsx"), "utf8");
+  const rootClasses = /className=\{`webOffice ([a-z-]+)/.exec(tsx)?.[1];
+  assert.equal(rootClasses, "workspace", "the root element carries webOffice and workspace");
+  assert.doesNotMatch(css, /\.webOffice \.workspace\b/, "'.webOffice .workspace' never matches: both classes are on one element");
+  assert.match(css, /\.webOffice\.workspace\{[^}]*display:grid/);
+});
