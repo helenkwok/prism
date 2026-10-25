@@ -263,9 +263,10 @@ export function preflightGuidedCorrections(projects: SliceEntryLike[], ctx: Para
 }
 
 async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<typeof processProject>[1]): Promise<ProjectOutcome> {
-  const { db, cacheDir, contract, codebook, overrides } = ctx;
+  const { db, cacheDir, codebook, overrides } = ctx;
   const input = correctionInputs(project, ctx);
   const checks = ctx.onlyChecks!;
+  const contract = buildContract(checks);
   const guidance = { version: ctx.guidance!.version, byCheck: Object.fromEntries(checks.map(id => [id, ctx.guidance!.byCheck[id]])) };
   const messages = input.chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
   const guided = await withStageCache(cacheDir, String(project.hn_id), "code-guided", { model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages, guidance }, async () => {

@@ -155,7 +155,11 @@ describe("retained-evidence coding corrections", () => {
         modelCalls++;
         const body = JSON.parse(init.body);
         assert.match(body.messages[0].content, /Coding guidance \(fixture-v1\)/);
-        const checks = f.contract.checkIds.map(checkId => ({ checkId, proposedState: checkId === f.target ? "claimed" : "fail", spanIds: [f.spans[0].id] }));
+        const schema = body.response_format.json_schema.schema;
+        assert.deepEqual(schema.properties.checks.required, [f.target]);
+        assert.deepEqual(Object.keys(schema.properties.checks.properties), [f.target]);
+        assert.equal(body.messages[1].content, "Spans:\n\n" + f.spans.map(s => `${s.id}: ${s.text}`).join("\n\n"), "every original span remains in the request");
+        const checks = [{ checkId: f.target, proposedState: "claimed", spanIds: [f.spans[0].id] }];
         return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks }) } }] });
       } } };
     try {
@@ -208,10 +212,10 @@ describe("retained-evidence coding corrections", () => {
     } finally { await f.db.destroy(); }
   });
 
-  test("retry-exhausted guided output preserves baseline and is not reused as success", async () => {
+  test("guided output containing unrequested checks exhausts retries, preserves baseline and is not reused", async () => {
     const f = await correctionFixture();
     let calls = 0;
-    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: "invalid fixture reply" } }] }); } } };
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: f.contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] }); } } };
     try {
       for (let n = 1; n <= 2; n++) {
         const result = await runPipeline(options);
