@@ -33,7 +33,7 @@ export interface Release {
     n: number
     labeller: Agent
     confirmer: Agent
-    agreement: Record<string, { ac1: number | null; ac1CI: [number, number] | null; precision: Row }>
+    agreement: Record<string, { ac1: number | null; ac1CI: [number, number] | null; precision: Row; status?: "not-estimable"; note?: string }>
     confirmation: { total: { changed: number; proposed: number; pct: number }; rejected: Row; downgraded: Row; perCheck?: Record<string, Row> }
     personEdits: { count: number; total: number }
   }
@@ -88,7 +88,14 @@ export function parseRelease(input: unknown): Release | null {
   const h = obj(r.howWeKnow, 'howWeKnow')
   num(h.n, 'howWeKnow.n')
   for (const who of ['labeller', 'confirmer']) { const a = obj(h[who], `howWeKnow.${who}`); str(a.modelId, `howWeKnow.${who}.modelId`); str(a.host, `howWeKnow.${who}.host`) }
-  for (const [check, a] of Object.entries(obj(h.agreement, 'howWeKnow.agreement'))) checkRow(obj(a, `howWeKnow.agreement.${check}`).precision, `howWeKnow.agreement.${check}.precision`)
+  for (const [check, a] of Object.entries(obj(h.agreement, 'howWeKnow.agreement'))) {
+    const entry = obj(a, `howWeKnow.agreement.${check}`)
+    checkRow(entry.precision, `howWeKnow.agreement.${check}.precision`)
+    if (entry.status !== undefined || entry.note !== undefined) {
+      if (entry.status !== 'not-estimable') fail(`howWeKnow.agreement.${check}.status is unknown`)
+      str(entry.note, `howWeKnow.agreement.${check}.note`)
+    }
+  }
   const c = obj(h.confirmation, 'howWeKnow.confirmation')
   num(obj(c.total, 'howWeKnow.confirmation.total').pct, 'howWeKnow.confirmation.total.pct')
   checkRow(c.rejected, 'howWeKnow.confirmation.rejected'); checkRow(c.downgraded, 'howWeKnow.confirmation.downgraded')

@@ -33,6 +33,7 @@ import { scanTexts, buildIdentifierSet } from "./identifiers.ts";
 import { lintStatements } from "./lint.ts";
 import {
   PARTITION_LABEL,
+  NOT_ESTIMABLE_NOTE,
   QUARTERS,
   SOURCES,
   buildModel,
@@ -400,10 +401,11 @@ function sections(input: AggregateInput, model: Model, row: RowOf, version: stri
     tables.checkIds.map((c) => {
       const g = tables.gate.get(c) as any;
       const shown = tables.publishable.has(c) && released(row(tupleId(c, "pass", "all"), ""));
+      const notEstimable = g.status === "released-not-estimable";
       const precision = model.precision.includes(c)
         ? row(`prec|${c}`, `Pass precision: ${labels[c]}`)
-        : ({ id: `prec|${c}`, label: `Pass precision: ${labels[c]}`, state: "not-estimable", reason: "no gold passes for this check" } as Row);
-      return [c, { ac1: shown && g.ac1 != null ? r2(g.ac1) : null, ac1CI: shown && g.ac1CI ? g.ac1CI.map(r2) : null, precision }];
+        : ({ id: `prec|${c}`, label: `Pass precision: ${labels[c]}`, state: "not-estimable", reason: notEstimable ? NOT_ESTIMABLE_NOTE : "pass precision not estimable for this check" } as Row);
+      return [c, { ac1: shown && g.ac1 != null ? r2(g.ac1) : null, ac1CI: shown && g.ac1CI ? g.ac1CI.map(r2) : null, precision, ...(notEstimable ? { status: "not-estimable", note: NOT_ESTIMABLE_NOTE } : {}) }];
     }),
   );
   const cf = model.confirmation;

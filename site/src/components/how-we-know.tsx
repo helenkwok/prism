@@ -55,14 +55,17 @@ function agreementText(release: Release, checkIds: string[]) {
     const p = a.precision
     const ac1 = a.ac1 === null ? 'AC1 not estimable' : `AC1 ${a.ac1.toFixed(2)} (95% CI ${a.ac1CI![0].toFixed(2)}–${a.ac1CI![1].toFixed(2)})`
     const pp = p.state === 'released' ? `pass precision ${p.pct}% (${p.c} of ${p.n})` : `pass precision ${stateText(p)}`
-    return `Agreement with an independent labeller: ${ac1}; ${pp}. Labeller: ${by(h.labeller)}.`
+    const limitation = a.status === 'not-estimable' ? `${a.note}. Descriptive figures: ` : ''
+    return `Agreement with an independent labeller: ${limitation}${ac1}; ${pp}. Labeller: ${by(h.labeller)}.`
   }
   if (!ids.length) return ''
   const values = ids.map(id => h.agreement[id]!.ac1).filter((v): v is number => v !== null)
   const missing = ids.length - values.length
+  const rare = ids.filter(id => h.agreement[id]!.status === 'not-estimable').length
+  const limitation = rare ? ` Agreement not estimable for ${rare} shown ${rare === 1 ? 'check' : 'checks'} (fewer than ten gold passes); those figures are descriptive.` : ''
   const [lo, hi] = [Math.min(...values).toFixed(2), Math.max(...values).toFixed(2)]
   const range = !values.length ? 'AC1 not estimable for the shown checks' : `AC1 ${lo === hi ? lo : `${lo}–${hi}`} across the shown checks`
-  return `Agreement with an independent labeller: ${range}${missing && values.length ? ` (not estimable for ${missing})` : ''}; per check on the Validation page. Labeller: ${by(h.labeller)}.`
+  return `Agreement with an independent labeller: ${range}${missing && values.length ? ` (not estimable for ${missing})` : ''}; per check on the Validation page.${limitation} Labeller: ${by(h.labeller)}.`
 }
 
 /**

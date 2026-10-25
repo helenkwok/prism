@@ -276,6 +276,32 @@ describe("task 3: input refusals, withheld rows, committed release", () => {
     assert.ok(rows.every((r) => Number.isInteger(r.c) && r.note === "agreement not estimable: fewer than ten gold passes"));
   });
 
+  test("rare agreement keeps every figure with an explicit not-estimable label", () => {
+    const agreement = committed.release.howWeKnow.agreement[NOT_ESTIMABLE];
+    const registered = raw().gate.checks.find(c => c.checkId === NOT_ESTIMABLE);
+    assert.equal(agreement.status, "not-estimable");
+    assert.equal(agreement.note, "agreement not estimable: fewer than ten gold passes");
+    assert.equal(agreement.ac1, registered.ac1);
+    assert.deepEqual(agreement.ac1CI, registered.ac1CI);
+    assert.equal(agreement.precision.id, `prec|${NOT_ESTIMABLE}`);
+    assert.doesNotMatch(JSON.stringify(agreement), /validated|no gold passes/);
+  });
+
+  test("rare precision without a tuple never claims there were zero gold passes", async () => {
+    const store = raw();
+    const check = store.gate.checks.find(c => c.checkId === NOT_ESTIMABLE);
+    assert.equal(check.goldPasses, 6);
+    delete check.precision;
+    const result = await exportRelease({ input: expandFixture(store), outDir: outDir(), ...FAST });
+    const agreement = result.release.howWeKnow.agreement[NOT_ESTIMABLE];
+    assert.equal(agreement.status, "not-estimable");
+    assert.equal(agreement.precision.state, "not-estimable");
+    assert.equal(agreement.precision.reason, "agreement not estimable: fewer than ten gold passes");
+    assert.equal(agreement.ac1, check.ac1);
+    assert.deepEqual(agreement.ac1CI, check.ac1CI);
+    assert.doesNotMatch(JSON.stringify(agreement), /validated|no gold passes/);
+  });
+
   test("fixture-into-public-data: a synthetic store never writes under the repo's public-data/", () => {
     const pd = path.join(REPO, "public-data");
     const existed = fs.existsSync(pd);

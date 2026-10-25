@@ -146,7 +146,12 @@ export function ValidationSection({ release }: { release: Release }) {
   const perCheck = h.confirmation.perCheck ?? {}
   const ac1 = (id: string) => {
     const a = h.agreement[id]
-    return a?.ac1 == null ? <td data-state-text>not estimable</td> : <td className="num">{a.ac1.toFixed(2)} ({a.ac1CI![0].toFixed(2)}–{a.ac1CI![1].toFixed(2)})</td>
+    return a?.ac1 == null
+      ? <td data-state-text data-agreement-status={a?.status}>{a?.note ?? 'not estimable'}</td>
+      : <td className="num" data-agreement-status={a.status}>
+          {a.status === 'not-estimable' && <><strong>{a.note}</strong><br /><span>Descriptive AC1: </span></>}
+          {a.ac1.toFixed(2)} ({a.ac1CI![0].toFixed(2)}–{a.ac1CI![1].toFixed(2)})
+        </td>
   }
   return (
     <Section id="validation" title="Validation">

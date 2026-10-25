@@ -4162,7 +4162,9 @@
           "id": "prec|recovery-tested",
           "label": "Pass precision: Recovery or rollback has been tested where failure consequence warrants it.",
           "state": "lt10"
-        }
+        },
+        "status": "not-estimable",
+        "note": "agreement not estimable: fewer than ten gold passes"
       },
       "support-maintenance-defined": {
         "ac1": 0.82,
