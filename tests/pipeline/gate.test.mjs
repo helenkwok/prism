@@ -96,12 +96,12 @@ test("worked case and projects beyond sample cannot inflate agreement", async ()
   const g = await evaluateGate(f); assert.equal(g.checks[0].n, 29); assert.equal(g.exclusions.a3Projects, 1); assert.equal(g.sampleNs.length, 30);
   await f.db.destroy();
 });
-test("revalidation requires fresh estimable evidence and correction on every sample manifest", async () => {
+test("claimed revalidation and correction markers never substitute for independently verified fresh evidence", async () => {
   const f = await fixture(); const revalidation = { sampleNs: Array.from({ length: 76 }, (_, i) => i + 301), checks: [{ checkId: ids[1], goldPasses: 12, ac1: .8, precision: .9 }] };
   const actions = { checks: [{ checkId: ids[1], action: "apply-correction", applied: true }] };
   let g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "missed");
   for (const n of f.sampleNs) { const file = path.join(f.dataDir, `pipeline/manifests/${n}.json`); const m = JSON.parse(fs.readFileSync(file)); m.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(file, JSON.stringify(m)); }
-  g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "corrected-revalidated"); assertPublishable(g, ids[1]);
+  g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "missed"); assert.throws(() => assertPublishable(g, ids[1]));
   assert.equal(g.revalidationSampleNs.length, 76); assert.equal(g.checks[1].revalidation.sampleRef, "revalidationSampleNs");
   g = await evaluateGate({ ...f, revalidation: { ...revalidation, sampleNs: [301] }, actions }); assert.equal(g.checks[1].status, "missed");
   g = await evaluateGate({ ...f, revalidation: { ...revalidation, sampleNs: [1, 2] }, actions }); assert.equal(g.checks[1].status, "missed");
@@ -109,7 +109,7 @@ test("revalidation requires fresh estimable evidence and correction on every sam
   fs.writeFileSync(freshPath, JSON.stringify(revalidation.sampleNs.map(n => ({ n, quarter: 1 }))));
   g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "missed");
   fs.writeFileSync(freshPath, JSON.stringify(revalidation.sampleNs.map(n => ({ n, quarter: Math.floor((n - 301) / 19) + 1 }))));
-  g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "corrected-revalidated");
+  g = await evaluateGate({ ...f, revalidation, actions }); assert.equal(g.checks[1].status, "missed");
   g = await evaluateGate({ ...f, revalidation: { ...revalidation, checks: [{ ...revalidation.checks[0], goldPasses: 6 }] }, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true }] } }); assert.equal(g.checks[1].status, "withheld"); assert.throws(() => assertPublishable(g, ids[1]));
   g = await evaluateGate({ ...f, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true }] } }); assert.equal(g.checks[1].status, "missed");
   await f.db.destroy();

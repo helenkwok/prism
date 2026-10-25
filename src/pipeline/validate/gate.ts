@@ -16,6 +16,7 @@ import { loadReleaseProof } from "./release-proof.ts";
 import { expandGateReviewBundle } from "./gate-review-bundle.ts";
 import { loadFundingFallback, type FundingFallbackOptions } from "./funding-fallback.ts";
 import { loadCorrectionApprovalFailures, type CorrectionApprovalFailure } from "./correction-approval-failure.ts";
+import { verifyRevalidationProof, type RevalidationProofOptions } from "../revalidation-proof.ts";
 
 export const AC1_THRESHOLD = 0.70;
 export const PRECISION_THRESHOLD = 0.85;
@@ -34,6 +35,7 @@ export type GateOptions = {
   screeningAuditAction?: { documentPath: string; signoffPath?: string };
   priorApprovalProofPath?: string;
   fundingFallback?: FundingFallbackOptions;
+  revalidationProof?: RevalidationProofOptions;
   correctionApprovalFailures?: CorrectionApprovalFailure[];
 };
 
@@ -188,6 +190,8 @@ export async function evaluateGate(o: GateOptions) {
   const quarters = Array.isArray(freshDraw) ? [1, 2, 3, 4].map(q => freshDraw.filter(e => freshNs.includes(e.n) && e.quarter === q).length) : null;
   const fresh = freshNs.length === 76 && new Set(freshNs).size === 76 && freshNs.every(n => Number.isInteger(n) && n >= 301 && !sampleNs.includes(n)) &&
     (!quarters || quarters.every(n => n === 19));
+  const verifiedFresh = o.revalidationProof ? await verifyRevalidationProof({ db: o.db, dataDir: o.dataDir, codebook: o.codebook,
+    checkIds, sampleNs, freshNs, cutoff, proof: o.revalidationProof }) : undefined;
   const activeSample = sampleNs.filter(n => !a3.includes(n));
   const personCoverage = (id: string) => activeSample.length > 0 && activeSample.every(n => {
     const candidates = edits.filter(e => e.project_n === n && e.check_id === id).sort((a, b) => String(b.edited_at).localeCompare(String(a.edited_at)));
@@ -206,6 +210,9 @@ export async function evaluateGate(o: GateOptions) {
       (candidate.precision === null || (Number.isFinite(candidate.precision) && candidate.precision >= 0 && candidate.precision <= 1)) ? candidate : undefined;
     const versions = activeSample.map(n => manifests.get(n)?.codingCorrection).filter(c => c?.checks.includes(metric.checkId)).map(c => c!.version);
     const correctionApplied = activeSample.length > 0 && versions.length === activeSample.length && versions.every(v => !!v && v === versions[0] && (!action?.correctionVersion || v === action.correctionVersion));
+    const recomputed = verifiedFresh?.metrics.checks.find(c => c.checkId === metric.checkId);
+    const verifiedCorrection = !!rv && !!recomputed && verifiedFresh!.appliedCheckIds.includes(metric.checkId) &&
+      rv.goldPasses === recomputed.goldPasses && rv.ac1 === recomputed.ac1 && rv.precision === recomputed.precision;
     let status = metric.n === 0 ? "missed" : !estimable(metric.goldPasses) ? "released-not-estimable" : within(metric) ? "released" : "missed";
     let reason = status === "released-not-estimable" ? "validated by confirmation only; agreement not estimable (fewer than 10 gold passes)" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
     const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
@@ -223,7 +230,7 @@ export async function evaluateGate(o: GateOptions) {
     }
     else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
-    else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied) { status = "corrected-revalidated"; reason = "passed estimable fresh revalidation and correction is recorded on every scoped sample manifest"; }
+    else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied && verifiedCorrection) { status = "corrected-revalidated"; reason = "passed recomputed current fresh revalidation with approved guidance applied across the scoped sample"; }
     return { ...metric, status, reason, correctionApplied, ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
   const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
@@ -244,6 +251,7 @@ export async function evaluateGate(o: GateOptions) {
   }
   return {
     generatedAt: new Date().toISOString(), codebookVersion: o.codebookVersion, gateSha: o.gateFile.sha256, sampleNs, revalidationSampleNs: fresh ? freshNs : [],
+    ...(verifiedFresh ? { revalidationEvidence: verifiedFresh.evidence, recomputedRevalidation: verifiedFresh.metrics } : {}),
     ...(funding ? { fundingFallback: funding } : {}),
     ...(approvalFailures.length ? { correctionApprovalFailures: approvalFailures } : {}),
     ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
@@ -285,7 +293,8 @@ async function main() {
   const db = getDb();
   try {
     const revalidation = value("--revalidation"); const actions = value("--actions"); const screeningAction = value("--screening-audit-action"); const priorApprovalProofPath = value("--prior-approval-proof");
-    const gate = await evaluateGate({ db, dataDir, sampleNs: entries.map((e: { n: number }) => e.n), subsets: readJson(path.join(dataDir, "pipeline", "sample-subsets.json")), codebook, codebookVersion: codebook.codebookVersion, gateFile: loadGateFile(resolveGatesPath()), revalidation: revalidation ? readJson(revalidation) : undefined, actions: actions ? readJson(actions) : undefined, screeningAuditAction: screeningAction ? { documentPath: screeningAction } : undefined, priorApprovalProofPath });
+    const revalidationProof = value("--revalidation-proof");
+    const gate = await evaluateGate({ db, dataDir, sampleNs: entries.map((e: { n: number }) => e.n), subsets: readJson(path.join(dataDir, "pipeline", "sample-subsets.json")), codebook, codebookVersion: codebook.codebookVersion, gateFile: loadGateFile(resolveGatesPath()), revalidation: revalidation ? readJson(revalidation) : undefined, revalidationProof: revalidationProof ? readJson(revalidationProof) : undefined, actions: actions ? readJson(actions) : undefined, screeningAuditAction: screeningAction ? { documentPath: screeningAction } : undefined, priorApprovalProofPath });
     const dir = path.join(dataDir, "validation"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(dir, "gate-v1.0.json"), JSON.stringify(gate) + "\n", { mode: 0o600 });
     fs.writeFileSync(path.join(dir, "gate-v1.0.md"), renderGateMarkdown(gate), { mode: 0o600 });
