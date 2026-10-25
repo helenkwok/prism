@@ -79,7 +79,12 @@ function signedDocument(documentPath: string, signoffPath: string, item: string)
     const records = fs.readFileSync(signoffPath, "utf8").split("\n").filter(Boolean).map((line, i) => ({ ...JSON.parse(line), order: i }))
       .filter(r => r.item === item && r.docDigest === docDigest)
       .sort((a, b) => String(b.decidedAt ?? "").localeCompare(String(a.decidedAt ?? "")) || b.order - a.order);
-    return records[0]?.decision === "approved" ? { binding: { item, docDigest }, text } : null;
+    const latest = records[0];
+    if (item === "VAL-07 gate record (final)" && latest?.actorKind !== undefined &&
+        (latest.actorKind !== "person" || typeof latest.actorId !== "string" || !/^person:.+/.test(latest.actorId) ||
+         latest.reviewer?.kind !== "person" || latest.reviewer.id !== latest.actorId || latest.gateDigest !== docDigest ||
+         latest.approvalScope !== "complete-gate" || !Number.isFinite(Date.parse(latest.decidedAt)))) return null;
+    return latest?.decision === "approved" ? { binding: { item, docDigest }, text } : null;
   } catch { return null; }
 }
 
@@ -259,7 +264,7 @@ export async function evaluateGate(o: GateOptions) {
     const verifiedCorrection = !!rv && !!recomputed && verifiedFresh!.appliedCheckIds.includes(metric.checkId) &&
       rv.goldPasses === recomputed.goldPasses && rv.ac1 === recomputed.ac1 && rv.precision === recomputed.precision;
     let status = metric.n === 0 ? "missed" : !estimable(metric.goldPasses) ? "released-not-estimable" : within(metric) ? "released" : "missed";
-    let reason = status === "released-not-estimable" ? "validated by confirmation only; agreement not estimable (fewer than 10 gold passes)" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
+    let reason = status === "released-not-estimable" ? "not estimable: fewer than 10 gold passes" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
     const uncorrectedStatus = status;
     if (versions.length) { status = "missed"; reason = "correction requires complete approved application, verified fresh validation and current confirmation before release"; }
     const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
@@ -284,7 +289,7 @@ export async function evaluateGate(o: GateOptions) {
     else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
     else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied && verifiedCorrection && correctionConfirmed(metric.checkId)) { status = "corrected-revalidated"; reason = "passed recomputed current fresh revalidation with approved guidance applied across the scoped sample and all current positives independently confirmed"; }
-    return { ...metric, status, reason, correctionApplied, ...(confirmationRefused ? { confirmationRefusalProofDigest: requestRefusals!.evidence.proofDigest } : {}), ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
+    return { ...metric, status, reason, correctionApplied, ...(status === "released-not-estimable" ? { publicationLabel: "not estimable" } : {}), ...(confirmationRefused ? { confirmationRefusalProofDigest: requestRefusals!.evidence.proofDigest } : {}), ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
   const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
   const flaggedProjects = new Set(flags.map(f => f.project_n));
@@ -335,7 +340,7 @@ export function loadSignedGate(gatePath: string, signoffPath: string): any | nul
 }
 
 export function renderGateMarkdown(gate: Awaited<ReturnType<typeof evaluateGate>>): string {
-  return ["# Validation gate", "", gate.labeller.wording, "", "Gate: AC1 ≥ 0.70 and pass precision ≥ 0.85 on point estimates.", "", "| Check | N | Gold passes | AC1 | Precision | Status |", "|---|---:|---:|---:|---:|---|", ...gate.checks.map(c => `| ${c.checkId} | ${c.n} | ${c.goldPasses} | ${c.ac1} | ${c.precision ?? "not estimable"} | ${c.status} |`), "", `Audit: ${gate.screeningAudit.status}. Recall: ${gate.collectionRecall.status}.`, `Included projects: ${gate.exclusions.includedProjects}. Collection failures: ${gate.collection.failedProjects}.`, "", "All binary and four-state estimates and project-bootstrap intervals are retained in the accompanying JSON. Second-coder comparisons are descriptive and never gate publication.", ""].join("\n");
+  return ["# Validation gate", "", gate.labeller.wording, "", "Gate: AC1 ≥ 0.70 and pass precision ≥ 0.85 on point estimates.", "", "| Check | N | Gold passes | AC1 | Precision | Status |", "|---|---:|---:|---:|---:|---|", ...gate.checks.map(c => `| ${c.checkId} | ${c.n} | ${c.goldPasses} | ${c.ac1} | ${c.precision ?? "not estimable"} | ${c.status === "released-not-estimable" ? "not estimable" : c.status} |`), "", `Audit: ${gate.screeningAudit.status}. Recall: ${gate.collectionRecall.status}.`, `Included projects: ${gate.exclusions.includedProjects}. Collection failures: ${gate.collection.failedProjects}.`, "", "All binary and four-state estimates and project-bootstrap intervals are retained in the accompanying JSON. Second-coder comparisons are descriptive and never gate publication.", ""].join("\n");
 }
 
 async function main() {

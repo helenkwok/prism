@@ -70,6 +70,9 @@ test("point estimates release each estimable passing check and label rare checks
   const f = await fixture(); const g = await evaluateGate(f);
   assert.equal(g.checks[0].status, "released"); assert.equal(g.checks[1].status, "missed"); assert.equal(g.checks[2].status, "released-not-estimable");
   assert.match(g.checks[2].reason, /not estimable/); assert.equal(g.checks[0].goldPasses, 12);
+  assert.equal(g.checks[2].publicationLabel, "not estimable");
+  assert.doesNotMatch(g.checks[2].reason, /validated/i);
+  assert.match(renderGateMarkdown(g), /\| not estimable \|/);
   assert.ok(g.checks[0].ac1CI); assert.ok(g.checks[0].precisionCI); assert.equal(g.bootstrap.resamples, 2000);
   assert.ok(g.checks[0].fourStateAc1CI); assert.ok(g.checks[0].fourStatePaCI); assert.ok(g.checks[0].fourStateKappaCI);
   assertPublishable(g, ids[0]); assertPublishable(g, ids[2]); assert.throws(() => assertPublishable(g, ids[1]));
@@ -196,6 +199,29 @@ test("only latest approved exact-byte final sign-off permits loading a record", 
   const record = { item: "VAL-07 gate record (final)", docDigest: sha(text), decision: "approved", decidedAt: "2026-10-24T00:00:00.000Z" }; fs.writeFileSync(sig, JSON.stringify(record) + "\n"); assert.ok(loadSignedGate(file, sig));
   fs.appendFileSync(sig, JSON.stringify({ ...record, decision: "rejected", decidedAt: "2026-10-24T01:00:00.000Z" }) + "\n"); assert.equal(loadSignedGate(file, sig), null);
   fs.writeFileSync(sig, JSON.stringify(record) + "\n"); fs.appendFileSync(file, " "); assert.equal(loadSignedGate(file, sig), null);
+});
+
+test("a person can approve the complete gate while retained rejections remain unchanged", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-person-gate-"));
+  try {
+    const file = path.join(dir, "gate.json"), sig = path.join(dir, "release-signoffs.jsonl");
+    const gate = { checks: [{ checkId: "x", status: "released-not-estimable", publicationLabel: "not estimable" }] };
+    const text = JSON.stringify(gate) + "\n", digest = sha(text);
+    fs.writeFileSync(file, text);
+    const rejected = { item: "VAL-07 gate matrix (published)", docDigest: "a".repeat(64), decision: "rejected", decidedAt: "2026-10-25T00:00:00Z" };
+    const history = JSON.stringify(rejected) + "\n" + JSON.stringify({ ...rejected, decidedAt: "2026-10-25T00:01:00Z" }) + "\n";
+    const person = { item: "VAL-07 gate record (final)", actorKind: "person", actorId: "person:reviewer", reviewer: { kind: "person", id: "person:reviewer" }, approvalScope: "complete-gate", gateDigest: digest, docDigest: digest, decision: "approved", decidedAt: "2026-10-25T00:02:00Z", reviewHistory: [rejected, rejected], factualCheck: { checks: 24 } };
+    fs.writeFileSync(sig, history + JSON.stringify(person) + "\n");
+    assert.deepEqual(loadSignedGate(file, sig), gate);
+    assert.ok(fs.readFileSync(sig, "utf8").startsWith(history));
+    for (const change of [{ actorKind: "agent" }, { actorId: "other" }, { reviewer: { kind: "person", id: "person:other" } }, { gateDigest: "b".repeat(64) }, { approvalScope: "matrix" }, { decidedAt: "invalid" }]) {
+      fs.writeFileSync(sig, history + JSON.stringify({ ...person, ...change }) + "\n");
+      assert.equal(loadSignedGate(file, sig), null);
+    }
+    fs.writeFileSync(sig, history + JSON.stringify(person) + "\n");
+    fs.appendFileSync(file, " ");
+    assert.equal(loadSignedGate(file, sig), null);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 test("signed matrix manifests expand only with every exact component approval", async () => {
