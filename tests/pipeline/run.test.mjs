@@ -18,7 +18,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile, buildContract, citationSchema } from "../../src/pipeline/coding/contract.ts";
-import { runPipeline, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
+import { runPipeline, codeGuidedPrimaryChunk, guidedCodingRequestBodies, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
 import { spansDigest } from "../../src/pipeline/confirm/confirm.ts";
@@ -26,8 +26,8 @@ import { writeCached, stageCacheKey } from "../../src/pipeline/cache/stage-cache
 import { ensurePipelineSchema, recordSecondCoding } from "../../src/pipeline/store/results.ts";
 import { A8_ITEMS, a8Section } from "../../src/pipeline/signoff/a8.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
-import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
-import { PINNED_MODEL, SECOND_CODER_MODEL, buildChatBody } from "../../src/pipeline/coding/nebius-client.ts";
+import { DollarBudget, estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
+import { PINNED_MODEL, SECOND_CODER_MODEL, buildChatBody, createClient } from "../../src/pipeline/coding/nebius-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -1069,5 +1069,76 @@ describe("run.ts's --slice flag (03-09)", () => {
     assert.equal(accounting.ranProjects, 1);
     assert.equal(accounting.accountedProjects, 1);
     assert.ok(threw, "run.ts exits non-zero when any project failed, so a run with failures can never pass on exit status");
+  });
+});
+
+describe("guided primary chunk retries and durable reuse", () => {
+  function chunkOptions() {
+    const cacheDir = tempDir("prism-guided-chunks-");
+    const codebook = loadCodebook(), contract = buildContract(gateFile.checkIds);
+    return { cacheDir, projectId: "synthetic-guided", snapshotHashes: ["a".repeat(64)], codebook, contract, spans: [{ id: "p1-s001", text: "Complete synthetic source evidence." }], guidance: { version: "c1", byCheck: { [contract.checkIds[0]]: "Synthetic clarification." } } };
+  }
+  const response = (contract, spanId) => JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "pass", spanIds: [spanId] })) });
+  const ok = content => ({ ok: true, status: 200, json: { choices: [{ message: { content } }] } });
+
+  test("invalid citation regenerates a complete strict reply using enumerated citations", async () => {
+    const o = chunkOptions(), bodies = [];
+    try {
+      const variants = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+      const result = await codeGuidedPrimaryChunk({ ...o, client: { request: async (_path, { body }) => {
+        bodies.push(body);
+        return ok(response(o.contract, bodies.length === 1 ? "invented-id" : o.spans[0].id));
+      } } });
+      assert.equal(result.valid, true); assert.equal(result.attempts, 2);
+      assert.deepEqual(bodies, variants);
+      const canonical = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(o.contract.checkIds, o.codebook, o.contract.jsonSchema, o.spans, o.guidance), mode: "json_schema", schema: { name: "gate_checks", schema: o.contract.jsonSchema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+      assert.deepEqual(bodies[0], canonical);
+      assert.deepEqual(bodies[1].response_format.json_schema.schema.$defs.citedSpanId.enum, ["p1-s001"]);
+      assert.equal(bodies[1].messages[1].content, bodies[0].messages[1].content);
+      const record = JSON.parse(fs.readFileSync(path.join(o.cacheDir, fs.readdirSync(o.cacheDir)[0])));
+      assert.equal(record.raw, response(o.contract, "p1-s001"));
+      assert.equal(record.requestVariant, "citation-enumerated");
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("an interrupted later chunk resumes without buying earlier successful chunks", async () => {
+    const o = chunkOptions(); let calls = 0;
+    const second = { ...o, spans: [{ id: "p2-s001", text: "Different complete synthetic evidence." }] };
+    const working = { request: async (_path, { body }) => { calls++; const id = body.messages[1].content.includes("p2-s001") ? "p2-s001" : "p1-s001"; return ok(response(o.contract, id)); } };
+    try {
+      assert.equal((await codeGuidedPrimaryChunk({ ...o, client: working })).valid, true);
+      await assert.rejects(codeGuidedPrimaryChunk({ ...second, client: { request: async () => { calls++; throw new Error("synthetic interrupted request"); } } }), /interrupted/);
+      assert.equal(fs.readdirSync(o.cacheDir).length, 1);
+      assert.equal((await codeGuidedPrimaryChunk({ ...o, client: working })).attempts, 0);
+      assert.equal((await codeGuidedPrimaryChunk({ ...second, client: working })).valid, true);
+      assert.equal(calls, 3);
+      assert.equal((await codeGuidedPrimaryChunk({ ...second, client: working })).attempts, 0);
+      assert.equal(calls, 3);
+      await codeGuidedPrimaryChunk({ ...o, snapshotHashes: ["b".repeat(64)], client: working });
+      await codeGuidedPrimaryChunk({ ...o, guidance: { ...o.guidance, version: "c2" }, client: working });
+      assert.equal(calls, 5, "current evidence and guidance each invalidate the chunk cache");
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("an over-cap citation retry refuses before another HTTP request without truncating evidence", async () => {
+    const o = chunkOptions(); let calls = 0;
+    o.spans = Array.from({ length: 100 }, (_, i) => ({ id: `p1-s${String(i).padStart(3, "0")}`, text: "Complete synthetic evidence." }));
+    const bodies = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+    const cap = estimateMessagesTokens(bodies[0].messages);
+    assert.ok(estimateMessagesTokens(bodies[1].messages) > cap);
+    const c = createClient({ baseUrl: "https://synthetic.example.test", apiKey: "fixture", tokenCap: cap, budget: new DollarBudget(1), maxRetries: 0, fetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: response(o.contract, "invented-id") } }] }); } });
+    try {
+      await assert.rejects(codeGuidedPrimaryChunk({ ...o, client: c }), /too-large/);
+      assert.equal(calls, 1); assert.equal(o.spans.length, 100); assert.equal(fs.readdirSync(o.cacheDir).length, 0);
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("three malformed replies remain failures and are never repaired or cached", async () => {
+    const o = chunkOptions(); let calls = 0;
+    try {
+      const out = await codeGuidedPrimaryChunk({ ...o, client: { request: async () => { calls++; return ok('{"checks":'); } } });
+      assert.equal(calls, 3); assert.equal(out.allUnknown, true); assert.equal(out.valid, false);
+      assert.equal(fs.readdirSync(o.cacheDir).length, 0);
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
   });
 });

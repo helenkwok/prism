@@ -43,12 +43,12 @@ import {
 } from "./coding/nebius-client.ts";
 import { requireTfBudget, DollarBudget } from "./coding/spend-guards.ts";
 import { uniqueProjectSpans } from "./coding/span-packing.ts";
-import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
+import { codeProjectWithRetry, allUnknownChecks, type CallOnce, type RetryContract } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
 import { buildClaimsForProject } from "./claims/build-claims.ts";
 import { runGate, type SpawnImpl } from "./gate/run-gate.ts";
-import { withStageCache, defaultCacheDir, readCached, stageCacheKey } from "./cache/stage-cache.ts";
+import { withStageCache, defaultCacheDir, readCached, writeCached, stageCacheKey } from "./cache/stage-cache.ts";
 import { projectSpans, spansDigest } from "./confirm/confirm.ts";
 import {
   ensurePipelineSchema,
@@ -145,6 +145,36 @@ export const CODING_MAX_TOKENS = 16384;
 
 function codingBody(model: string, codebook: Codebook, jsonSchema: unknown, checkIds: string[], spans: { id: string; text: string }[], guidance?: CodingGuidance) {
   return buildChatBody({ model, messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans, guidance), mode: "json_schema", schema: { name: "gate_checks", schema: jsonSchema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+}
+
+/** Both complete request variants can be inventoried before any guided coding. */
+export function guidedCodingRequestBodies(codebook: Codebook, contract: RetryContract, spans: { id: string; text: string }[], guidance: CodingGuidance, model = PINNED_MODEL) {
+  return [contract.jsonSchema, citationSchema(contract.jsonSchema, spans.map(s => s.id))].map(schema => codingBody(model, codebook, schema, contract.checkIds, spans, guidance));
+}
+
+/** Retain successful whole-chunk replies; invalid replies are regenerated, never edited. */
+export async function codeGuidedPrimaryChunk(o: {
+  cacheDir: string; projectId: string; snapshotHashes: string[]; client: any;
+  codebook: Codebook; contract: RetryContract; spans: { id: string; text: string }[]; guidance: CodingGuidance;
+}) {
+  const bodies = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+  const spanIds = o.spans.map(s => s.id);
+  const key = stageCacheKey(o.projectId, "guided-primary-chunk", { bodies, guidance: o.guidance, spanIds, snapshotHashes: o.snapshotHashes });
+  const cached = readCached<{ raw: string }>(o.cacheDir, key);
+  if (cached.hit) {
+    const valid = isSchemaValid(cached.value.raw, spanIds, o.contract.zodSchema);
+    if (!valid.valid) throw new Error("invalid retained guided chunk reply");
+    return { ...valid, attempts: 0 };
+  }
+  let attempt = 0, raw = "";
+  const call = makeNebiusCallOnce(o.codebook, new Map(o.spans.map(s => [s.id, s.text])), PINNED_MODEL, o.guidance);
+  const result = await codeProjectWithRetry({ client: o.client, cfg: {}, contract: o.contract, spanIds, callOnce: async (client, cfg, schema, ids, allowed) => {
+    const requestSchema = attempt++ === 0 ? schema : citationSchema(schema, allowed);
+    raw = await call(client, cfg, requestSchema, ids, allowed);
+    return raw;
+  } });
+  if (result.valid) writeCached(o.cacheDir, key, { raw, requestVariant: attempt > 1 ? "citation-enumerated" : "canonical" });
+  return result;
 }
 
 function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, model: string = PINNED_MODEL, guidance?: CodingGuidance): CallOnce {
@@ -608,7 +638,9 @@ async function processProject(
         const callOnce = makeNebiusCallOnce(codebook, spansById, model, guidance);
         const results: any[] = [];
         for (const chunk of chunks) {
-          results.push(await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
+          results.push(guidance && model === PINNED_MODEL
+            ? await codeGuidedPrimaryChunk({ cacheDir, projectId, snapshotHashes: segmented.snapshotHashesInCollectionOrder, client, codebook, contract, spans: chunk, guidance })
+            : await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
         }
         const perChunk: CheckEntry[][] = results.map((r) => r.checks ?? r.data?.checks ?? []);
         const failedChunks = results.filter((r) => r.allUnknown === true).length;
@@ -621,7 +653,7 @@ async function processProject(
           failedChunks,
         };
       },
-      // A coding with any retry-exhausted chunk is not cached, so the next run tries the project again.
+      // An incomplete project is retried; successful guided chunks remain independently reusable.
       (result: any) => !(result.attempts > 0 && result.failedChunks > 0),
     );
   };
