@@ -405,3 +405,39 @@ Reason: observed recode spend was approximately $0.0115 per project, projecting 
 Changed rule: the 30-positive Ultra spike compares thinking on versus off, not low. The model advertises only boolean thinking settings. Keep the $0.50 combined spike cap, identical cited evidence in both conditions, and independent reading of every decision against its cited spans. Report the comparison before full confirmation; the latter retains its $5.00 cap and uses the winning setting.
 
 Reason: compare supported settings without silently translating an unsupported setting.
+
+## Addendum 2026-10-25 (A11)
+
+Adopted on Helen's standing existing-balance instruction of 2026-10-25. This supersedes asking for separate spending approval within the protected envelope; evidence rules and agreement thresholds remain unchanged.
+
+### A11.1 Existing balances and protected reserves
+
+Changed rule: use existing balances only, with no top-up, credit purchase or new sign-in grant. Token Factory spending must leave at least $1.00 for judges' live runs. Ollama spending must leave at least $0.50 of included monthly credit; purchased credit is not usable. Verify starting balances, freeze the release allowance and retain every subsequent charge and unresolved reservation across stages and restarts. Each request reserves its complete bounded cost before transmission. Retain the default 20000-token prompt guard and the previously approved exact-nine confirmation exceptions only. Decisions within this envelope are autonomous and actual spend is reported afterwards. The fresh 76-project stage and the single extra guidance adjudication are authorized within this envelope.
+
+Reason: shared remaining balances must fund completion while preserving live-run and included-credit reserves.
+
+### A11.2 No-spend publication fallback
+
+Changed rule: when a required correction, application or confirmation would exceed the remaining protected allowance, record its projection and a digest-bound copy of the budget evidence and withhold the affected unreleased checks under D-55b. A fresh passing result can remain withheld when application or confirmation is unaffordable; its fresh metrics remain reported. A correction without independent approval remains unapplied and its check is withheld. Preserve the original states, evidence, failed decisions and explicit limitation. The all-17 application scenario is not authorized. The original 300 never become the correction test set, and the labeller's states never replace primary coding.
+
+Reason: a failed or unaffordable step must produce a truthful withheld result within the existing allowance.
+
+### A11.3 Complete bounded gate review
+
+Changed rule: keep every agreement number and project-bootstrap interval intact. Where the complete gate plus the full protocol exceeds the request limit, review complete agreement matrices as separate named JSON documents. The final gate manifest retains the primary release decisions and other metadata; each complete matrix is either supplied inline or named by an approved attachment's exact digest. Every review receives the full protocol. Loading the signed gate requires the final manifest approval, each attachment's latest matching approval, exact file digests and a lossless reconstruction matching the complete-gate digest. This changes only review representation; the statistics, scope and release thresholds are unchanged. All numbers and intervals remain readable and exact.
+
+Reason: bounded review requests must preserve the full evidence and the existing publication input contract.
+
+## Addendum 2026-10-25 (A12)
+
+Adopted before scoring the fresh continuation. A metadata-only preflight of the first 43 retained fresh projects found 24 initial prompts and 43 citation-regeneration variants above the unchanged 20000-token guard across 136 legacy groups; no fresh coding or labelling had been sent.
+
+Changed rule: retain the 40000-character chunk ceiling, every numbered span's complete text and identifier, collection order and the approved exact-text deduplication within each project. If a complete request would exceed the token guard, divide its group deterministically at existing span boundaries until it fits. No text is truncated, spans are not rewritten, the evidence scope is unchanged and the exact-nine confirmation exceptions are not extended. A single complete span that cannot fit stops before transmission. This packing applies to the fresh primary coding and independent gold labelling, and to an approved targeted correction where necessary; the original unguided baseline and second-coder packing stay unchanged. Record the actual complete request inventory and re-project costs before each paid role.
+
+Strict JSON and citation validation and the three-attempt policy remain unchanged. Invalid guided responses may be regenerated using the existing citation-constrained schema; gold retains its existing trusted format feedback. Never repair returned JSON or separate a thinking envelope for these roles. Inventory all possible regeneration variants before the role starts. Preserve every raw response unchanged and cache successful complete chunks with their request and source bindings so an interrupted project need not buy those chunks again. Fresh coding proof hashes bind the actual packing. The method changes grouping within the existing ceiling, so the fresh held-out agreement, rather than the tuning projects, decides whether any correction is released.
+
+Reason: span-identifier and schema overhead can make a complete prompt exceed the token guard even when source text fits the character ceiling. Whole-span subdivision preserves all evidence while enforcing both limits before any fresh outcomes are observed.
+
+## Addendum 2026-10-25 (A13)
+
+The single qualifying correction passed fresh validation and was applied across all 300 projects, but confirmation preflight found 87 pending positives, including two complete cited-only prompts estimated at 26628 and 49454 tokens. Neither matches an approved exact-nine request; the default 20000-token limit therefore refuses them before transmission. The projected confirmation cost fits the protected allowance, so this is a request-limit refusal, not a funding shortfall. Apply D-55b by withholding the entire affected check, retaining its fresh metrics, corrected coding, every cited span, unchanged raw responses and a digest-bound refusal inventory that is recomputed against current evidence and the retained exception registry. Do not truncate, repack confirmation evidence, extend an exception, substitute gold labels or mark an unconfirmed positive as confirmed. Acceptance must report incomplete full-sample confirmation separately from verified cached coverage of every current positive outside the withheld check; publication requires the signed final gate and refuses the withheld check. This records the existing guarded withholding path after observing the refusal, without changing a threshold, request limit or dollar cap.

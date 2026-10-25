@@ -339,23 +339,31 @@ export async function readPositives(
   return { positives, awaitingGold };
 }
 
-function pickDecision(
-  decisions: any[],
-  projectN: number,
-  checkId: string,
-  digest: string,
-  editActorId: string | null,
-): any | undefined {
-  const current = decisions.filter(
-    (d) => d.project_n === projectN && d.check_id === checkId && d.input_digest === digest,
-  );
-  if (!current.length) return undefined;
-  // A7.8: person outranks agent; ignore a person decision by the author of the latest edit.
-  const person = current.find(
-    (d) => d.confirmer_kind === "person" && !(editActorId && d.confirmer_id === editActorId),
-  );
-  if (person) return person;
-  return current.find((d) => d.confirmer_kind === "agent") ?? current[0];
+export type ConfirmationMatchOptions = { editActorId?: string | null; allowedModelIds?: string[] };
+
+/** Shared publication/export check; callers supply current resolved citations and flags. */
+export function confirmationMatches(row: any, p: Positive, codebook: Codebook, options: ConfirmationMatchOptions = {}): boolean {
+  if (row.project_n !== p.projectN || row.check_id !== p.checkId || row.input_digest !== inputDigest(codebook, p) ||
+      !["person", "agent"].includes(row.confirmer_kind) || !row.confirmer_id || row.confirmer_id === options.editActorId ||
+      !p.spans.length || p.spans.some(s => !s.text) || typeof row.reason !== "string") return false;
+  const canonical = (model: string) => model.replace(/:cloud$/, "");
+  if (row.confirmer_kind === "agent") {
+    if (typeof row.model_id !== "string" || [PINNED_MODEL, SECOND_CODER_MODEL, "nemotron-3-super"].map(canonical).includes(canonical(row.model_id))) return false;
+    if (options.allowedModelIds && !options.allowedModelIds.map(canonical).includes(canonical(row.model_id))) return false;
+  }
+  try {
+    if (JSON.stringify(JSON.parse(row.span_ids_json)) !== JSON.stringify(p.spans.map(s => s.id))) return false;
+  } catch { return false; }
+  if (row.decision === "rejected") return row.confirmed_state == null;
+  if (citesFlagged(p)) return false;
+  if (row.decision === "downgraded") return p.state === "pass" && row.confirmed_state === "claimed";
+  return row.decision === "confirmed" && (row.confirmed_state == null || row.confirmed_state === p.state);
+}
+
+function pickDecision(decisions: any[], p: Positive, codebook: Codebook, options: ConfirmationMatchOptions): any | undefined {
+  return decisions.map((row, i) => ({ row, i })).filter(({ row }) => confirmationMatches(row, p, codebook, options))
+    .sort((a, b) => Number(b.row.confirmer_kind === "person") - Number(a.row.confirmer_kind === "person") ||
+      String(b.row.decided_at ?? "").localeCompare(String(a.row.decided_at ?? "")) || b.i - a.i)[0]?.row;
 }
 
 /**
@@ -367,9 +375,12 @@ export async function publishedStates(
   dataDir: string,
   codebook: Codebook,
   sampleNs: number[],
+  options: Pick<ConfirmationMatchOptions, "allowedModelIds"> = {},
 ): Promise<PublishedState[]> {
   const effective = await effectiveStates(db, sampleNs);
   const decisions = await db.selectFrom("pipeline_confirmations").selectAll().execute();
+  const hasFlags = (await db.introspection.getTables()).some(t => t.name === "pipeline_injection_flags");
+  const flags = hasFlags && sampleNs.length ? await db.selectFrom("pipeline_injection_flags").select(["project_n", "span_id"]).where("project_n", "in", sampleNs).execute() : [];
   const spanCache = new Map<number, Map<string, string>>();
   const spansOf = (n: number) => {
     if (!spanCache.has(n)) {
@@ -399,10 +410,11 @@ export async function publishedStates(
       checkId: e.checkId,
       state,
       spans: e.spanIds.map((id) => ({ id, text: byId.get(id) ?? "" })),
+      flaggedSpanIds: flags.filter(f => f.project_n === e.projectN).map(f => f.span_id),
     };
     const digest = inputDigest(codebook, p);
     const mine = (decisions as any[]).filter((d) => d.project_n === p.projectN && d.check_id === p.checkId);
-    const current = pickDecision(decisions as any[], p.projectN, p.checkId, digest, e.editActorId);
+    const current = pickDecision(decisions as any[], p, codebook, { ...options, editActorId: e.editActorId });
     if (!current) {
       out.push({
         projectN: p.projectN,

@@ -81,6 +81,25 @@ describe("name guard", () => {
     assert.ok(!res.stderr.toLowerCase().includes(SAMPLE_WORD));
   });
 
+  test("a commit reachable only from an internal snapshot ref is ignored", () => {
+    const r = seeded();
+    const tree = r.git("rev-parse", "HEAD^{tree}").stdout.trim();
+    const commit = r.git("commit-tree", tree, "-p", "HEAD", "-m", SAMPLE_TRAILER);
+    assert.equal(commit.status, 0, commit.stderr);
+    const id = commit.stdout.trim();
+    const ref = "refs/cmux/last-turn/fixture";
+    assert.equal(r.git("update-ref", ref, id).status, 0);
+    const result = guard(r, "--history");
+    assert.equal(result.stderr, "", "internal snapshot must produce no findings");
+    assert.equal(result.status, 0);
+    assert.equal(r.git("rev-parse", ref).stdout.trim(), id, "the snapshot ref must remain unchanged");
+    for (const publishable of ["refs/heads/review", "refs/tags/review", "refs/remotes/example/review"]) {
+      assert.equal(r.git("update-ref", publishable, id).status, 0);
+      assert.match(guard(r, "--history").stderr, /pattern #\d+ at commit [0-9a-f]{12} message/);
+      assert.equal(r.git("update-ref", "-d", publishable).status, 0);
+    }
+  });
+
   test("--refs scans only the given revisions: a local-only ref is skipped, a branch is not", () => {
     const r = seeded();
     const base = r.git("rev-parse", "HEAD").stdout.trim();
@@ -90,7 +109,7 @@ describe("name guard", () => {
     const bad = r.git("rev-parse", "HEAD").stdout.trim();
     assert.equal(r.git("update-ref", "refs/local-only/x", bad).status, 0);
     assert.equal(r.git("reset", "-q", "--hard", base).status, 0);
-    assert.equal(guard(r, "--history").status, 1);
+    assert.equal(guard(r, "--history").status, 0, "--history also skips local-only refs");
     assert.equal(guard(r, "--refs", "--branches", "--tags").status, 0);
     assert.equal(r.git("branch", "topic", bad).status, 0);
     const res = guard(r, "--refs", `${base}..topic`);

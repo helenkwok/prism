@@ -89,6 +89,16 @@ export function splitLeadingThinkingBlock(raw: string): { reasoning: string; con
   return { reasoning: match[1], content: match[2] };
 }
 
+/** The same native payload is used for byte-bound cost preflight and transmission. */
+export function ollamaRequestBody(body: any) {
+  const rf = body.response_format;
+  const format = rf?.type === "json_schema" ? rf.json_schema?.schema : rf?.type === "json_object" ? "json" : undefined;
+  const think = body.reasoning_effort !== undefined ? body.reasoning_effort : body.chat_template_kwargs?.enable_thinking;
+  return { model: body.model, messages: body.messages, stream: false,
+    ...(format !== undefined ? { format } : {}), ...(think !== undefined ? { think } : {}),
+    options: { ...(body.temperature !== undefined ? { temperature: body.temperature } : {}), num_predict: outputTokenLimit(body.max_tokens) } };
+}
+
 /** Translate an OpenAI-style chat body into Ollama /api/chat; return OpenAI-shaped json. */
 export function ollamaClient({
   baseUrl = OLLAMA_BASE_URL,
@@ -143,25 +153,9 @@ export function ollamaClient({
     if (!body?.model || !body?.messages) throw new Error("ollamaClient: body.model and body.messages required");
     if (thinkingEnvelopeEnabled(stage, body.model, splitNemotronThinking) && !onThinkingEnvelope) throw new Error("second-coder envelope separation requires a private audit callback");
     const maxTokens = outputTokenLimit(body.max_tokens);
-    const rf = body.response_format;
-    const format =
-      rf?.type === "json_schema" ? rf.json_schema?.schema : rf?.type === "json_object" ? "json" : undefined;
-    const think =
-      body.reasoning_effort !== undefined
-        ? body.reasoning_effort
-        : body.chat_template_kwargs?.enable_thinking;
-    const ollamaBody = {
-      model: body.model,
-      messages: body.messages,
-      stream: false,
-      ...(format !== undefined ? { format } : {}),
-      ...(think !== undefined ? { think } : {}),
-      options: {
-        ...(body.temperature !== undefined ? { temperature: body.temperature } : {}),
-        num_predict: maxTokens,
-      },
-    };
+    const ollamaBody = ollamaRequestBody(body);
     await acquire();
+    const usageAttempts: Record<string, unknown>[] = [];
     try {
       for (let attempt = 1; ; attempt += 1) {
         let cap = Math.min(tokenCap, DEFAULT_TOKEN_CAP);
@@ -170,18 +164,34 @@ export function ollamaClient({
           if (approvedCap !== DEFAULT_TOKEN_CAP && approvedCap !== 50_000) throw new Error("invalid approved request cap");
           if (approvedCap === 50_000) cap = approvedCap;
         }
-        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap, completionTokens: maxTokens, reservationTokens: reservationInputTokens(ollamaBody) });
+        const inputBound = reservationInputTokens(ollamaBody);
+        const { projectedUsd } = assertRequestAllowed({ messages: body.messages, model: body.model, budget: dollarBudget, cap, completionTokens: maxTokens, reservationTokens: inputBound });
         dollarBudget.reserve(projectedUsd);
         counters.calls += 1;
         const started = Date.now();
+        const transportFailure = (error: unknown, phase: "request" | "response-body") => {
+          dollarBudget.settle(projectedUsd);
+          const name = (error as any)?.name;
+          const code = (error as any)?.cause?.code ?? (error as any)?.code;
+          try {
+            onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
+              inputTokens: null, outputTokens: null, cachedInputTokens: null, measured: false,
+              prefixDigest: prefixDigest(body.messages), chargedUsd: projectedUsd, status: 0, attempt,
+              latencyMs: Math.max(0, Date.now() - started), transportFailure: true, phase,
+              errorName: typeof name === "string" && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name) ? name : "Error",
+              causeCode: typeof code === "string" && /^[A-Z0-9_]{1,64}$/.test(code) ? code : null,
+              reservation_bounds: { inputTokens: inputBound, outputTokens: maxTokens, spentUsd: projectedUsd, source: "request-reservation-upper-bound" },
+            });
+          } catch { /* The original transport failure remains the thrown error. */ }
+        };
         let res: Response;
         try { res = await fetchImpl(`${baseUrl}/api/chat`, {
           method,
           headers: { "content-type": "application/json" },
           body: JSON.stringify(ollamaBody),
-        }); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
+        }); } catch (error) { transportFailure(error, "request"); throw error; }
         let text: string;
-        try { text = await res.text(); } catch (error) { dollarBudget.settle(projectedUsd); throw error; }
+        try { text = await res.text(); } catch (error) { transportFailure(error, "response-body"); throw error; }
         let parsed: any = null;
         try {
           parsed = text ? JSON.parse(text) : null;
@@ -193,6 +203,9 @@ export function ollamaClient({
         const cached = cachedTokenCount(parsed?.prompt_eval_cached_count, prompt);
         const measured = prompt !== null && completion !== null;
         const actual = measured ? measuredCostUsd(body.model, prompt, completion, cached) : projectedUsd;
+        const reservationBounds = measured ? undefined : { inputTokens: inputBound, outputTokens: maxTokens, spentUsd: projectedUsd, source: "request-reservation-upper-bound" as const };
+        const normalizedUsage = { prompt_tokens: prompt, completion_tokens: completion, prompt_tokens_details: { cached_tokens: cached }, ...(reservationBounds ? { reservation_bounds: reservationBounds } : {}) };
+        usageAttempts.push(normalizedUsage);
         dollarBudget.settle(projectedUsd, actual);
         const rawContent = parsed?.message?.content ?? "";
         let content = rawContent;
@@ -207,11 +220,12 @@ export function ollamaClient({
         onUsage?.({ provider: "ollama", stage: stage ?? null, model: body.model,
           inputTokens: prompt, outputTokens: completion, cachedInputTokens: cached,
           prefixDigest: prefixDigest(body.messages), chargedUsd: actual, measured,
-          status: res.status, attempt, latencyMs: Date.now() - started });
+          status: res.status, attempt, latencyMs: Date.now() - started,
+          ...(reservationBounds ? { reservation_bounds: reservationBounds } : {}) });
         if (actual > projectedUsd + 1e-12) throw new ReservationExceededError(dollarBudget.snapshot());
         const blob = res.ok ? "" : `${text} ${JSON.stringify(parsed ?? "")}`.toLowerCase();
         const concurrent = res.status === 429 || /too many concurrent/.test(blob);
-        const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage/.test(blob);
+        const usageCap = /usage.?cap|rate.?limit.*pro|pro.*usage|insufficient.*credit|credit.*(?:exhausted|insufficient)|out of credits/.test(blob);
         if (usageCap || res.status === 402 || res.status === 403) {
           counters.limit_hits += 1;
           throw new QuotaStop(res.status, `OLLAMA usage-cap: stop and report (${formatOllamaSummary(counters)})`);
@@ -229,8 +243,7 @@ export function ollamaClient({
           status: res.status,
           text,
           json: { choices: [{ message: { content, ...channelFields }, finish_reason: finish }],
-            usage: { prompt_tokens: prompt, completion_tokens: completion,
-              prompt_tokens_details: { cached_tokens: cached } },
+            usage: normalizedUsage, usage_attempts: usageAttempts,
             prompt_eval_count: prompt, eval_count: completion, prompt_eval_cached_count: cached },
         };
       }

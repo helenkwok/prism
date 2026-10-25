@@ -45,7 +45,7 @@ export function signoffMessages(doc: string, context: string, item: string) {
 
 export async function signOff(client: any, doc: string, context: string, item: string, model = SIGNOFF_MODEL) {
   if ([PINNED_MODEL, SECOND_CODER_MODEL, CONFIRMER_MODEL].includes(model)) throw new Error(`A6: ${model} codes or confirms and cannot sign off`);
-  const body = buildChatBody({ model, messages: signoffMessages(doc, context, item), mode: "json_schema", schema: { name: "signoff", schema: SCHEMA, strict: true }, thinking: false, maxTokens: 2048 });
+  const body = buildSignoffBody(doc, context, item, model);
   const res = await client.request("/chat/completions", { method: "POST", body });
   if (!res.ok) throw new Error(`nebius chat/completions returned status ${res.status}`);
   const v = JSON.parse((res.json as any)?.choices?.[0]?.message?.content);
@@ -60,6 +60,10 @@ export async function signOff(client: any, doc: string, context: string, item: s
     docDigest: crypto.createHash("sha256").update(doc).digest("hex"),
     decidedAt: new Date().toISOString(),
   };
+}
+
+export function buildSignoffBody(doc: string, context: string, item: string, model = SIGNOFF_MODEL) {
+  return buildChatBody({ model, messages: signoffMessages(doc, context, item), mode: "json_schema", schema: { name: "signoff", schema: SCHEMA, strict: true }, thinking: false, maxTokens: 2048 });
 }
 
 async function main() {

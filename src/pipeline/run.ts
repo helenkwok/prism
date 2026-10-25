@@ -29,7 +29,7 @@ import { findSiteRepos } from "./evidence/site-repos.ts";
 import { assertA8Signed } from "./signoff/a8.ts";
 import { assertA9Signed } from "./signoff/a9.ts";
 import { buildSnapshot } from "./evidence/segment.ts";
-import { loadGateFile, resolveGatesPath, buildContract, type GateFile, type CheckEntry } from "./coding/contract.ts";
+import { loadGateFile, resolveGatesPath, buildContract, isSchemaValid, citationSchema, type GateFile, type CheckEntry } from "./coding/contract.ts";
 import { loadCodebook, checkPromptText, type Codebook } from "./coding/codebook-prompt.ts";
 import {
   createClient,
@@ -41,14 +41,15 @@ import {
   isQuotaResponse,
   type FetchImpl as NebiusFetchImpl,
 } from "./coding/nebius-client.ts";
-import { requireTfBudget, DollarBudget } from "./coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, estimateMessagesTokens } from "./coding/spend-guards.ts";
 import { uniqueProjectSpans } from "./coding/span-packing.ts";
-import { codeProjectWithRetry, allUnknownChecks, type CallOnce } from "./coding/retry.ts";
+import { codeProjectWithRetry, allUnknownChecks, type CallOnce, type RetryContract } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
 import { detectInjection } from "./coding/injection-flag.ts";
 import { buildClaimsForProject } from "./claims/build-claims.ts";
 import { runGate, type SpawnImpl } from "./gate/run-gate.ts";
-import { withStageCache, defaultCacheDir } from "./cache/stage-cache.ts";
+import { withStageCache, defaultCacheDir, readCached, writeCached, stageCacheKey } from "./cache/stage-cache.ts";
+import { projectSpans, spansDigest } from "./confirm/confirm.ts";
 import {
   ensurePipelineSchema,
   recordProjectResult,
@@ -129,8 +130,10 @@ function githubSecurityPath(info: { path: string | null } | { failed: true } | n
 /** Nebius coding prompt, modeled on scripts/spikes/nebius-matrix.mjs's buildCodingPrompt.
  * The per-check checklist text is sourced from codebook.md (CDB-01, D-31) via
  * checkPromptText — never a second hardcoded copy of the codebook's own field text. */
-export function buildCodingMessages(checkIds: string[], codebook: Codebook, jsonSchema: unknown, spans: { id: string; text: string }[]) {
-  const checklist = checkIds.map((id) => checkPromptText(codebook, id)).join("\n\n");
+export type CodingGuidance = { version: string; byCheck: Record<string, string> };
+
+export function buildCodingMessages(checkIds: string[], codebook: Codebook, jsonSchema: unknown, spans: { id: string; text: string }[], guidance?: CodingGuidance) {
+  const checklist = checkIds.map((id) => checkPromptText(codebook, id) + (guidance?.byCheck[id] ? `\nCoding guidance (${guidance.version}): ${guidance.byCheck[id]}` : "")).join("\n\n");
   const spanText = spans.map((s) => `${s.id}: ${s.text}`).join("\n\n");
   const system =
     "You are coding evidence for a fixed set of decision-gate checks, from a project's own pages and repository, " +
@@ -151,17 +154,49 @@ export function buildCodingMessages(checkIds: string[], codebook: Codebook, json
 // 4096 truncated replies on pages with many spans (finish_reason=length on the 20-project pilot).
 export const CODING_MAX_TOKENS = 16384;
 
-function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, model: string = PINNED_MODEL): CallOnce {
+function codingBody(model: string, codebook: Codebook, jsonSchema: unknown, checkIds: string[], spans: { id: string; text: string }[], guidance?: CodingGuidance) {
+  return buildChatBody({ model, messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans, guidance), mode: "json_schema", schema: { name: "gate_checks", schema: jsonSchema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+}
+
+/** Both complete request variants can be inventoried before any guided coding. */
+export function guidedCodingRequestBodies(codebook: Codebook, contract: RetryContract, spans: { id: string; text: string }[], guidance: CodingGuidance, model = PINNED_MODEL) {
+  return [contract.jsonSchema, citationSchema(contract.jsonSchema, spans.map(s => s.id))].map(schema => codingBody(model, codebook, schema, contract.checkIds, spans, guidance));
+}
+
+/** Keep every numbered span intact while fitting both complete guided request variants. */
+export function guidedCodingChunks<T extends { id: string; text: string }>(spans: T[], codebook: Codebook, contract: RetryContract, guidance: CodingGuidance): T[][] {
+  return chunkSpans(uniqueProjectSpans(spans), CODING_CHUNK_CHARS, chunk => guidedCodingRequestBodies(codebook, contract, chunk, guidance).every(body => estimateMessagesTokens(body.messages) <= DEFAULT_TOKEN_CAP));
+}
+
+/** Retain successful whole-chunk replies; invalid replies are regenerated, never edited. */
+export async function codeGuidedPrimaryChunk(o: {
+  cacheDir: string; projectId: string; snapshotHashes: string[]; client: any;
+  codebook: Codebook; contract: RetryContract; spans: { id: string; text: string }[]; guidance: CodingGuidance;
+}) {
+  const bodies = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+  const spanIds = o.spans.map(s => s.id);
+  const key = stageCacheKey(o.projectId, "guided-primary-chunk", { bodies, guidance: o.guidance, spanIds, snapshotHashes: o.snapshotHashes });
+  const cached = readCached<{ raw: string }>(o.cacheDir, key);
+  if (cached.hit) {
+    const valid = isSchemaValid(cached.value.raw, spanIds, o.contract.zodSchema);
+    if (!valid.valid) throw new Error("invalid retained guided chunk reply");
+    return { ...valid, attempts: 0 };
+  }
+  let attempt = 0, raw = "";
+  const call = makeNebiusCallOnce(o.codebook, new Map(o.spans.map(s => [s.id, s.text])), PINNED_MODEL, o.guidance);
+  const result = await codeProjectWithRetry({ client: o.client, cfg: {}, contract: o.contract, spanIds, callOnce: async (client, cfg, schema, ids, allowed) => {
+    const requestSchema = attempt++ === 0 ? schema : citationSchema(schema, allowed);
+    raw = await call(client, cfg, requestSchema, ids, allowed);
+    return raw;
+  } });
+  if (result.valid) writeCached(o.cacheDir, key, { raw, requestVariant: attempt > 1 ? "citation-enumerated" : "canonical" });
+  return result;
+}
+
+function makeNebiusCallOnce(codebook: Codebook, spansById: Map<string, string>, model: string = PINNED_MODEL, guidance?: CodingGuidance): CallOnce {
   return async (client: any, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
-    const body = buildChatBody({
-      model,
-      messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans),
-      mode: "json_schema",
-      schema: { name: "gate_checks", schema: jsonSchema, strict: true },
-      thinking: false,
-      maxTokens: CODING_MAX_TOKENS,
-    });
+    const body = codingBody(model, codebook, jsonSchema, checkIds, spans, guidance);
     const res = await client.request("/chat/completions", { method: "POST", body });
     if (res.outcome === "too-large") {
       throw new Error(`too-large: prompt estimate refused before Token Factory HTTP`);
@@ -203,6 +238,7 @@ export interface ProjectOutcome {
   claimsFromCache?: boolean;
   recordFromCache?: boolean;
   tavilyCreditsSpent?: number;
+  codingFailedChunks?: number;
 }
 
 export interface RunAccounting {
@@ -224,6 +260,116 @@ export interface RunAccounting {
   outcomes: ProjectOutcome[];
 }
 
+const digestJson = (value: unknown) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+
+/** Retained evidence and unguided results are prerequisites, never collection fallbacks. */
+function correctionInputs(project: SliceEntryLike, ctx: { dataDir: string; cacheDir: string; codebook: Codebook; contract: ReturnType<typeof buildContract> }) {
+  const { dataDir, cacheDir, codebook, contract } = ctx;
+  const manifestPath = path.join(dataDir, "pipeline", "manifests", `${project.n}.json`);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (String(manifest.hnId) !== String(project.hn_id) || !Array.isArray(manifest.snapshotHashesInCollectionOrder)) throw new Error(`project ${project.n}: incompatible retained manifest`);
+  const urls = manifest.snapshotHashesInCollectionOrder.map((hash: string) => {
+    if (typeof hash !== "string" || !/^[a-f0-9]{64}$/.test(hash)) throw new Error(`project ${project.n}: invalid snapshot hash`);
+    const snap = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline", "snapshots", `${hash}.json`), "utf8"));
+    if (typeof snap.redactedText !== "string" || crypto.createHash("sha256").update(snap.redactedText).digest("hex") !== hash || typeof snap.url !== "string") throw new Error(`project ${project.n}: retained snapshot integrity mismatch`);
+    return snap.url as string;
+  });
+  const spans = projectSpans(dataDir, project.n);
+  const spanIds = spans.map(s => s.id);
+  const chunks = chunkSpans(uniqueProjectSpans(spans));
+  const codingRequestHash = digestJson({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c)) });
+  const legacy = readCached<{ checks: CheckEntry[]; failedChunks: number }>(cacheDir, stageCacheKey(String(project.hn_id), "code", { spanIds, hasSpans: spanIds.length > 0, codingRequestHash }));
+  let baseline: CheckEntry[];
+  if (!spans.length) baseline = allUnknownChecks(contract.checkIds);
+  else if (legacy.hit && legacy.value.failedChunks === 0 && isSchemaValid(JSON.stringify({ checks: legacy.value.checks }), spanIds, contract.zodSchema).valid) baseline = legacy.value.checks;
+  else {
+    const perChunk = chunks.map(chunk => {
+      // Both previously successful production request variants remain valid baselines.
+      for (const schema of [contract.jsonSchema, citationSchema(contract.jsonSchema, chunk.map(s => s.id))]) {
+        const body = codingBody(PINNED_MODEL, codebook, schema, contract.checkIds, chunk);
+        const cached = readCached<string>(cacheDir, stageCacheKey(String(project.hn_id), "approved-recode-chunk", { digest: digestJson(body), provider: "token-factory" }));
+        if (cached.hit) {
+          const validation = isSchemaValid(cached.value, chunk.map(s => s.id), contract.zodSchema);
+          if (validation.valid) return validation.data!.checks;
+        }
+      }
+      throw new Error(`project ${project.n}: compatible unguided coding cache required before correction`);
+    });
+    baseline = mergeChunkCodings(contract.checkIds, perChunk);
+  }
+  const spanUrls = Object.fromEntries(spans.map(s => [s.id, urls[Number(s.id.split("-")[0].slice(1)) - 1]]));
+  return { manifestPath, manifest, spans, spanIds, chunks, baseline, spanUrls };
+}
+
+/** Offline compatibility check; returns counts without exposing retained evidence. */
+export function preflightGuidedCorrections(projects: SliceEntryLike[], ctx: Parameters<typeof correctionInputs>[1]): { projects: number; chunks: number } {
+  let chunks = 0;
+  for (const project of projects) chunks += correctionInputs(project, ctx).chunks.length;
+  return { projects: projects.length, chunks };
+}
+
+async function currentCorrectionStates(project: SliceEntryLike, input: ReturnType<typeof correctionInputs>, ctx: {
+  db: ReturnType<typeof getDb>; contract: ReturnType<typeof buildContract>; codebook: Codebook; guidance: CodingGuidance;
+}) {
+  const prior = await ctx.db.selectFrom("pipeline_project_results").selectAll().where("project_n", "=", project.n).executeTakeFirst();
+  let snapshots: unknown;
+  try { snapshots = JSON.parse(prior?.snapshot_hashes_json ?? "null"); } catch { /* Refused below. */ }
+  if (!prior || String(prior.hn_id) !== String(project.hn_id) || prior.codebook_version !== ctx.codebook.codebookVersion || prior.model_id !== PINNED_MODEL ||
+      !Number.isFinite(Date.parse(prior.completed_at)) || digestJson(snapshots) !== digestJson(input.manifest.snapshotHashesInCollectionOrder)) throw new Error(`project ${project.n}: missing or stale current coding record`);
+  const previous = input.manifest.codingCorrection;
+  if (previous && (previous.version !== ctx.guidance.version || !Array.isArray(previous.checks) || !previous.checks.length || new Set(previous.checks).size !== previous.checks.length ||
+      previous.checks.some((id: string) => !ctx.contract.checkIds.includes(id)) || (previous.inputDigest !== undefined && previous.inputDigest !== spansDigest(input.spans)))) throw new Error(`project ${project.n}: stale or mismatched prior correction`);
+  const rows = await ctx.db.selectFrom("pipeline_check_states").selectAll().where("project_n", "=", project.n).execute();
+  let entries: CheckEntry[];
+  try { entries = rows.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) })) as CheckEntry[]; }
+  catch { throw new Error(`project ${project.n}: incompatible current coding states`); }
+  if (!isSchemaValid(JSON.stringify({ checks: entries }), input.spanIds, ctx.contract.zodSchema).valid) throw new Error(`project ${project.n}: incompatible current coding states`);
+  const filtered = applyQuoteOrUnknownFilter(entries, input.spanIds);
+  if (rows.some(row => {
+    const expected = filtered.find(entry => entry.checkId === row.check_id);
+    return !expected || expected.proposedState !== row.filtered_state || JSON.stringify(expected.spanIds) !== JSON.stringify(JSON.parse(row.span_ids_json));
+  })) throw new Error(`project ${project.n}: incompatible current coding states`);
+  return { prior, entries, previous };
+}
+
+async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<typeof processProject>[1]): Promise<ProjectOutcome> {
+  const { db, cacheDir, codebook, overrides } = ctx;
+  const input = correctionInputs(project, ctx);
+  const checks = ctx.onlyChecks!;
+  const contract = buildContract(checks);
+  const guidance = { version: ctx.guidance!.version, byCheck: Object.fromEntries(checks.map(id => [id, ctx.guidance!.byCheck[id]])) };
+  const inputDigest = spansDigest(input.spans);
+  const { prior, entries: current, previous } = await currentCorrectionStates(project, input, { db, contract: ctx.contract, codebook, guidance });
+  const cumulativeChecks = ctx.contract.checkIds.filter(id => checks.includes(id) || previous?.checks.includes(id));
+  const chunks = guidedCodingChunks(input.spans, codebook, contract, guidance);
+  const messages = chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
+  const guided = await withStageCache(cacheDir, String(project.hn_id), "code-guided", { model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages, guidance }, async () => {
+    if (!input.spans.length) return { checks: allUnknownChecks(contract.checkIds), attempts: 0 };
+    const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: ctx.apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl,
+      ...(overrides.tfBudget != null ? { budget: overrides.tfBudget } : overrides.nebiusFetchImpl ? { skipBudgetGate: true } : { budget: requireTfBudget() }) });
+    const results = [];
+    for (const chunk of chunks) {
+      const result = await codeGuidedPrimaryChunk({ cacheDir, projectId: String(project.hn_id), snapshotHashes: input.manifest.snapshotHashesInCollectionOrder, client, codebook, contract, spans: chunk, guidance });
+      if (!result.valid) throw new Error(`project ${project.n}: guided coding retry exhausted`);
+      if (!isSchemaValid(JSON.stringify(result.data), chunk.map(s => s.id), contract.zodSchema).valid) throw new Error(`project ${project.n}: invalid guided chunk cache`);
+      results.push(result);
+    }
+    return { checks: mergeChunkCodings(contract.checkIds, results.map(r => r.data!.checks)), attempts: results.reduce((n, r) => n + r.attempts, 0) };
+  });
+  if (!isSchemaValid(JSON.stringify({ checks: guided.value.checks }), input.spanIds, contract.zodSchema).valid) throw new Error(`project ${project.n}: invalid guided cache`);
+  const codeChecks = current.map(entry => checks.includes(entry.checkId) ? guided.value.checks.find(c => c.checkId === entry.checkId)! : entry);
+  const filtered = applyQuoteOrUnknownFilter(codeChecks, input.spanIds);
+  const claims = await buildClaimsForProject({ project: project.title, filteredStates: filtered, spanUrls: input.spanUrls,
+    runGate: record => runGate(record, { spawnImpl: overrides.gateSpawnImpl, pythonPath: overrides.pythonPath, gateScriptPath: overrides.gateScriptPath }), gatesPath: ctx.gateFile.path });
+  await recordProjectResult(db, { projectN: project.n, hnId: String(project.hn_id), modelId: PINNED_MODEL, promptHash: digestJson({ schema: contract.jsonSchema, guidance, messages }), codebookVersion: CODEBOOK_VERSION,
+    gateSha: (Object.values(claims)[0] as any).gateResult.gateSha, snapshotHashesInCollectionOrder: input.manifest.snapshotHashesInCollectionOrder,
+    codingAttempts: guided.value.attempts, codingAllUnknown: !input.spans.length, missingData: prior?.missing_data ?? null,
+    checkStates: filtered.map(f => ({ checkId: f.checkId, proposedState: codeChecks.find(c => c.checkId === f.checkId)!.proposedState, filteredState: f.proposedState, spanIds: f.spanIds })),
+    claims: Object.entries(claims).map(([decisionId, v]: [string, any]) => ({ decisionId, claimJson: v.record, gateStatus: v.gateResult.status })) });
+  fs.writeFileSync(input.manifestPath, JSON.stringify({ ...input.manifest, codingCorrection: { version: guidance.version, checks: cumulativeChecks, inputDigest } }, null, 2), { mode: 0o600 });
+  return { n: project.n, hnId: String(project.hn_id), status: "ok", boundaryFromCache: true, evidenceFromCache: true, redactFromCache: true, segmentFromCache: true, injectionFromCache: true, codeFromCache: guided.fromCache, filterFromCache: false, claimsFromCache: false, recordFromCache: false, tavilyCreditsSpent: 0 };
+}
+
 /** One project through every stage, each wrapped in withStageCache for resumability (COD-06). */
 async function processProject(
   project: SliceEntryLike,
@@ -240,10 +386,14 @@ async function processProject(
     secondCoderIds?: Set<string>;
     /** D-51: notify the run that credit exhaustion requires a clean stop. */
     onStop?: (reason: string) => void;
+    guidance?: CodingGuidance;
+    onlyChecks?: string[];
+    collectOnly?: boolean;
   },
 ): Promise<ProjectOutcome> {
   const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides, secondCoderIds, onStop } = ctx;
   const projectId = String(project.hn_id);
+  if (ctx.onlyChecks) return processGuidedCorrection(project, ctx);
 
   const onStage = overrides.onStage ?? (() => {});
   await onStage("collect", "running");
@@ -449,14 +599,52 @@ async function processProject(
   );
   const injectionResult = injectionStage.value;
 
+  const persistManifest = () => {
+    // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
+    // counts and visibility. results.ts's schema (plan 02-06, not re-
+    // architected here) stores only snapshot hashes, not URLs — this file is
+    // what scripts/phase2-acceptance.sh re-checks withinBoundary against.
+    const manifestDir = path.join(dataDir, "pipeline", "manifests");
+    fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(
+      path.join(manifestDir, `${project.n}.json`),
+      JSON.stringify(
+        {
+          projectN: project.n,
+          hnId: projectId,
+          boundary,
+          homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
+          // A site-first launch's own repositories, each its own boundary (evidence/site-repos.ts).
+          repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
+          snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
+            url: s.url,
+            visibility: renderedMap[s.url] ? "rendered" : "provider-extracted",
+            redactionCounts: s.counts,
+          })),
+          snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
+          ...(ctx.guidance && !ctx.collectOnly ? { codingCorrection: { version: ctx.guidance.version, checks: Object.keys(ctx.guidance.byCheck) } } : {}),
+        },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+  };
+  if (ctx.collectOnly) {
+    persistManifest();
+    return { n: project.n, hnId: projectId, status: "ok", evidenceFromCache: evidenceStage.fromCache, segmentFromCache: segmentStage.fromCache, tavilyCreditsSpent: evidence.tavily.creditsSpent };
+  }
+
   // 5. code — skip the live model call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
   const chunks = chunkSpans(uniqueProjectSpans(segmented.spans as { id: string; text: string }[]));
-  const codeWith = (model: string, stage: string) => {
+  const primaryChunks = ctx.guidance ? guidedCodingChunks(segmented.spans as { id: string; text: string }[], codebook, contract, ctx.guidance) : chunks;
+  const codeWith = (model: string, stage: string, guidance?: CodingGuidance) => {
+    const requestChunks = guidance && model === PINNED_MODEL ? primaryChunks : chunks;
     const codingRequestHash = crypto
       .createHash("sha256")
-      .update(JSON.stringify({ model, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c)) }))
+      .update(JSON.stringify({ model, maxTokens: CODING_MAX_TOKENS, chunks: requestChunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance)) }))
       .digest("hex");
     return withStageCache(
       cacheDir,
@@ -481,10 +669,12 @@ async function processProject(
               ? { skipBudgetGate: true }
               : { budget: requireTfBudget() }),
         });
-        const callOnce = makeNebiusCallOnce(codebook, spansById, model);
+        const callOnce = makeNebiusCallOnce(codebook, spansById, model, guidance);
         const results: any[] = [];
-        for (const chunk of chunks) {
-          results.push(await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
+        for (const chunk of requestChunks) {
+          results.push(guidance && model === PINNED_MODEL
+            ? await codeGuidedPrimaryChunk({ cacheDir, projectId, snapshotHashes: segmented.snapshotHashesInCollectionOrder, client, codebook, contract, spans: chunk, guidance })
+            : await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
         }
         const perChunk: CheckEntry[][] = results.map((r) => r.checks ?? r.data?.checks ?? []);
         const failedChunks = results.filter((r) => r.allUnknown === true).length;
@@ -497,11 +687,11 @@ async function processProject(
           failedChunks,
         };
       },
-      // A coding with any retry-exhausted chunk is not cached, so the next run tries the project again.
+      // An incomplete project is retried; successful guided chunks remain independently reusable.
       (result: any) => !(result.attempts > 0 && result.failedChunks > 0),
     );
   };
-  const codeStage = await codeWith(PINNED_MODEL, "code");
+  const codeStage = await codeWith(PINNED_MODEL, "code", ctx.guidance);
   // 5b. second coder (NVIDIA, hackathon rule; VAL agreement figure). Recorded alongside, never
   // read by filter/claims/gate: the primary coding alone decides. D-48: only the seeded subset.
   const runCode2 = secondCoderIds === undefined || secondCoderIds.has(projectId);
@@ -552,7 +742,9 @@ async function processProject(
       gateStatus: v.gateResult.status,
     }));
     const gateSha = (Object.values(claims)[0] as any).gateResult.gateSha;
-    const promptHash = crypto.createHash("sha256").update(JSON.stringify(contract.jsonSchema)).digest("hex");
+    const promptHash = ctx.guidance
+      ? digestJson({ schema: contract.jsonSchema, guidance: ctx.guidance, messages: primaryChunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, ctx.guidance)) })
+      : crypto.createHash("sha256").update(JSON.stringify(contract.jsonSchema)).digest("hex");
 
     await recordProjectResult(db, {
       projectN: project.n,
@@ -583,34 +775,7 @@ async function processProject(
     await recordInjectionFlags(db, project.n, injectionResult.spanIds.map((spanId) => ({ spanId })));
     await recordMissingData(db, project.n, evidence.tavily.pages.length === 0);
 
-    // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
-    // counts and visibility. results.ts's schema (plan 02-06, not re-
-    // architected here) stores only snapshot hashes, not URLs — this file is
-    // what scripts/phase2-acceptance.sh re-checks withinBoundary against.
-    const manifestDir = path.join(dataDir, "pipeline", "manifests");
-    fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(
-      path.join(manifestDir, `${project.n}.json`),
-      JSON.stringify(
-        {
-          projectN: project.n,
-          hnId: projectId,
-          boundary,
-          homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
-          // A site-first launch's own repositories, each its own boundary (evidence/site-repos.ts).
-          repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
-          snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
-            url: s.url,
-            visibility: renderedMap[s.url] ? "rendered" : "provider-extracted",
-            redactionCounts: s.counts,
-          })),
-          snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
-        },
-        null,
-        2,
-      ),
-      { mode: 0o600 },
-    );
+    persistManifest();
 
     return { recorded: true };
   })() };
@@ -630,6 +795,7 @@ async function processProject(
     claimsFromCache: claimsStage.fromCache,
     recordFromCache: recordStage.fromCache,
     tavilyCreditsSpent: evidence.tavily.creditsSpent,
+    codingFailedChunks: codingResult.failedChunks ?? 0,
   };
 }
 
@@ -643,6 +809,10 @@ export async function runPipeline({
   gatesPath,
   projectFilter,
   secondCoderIds,
+  guidance,
+  onlyChecks,
+  priorApprovalProofPath,
+  collectOnly = false,
   overrides = {},
 }: {
   sliceProjectsPath?: string;
@@ -657,25 +827,44 @@ export async function runPipeline({
   /** D-48 / VAL-02: when set, code2 runs only for these hn ids. */
   secondCoderIds?: Set<string>;
   overrides?: Overrides;
+  guidance?: CodingGuidance;
+  onlyChecks?: string[];
+  /** Explicit retained approval evidence; does not waive the separate collection approval. */
+  priorApprovalProofPath?: string;
+  /** Collect fresh evidence without constructing either coding client. */
+  collectOnly?: boolean;
 }): Promise<RunAccounting> {
+  if (collectOnly && onlyChecks) throw new Error("collect-only cannot be combined with only-checks");
   const resolvedDataDir = dataDir ?? resolveDataDir();
-  if (!overrides.nebiusFetchImpl) assertA9Signed(overrides.a9SignoffPath ? { signoffPath: overrides.a9SignoffPath } : undefined);
+  if (priorApprovalProofPath) {
+    const { loadReleaseProof } = await import("./validate/release-proof.ts");
+    loadReleaseProof(priorApprovalProofPath, path.join(process.cwd(), "protocol", "PROTOCOL.md"));
+  } else if (!overrides.nebiusFetchImpl) assertA9Signed(overrides.a9SignoffPath ? { signoffPath: overrides.a9SignoffPath } : undefined);
   // One budget object is shared by every project/client in this run.
   if (overrides.tfBudget != null && !(overrides.tfBudget instanceof DollarBudget)) {
     overrides = { ...overrides, tfBudget: new DollarBudget(overrides.tfBudget) };
-  } else if (!overrides.nebiusFetchImpl && overrides.tfBudget == null) {
+  } else if (!collectOnly && !overrides.nebiusFetchImpl && overrides.tfBudget == null) {
     overrides = { ...overrides, tfBudget: new DollarBudget(requireTfBudget()) };
   }
   const resolvedSliceProjectsPath = sliceProjectsPath ?? path.join(resolvedDataDir, "pipeline", "slice-projects.json");
   const allProjects: SliceEntryLike[] = JSON.parse(fs.readFileSync(resolvedSliceProjectsPath, "utf8"));
   const projects = projectFilter === undefined ? allProjects : allProjects.filter((p) => p.n === projectFilter);
+  if (collectOnly && projects.some(project => project.n <= 300)) throw new Error("collect-only is restricted to the fresh extension after the original 300");
 
   const resolvedDb = db ?? getDb();
   await ensurePipelineSchema(resolvedDb);
   const gateFile = loadGateFile(resolveGatesPath(gatesPath));
   const contract = buildContract(gateFile.checkIds);
   const codebook = loadCodebook(path.join(process.cwd(), "codebook.md"));
+  if (guidance && (typeof guidance.version !== "string" || !guidance.version || !guidance.byCheck || typeof guidance.byCheck !== "object" || Array.isArray(guidance.byCheck) || !Object.keys(guidance.byCheck).length || Object.entries(guidance.byCheck).some(([id, text]) => !contract.checkIds.includes(id) || typeof text !== "string" || !text.trim()))) throw new Error("invalid coding guidance");
+  if (onlyChecks && (!guidance || !onlyChecks.length || new Set(onlyChecks).size !== onlyChecks.length || onlyChecks.some(id => !contract.checkIds.includes(id) || !guidance.byCheck[id]))) throw new Error("only-checks requires guidance for every selected check");
   const resolvedCacheDir = cacheDir ?? defaultCacheDir();
+  // Check every retained baseline before scheduling even the first correction request.
+  if (onlyChecks) {
+    const ctx = { dataDir: resolvedDataDir, cacheDir: resolvedCacheDir, codebook, contract };
+    preflightGuidedCorrections(projects, ctx);
+    for (const project of projects) await currentCorrectionStates(project, correctionInputs(project, ctx), { db: resolvedDb, contract, codebook, guidance: guidance! });
+  }
 
   let stopReason: string | undefined;
   let attemptedProjects = 0;
@@ -703,6 +892,9 @@ export async function runPipeline({
             overrides,
             secondCoderIds,
             onStop,
+            guidance,
+            onlyChecks,
+            collectOnly,
           });
         } catch (err) {
           if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop" || (err as Error)?.name === "BudgetExceededError") {
@@ -757,7 +949,7 @@ export const CODING_CHUNK_CHARS = 40_000;
 
 /** Group spans into chunks of whole pages (span ids are `p<k>-...`), each under `limit` characters where a
  * page allows; a single page over the limit is split at span boundaries. */
-export function chunkSpans<T extends { id: string; text: string }>(spans: T[], limit = CODING_CHUNK_CHARS): T[][] {
+export function chunkSpans<T extends { id: string; text: string }>(spans: T[], limit = CODING_CHUNK_CHARS, fits?: (chunk: T[]) => boolean): T[][] {
   const pages: T[][] = [];
   for (const s of spans) {
     const page = s.id.split("-")[0];
@@ -788,7 +980,14 @@ export function chunkSpans<T extends { id: string; text: string }>(spans: T[], l
     }
   }
   flush();
-  return chunks;
+  if (!fits) return chunks;
+  const divide = (chunk: T[]): T[][] => {
+    if (chunk.reduce((n, span) => n + span.text.length, 0) <= limit && fits(chunk)) return [chunk];
+    if (chunk.length === 1) throw new Error("a complete numbered span cannot fit the request limits");
+    const middle = Math.floor(chunk.length / 2);
+    return [...divide(chunk.slice(0, middle)), ...divide(chunk.slice(middle))];
+  };
+  return chunks.flatMap(divide);
 }
 
 const STATE_RANK: Record<string, number> = { pass: 3, claimed: 2, fail: 1, unknown: 0 };
@@ -869,6 +1068,11 @@ if (invokedDirectly) {
     const sliceProjectsPath = sliceIdx >= 0 ? args[sliceIdx + 1] : undefined;
     const concurrencyIdx = args.indexOf("--concurrency");
     const concurrency = concurrencyIdx >= 0 ? Number(args[concurrencyIdx + 1]) : 2;
+    const guidanceIdx = args.indexOf("--guidance");
+    let guidance: CodingGuidance | undefined;
+    if (guidanceIdx >= 0) { const file = JSON.parse(fs.readFileSync(args[guidanceIdx + 1], "utf8")); guidance = { version: file.version, byCheck: file.checks }; }
+    const onlyChecksIdx = args.indexOf("--only-checks");
+    const onlyChecks = onlyChecksIdx >= 0 ? args[onlyChecksIdx + 1]?.split(",").map(id => id.trim()).filter(Boolean) ?? [] : undefined;
     const subsetsIdx = args.indexOf("--subsets");
     let secondCoderIds: Set<string> | undefined;
     if (subsetsIdx >= 0) {
@@ -920,6 +1124,8 @@ if (invokedDirectly) {
       sliceProjectsPath,
       concurrency,
       secondCoderIds,
+      guidance,
+      onlyChecks,
       overrides: { useTavily },
     });
     reportRunAccounting(accounting);

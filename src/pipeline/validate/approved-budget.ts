@@ -2,10 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { DollarBudget, type BudgetState } from "../coding/spend-guards.ts";
 
-export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 5 } as const;
+export const APPROVED_CAPS = { signoff: 3.50, recode: 3.80, gold: 4.50, "second-coder": .75, spike: .50, "full-confirm": 7.50, "irrelevant-probe": 1 } as const;
+export const APPROVED_OLLAMA_CAP = 10.75;
 export type ApprovedStage = keyof typeof APPROVED_CAPS;
 type Ledger = { approval: string; stages: Partial<Record<ApprovedStage, BudgetState>> };
 const hostOf = (stage: ApprovedStage) => stage === "signoff" || stage === "recode" ? "token-factory" : "ollama";
+
+/** Only the explicitly approved prior caps migrate; every accounting field is preserved. */
+export function migrateApprovedStageCap(stage: string, state: BudgetState): void {
+  if (stage === "recode" && state.cap === 3.50) state.cap = APPROVED_CAPS.recode;
+  if (stage === "full-confirm" && (state.cap === 5 || state.cap === 7)) state.cap = APPROVED_CAPS["full-confirm"];
+}
 
 /** Persist reservations before HTTP; on resume unresolved reservations count as spent. */
 export function openApprovedBudget(dataDir: string, stage: ApprovedStage) {
@@ -37,13 +44,14 @@ export function openApprovedBudget(dataDir: string, stage: ApprovedStage) {
     const charged = (state?: BudgetState) => state ? state.spent + state.reserved : 0;
     for (const [key, state] of Object.entries(ledger.stages)) {
       // Helen's explicit cap increase retains every prior charge and reservation.
-      if (key === "recode" && state?.cap === 3.50) state.cap = APPROVED_CAPS.recode;
+      if (state) migrateApprovedStageCap(key, state);
       if (!(key in APPROVED_CAPS) || !state || state.cap !== APPROVED_CAPS[key as ApprovedStage] ||
           ![state.estimated, state.spent, state.reserved].every(n => Number.isFinite(n) && n >= 0)) throw new Error("invalid persisted budget");
     }
     const host = hostOf(stage);
     const hostSpent = Object.entries(ledger.stages).reduce((sum, [key, state]) => sum + (hostOf(key as ApprovedStage) === host ? charged(state) : 0), 0);
-    const parent = new DollarBudget(host === "ollama" ? 10.75 : 3.80, { initialSpent: hostSpent });
+    const parent = new DollarBudget(host === "ollama" ? APPROVED_OLLAMA_CAP : 3.80, { initialSpent: hostSpent });
+    parent.estimated = Object.entries(ledger.stages).reduce((sum, [key, state]) => sum + (hostOf(key as ApprovedStage) === host ? state!.estimated : 0), 0);
     const persist = (state: BudgetState) => {
       ledger.stages[stage] = state;
       const next = `${file}.next`;
@@ -52,6 +60,7 @@ export function openApprovedBudget(dataDir: string, stage: ApprovedStage) {
       fs.renameSync(next, file);
     };
     const budget = new DollarBudget(APPROVED_CAPS[stage], { parent, initialSpent: charged(ledger.stages[stage]), onChange: persist });
+    budget.estimated = ledger.stages[stage]?.estimated ?? 0;
     persist({ ...budget.snapshot(), reserved: 0 });
     let released = false;
     return { budget, parent, host, file, release() { if (!released) { released = true; fs.closeSync(lock); fs.unlinkSync(lockFile); } } };

@@ -106,9 +106,9 @@ function scanField(value, location, patterns, findings) {
   }
 }
 
-/** Surface 2: commit messages plus author and committer identities on all refs. */
-export function scanCommits(patterns = loadPatterns(), revs = ["--all"]) {
-  const res = git(["log", ...revs,`--format=%H${"%x00"}%an${"%x00"}%ae${"%x00"}%cn${"%x00"}%ce${"%x00"}%B${"%x01"}`]);
+/** Surface 2: commit messages and identities reachable from branches, tags and remotes (or the given revs). */
+export function scanCommits(patterns = loadPatterns(), revs = ["--branches", "--tags", "--remotes"]) {
+  const res = git(["log", ...revs, `--format=%H${"%x00"}%an${"%x00"}%ae${"%x00"}%cn${"%x00"}%ce${"%x00"}%B${"%x01"}`]);
   if (res.status !== 0) {
     if (/does not have any commits|unknown revision/i.test(res.stderr)) return [];
     throw new Error(`git log failed: ${res.stderr.trim()}`);

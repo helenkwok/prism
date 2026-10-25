@@ -4,13 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Kysely } from "kysely";
 import type { Codebook } from "../coding/codebook-prompt.ts";
-import { DollarBudget } from "../coding/spend-guards.ts";
+import { DollarBudget, estimateMessagesTokens } from "../coding/spend-guards.ts";
 import {
-  confirmationStatus, confirmedStateFor, confirmWithModel, effectiveStates,
+  confirmationStatus, confirmedStateFor, confirmMessages, confirmWithModel, effectiveStates,
   ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans, readPositives,
   recordConfirmation, type Positive,
 } from "../confirm/confirm.ts";
 import { ARTCRAFT_HN_ID } from "../select/draw-sample.ts";
+import { APPROVED_CAPS } from "./approved-budget.ts";
+import type { ProjectionTracker } from "./rolling-projection.ts";
+import { loadReleaseProof } from "./release-proof.ts";
+import { verifyRevalidationProof, type RevalidationProofOptions } from "../revalidation-proof.ts";
 
 type SpikeOutcome = { projectN: number; checkId: string; state: string; setting: boolean; failed?: boolean; decision: string | null; spans: unknown; flaggedSpanIds?: string[] };
 export type SpikeReview = {
@@ -73,7 +77,31 @@ export type FullConfirmationOptions = {
   reasoning: boolean; entries: { n: number; hn_id: string }[]; goldOrder: string[];
   log?: (line: string) => void;
   concurrency?: 1 | 2;
+  projectionTracker?: ProjectionTracker;
+  correctionProof?: { priorApprovalProofPath: string; protocolPath: string; revalidationProofPath: string };
 };
+
+/** The historical experiment stays immutable; only independently verified applied checks may change. */
+export async function verifiedConfirmationCorrections(o: Pick<FullConfirmationOptions, "db" | "dataDir" | "codebook" | "entries" | "correctionProof">) {
+  if (!o.correctionProof) return { checkIds: new Set<string>(), evidence: null };
+  const validation = fs.realpathSync(path.join(o.dataDir, "validation"));
+  const retained = (file: string) => {
+    const absolute = path.resolve(file), real = fs.realpathSync(absolute);
+    if (fs.lstatSync(absolute).isSymbolicLink() || path.dirname(real) !== validation || path.extname(real) !== ".json") throw new Error("invalid confirmation correction proof path");
+    return real;
+  };
+  const prior = retained(o.correctionProof.priorApprovalProofPath);
+  const configPath = retained(o.correctionProof.revalidationProofPath);
+  const configText = fs.readFileSync(configPath, "utf8"), proof: RevalidationProofOptions = JSON.parse(configText);
+  if (!proof || typeof proof !== "object" || Array.isArray(proof) || Object.keys(proof).sort().join(",") !== "guidancePath,proposalPath,samplingSourcePath,signoffPath" || Object.values(proof).some(value => typeof value !== "string" || !value)) throw new Error("invalid confirmation correction proof configuration");
+  const sampleNs = o.entries.map(e => e.n).sort((a, b) => a - b);
+  if (sampleNs.length !== 300 || sampleNs.some((n, i) => n !== i + 1)) throw new Error("confirmation correction requires the exact original sample");
+  const inherited = loadReleaseProof(prior, o.correctionProof.protocolPath);
+  const verified = await verifyRevalidationProof({ db: o.db, dataDir: o.dataDir, codebook: o.codebook, checkIds: Object.keys(o.codebook.checks), sampleNs, freshNs: Array.from({ length: 76 }, (_, i) => 301 + i), cutoff: inherited.recoveryCutoff, proof });
+  const source = JSON.parse(fs.readFileSync(retained(proof.samplingSourcePath), "utf8"));
+  if (!Array.isArray(source.previousEntries) || source.previousEntries.length !== o.entries.length || source.previousEntries.some((entry: any) => !o.entries.some(e => e.n === entry.n && String(e.hn_id) === String(entry.hn_id)))) throw new Error("confirmation correction sample identity differs");
+  return { checkIds: new Set(verified.appliedCheckIds), evidence: { priorProofDigest: inherited.proofDigest, configurationDigest: digest(configText), appliedCheckIds: verified.appliedCheckIds, ...verified.evidence } };
+}
 
 function validCachedDecision(row: any, p: Positive): boolean {
   const allowed = row.decision === "confirmed" || row.decision === "rejected" || (row.decision === "downgraded" && p.state === "pass");
@@ -87,13 +115,15 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
   const concurrency = o.concurrency ?? 2;
   if (concurrency !== 1 && concurrency !== 2) throw new Error("full confirmation concurrency must be 1–2");
   if (canonicalModel(o.model) !== "nemotron-3-ultra" || typeof o.reasoning !== "boolean") throw new Error("approved full confirmer requires pinned model and boolean setting");
-  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > 5) throw new Error("full confirmation requires the approved budget, capped at five dollars");
+  if (!(o.client.dollarBudget instanceof DollarBudget) || o.client.dollarBudget.cap > APPROVED_CAPS["full-confirm"]) throw new Error(`full confirmation requires the approved budget, capped at $${APPROVED_CAPS["full-confirm"]}`);
   const spikePath = path.join(o.dataDir, "validation", "confirmation-spike.json");
   const reviewPath = path.join(o.dataDir, "validation", "confirmation-spike-review.json");
   const spikeText = fs.readFileSync(spikePath, "utf8");
   validateSpikeReview(JSON.parse(fs.readFileSync(reviewPath, "utf8")), spikeText, { model: o.model, reasoning: o.reasoning });
   const spike: Spike = JSON.parse(spikeText);
   const log = o.log ?? console.log;
+  const correction = await verifiedConfirmationCorrections(o);
+  if (correction.evidence) log(`CONFIRMATION_CORRECTION: ${JSON.stringify(correction.evidence)}`);
   const entries = o.entries.filter(e => String(e.hn_id) !== ARTCRAFT_HN_ID);
   if (!entries.length || new Set(entries.map(e => e.n)).size !== entries.length ||
       entries.some(e => !Number.isInteger(e.n) || e.n <= 0)) throw new Error("invalid full confirmation sample");
@@ -111,9 +141,9 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
     for (const selected of spike.selected) {
       const current = positives.find(p => p.projectN === selected.projectN && p.checkId === selected.checkId);
       const reviewed = spike.decisions.find(p => p.projectN === selected.projectN && p.checkId === selected.checkId);
-      if (!current || inputDigest(o.codebook, current) !== selected.digest ||
-          JSON.stringify(current.spans) !== JSON.stringify(reviewed?.spans) ||
-          JSON.stringify((current.flaggedSpanIds ?? []).filter(id => current.spans.some(s => s.id === id))) !== JSON.stringify(reviewed?.flaggedSpanIds ?? []))
+      if (current && JSON.stringify((current.flaggedSpanIds ?? []).filter(id => current.spans.some(s => s.id === id))) !== JSON.stringify(reviewed?.flaggedSpanIds ?? []))
+        throw new Error("reviewed-spike-inputs-stale");
+      if ((!current || inputDigest(o.codebook, current) !== selected.digest || JSON.stringify(current.spans) !== JSON.stringify(reviewed?.spans)) && !correction.checkIds.has(selected.checkId))
         throw new Error("reviewed-spike-inputs-stale");
     }
     const checkRows = await o.db.selectFrom("pipeline_check_states").select(["project_n", "check_id"]).where("project_n", "in", entries.map(e => e.n)).execute();
@@ -145,16 +175,26 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
         continue;
       }
       out.attempted++;
+      const attemptUsage: unknown[] = [];
+      let persisted = false;
+      const measuredClient = { ...guardedClient, request: async (...args: any[]) => {
+        const response = await guardedClient.request(...args);
+        if (Array.isArray(response.json?.usage_attempts)) attemptUsage.push(...response.json.usage_attempts);
+        else attemptUsage.push(response.json?.usage);
+        return response;
+      } };
       try {
-        const result = await confirmWithModel(guardedClient, o.codebook, p, o.model, 3, o.reasoning);
+        const result = await confirmWithModel(measuredClient, o.codebook, p, o.model, 3, o.reasoning);
         await recordConfirmation(o.db, { projectN: p.projectN, checkId: p.checkId, decision: result.decision, confirmedState: confirmedStateFor(result.decision, p.state), reason: result.reason, confirmerId, confirmerKind: "agent", modelId: o.model, decidedAt: new Date().toISOString(), inputDigest: s.digest, spanIds: p.spans.map(span => span.id) });
         out.valid++; out.accounted++; out[result.decision]++;
+        persisted = true;
         log(`CONFIRMATION: ${JSON.stringify({ stage: out.stage, projectN: p.projectN, checkId: p.checkId, decision: result.decision, valid: out.valid, total: out.total })}`);
+        o.projectionTracker?.complete({ projectN: p.projectN, checkId: p.checkId, estimatedInputTokens: estimateMessagesTokens(confirmMessages(o.codebook, p)), attempts: attemptUsage });
       } catch (error) {
         const name = (error as Error).name;
         stop = true;
         out.reason ??= name;
-        if (!["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError", "ConfirmationStoppedError"].includes(name)) { out.failed++; out.accounted++; }
+        if (!persisted && !["BudgetExceededError", "QuotaStop", "TooLargeError", "ReservationExceededError", "ConfirmationStoppedError"].includes(name)) { out.failed++; out.accounted++; }
       }
     }
     };
@@ -165,6 +205,8 @@ export async function runApprovedConfirmation(o: FullConfirmationOptions): Promi
     const failed = settled.find(result => result.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
   } catch (error) { out.reason = (error as Error).message; }
+  try { o.projectionTracker?.checkpoint(out.reason ?? "final", o.client.dollarBudget.spent); }
+  catch (error) { out.reason ??= (error as Error).name; }
   out.remaining = out.total - out.valid;
   out.stopped = Math.max(0, out.total - out.accounted);
   out.ok = out.total > 0 && !out.reason && !out.failed && !out.awaitingGold && out.valid === out.total;

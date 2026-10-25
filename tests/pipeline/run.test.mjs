@@ -17,12 +17,17 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
-import { loadGateFile } from "../../src/pipeline/coding/contract.ts";
-import { runPipeline, reportRunAccounting } from "../../src/pipeline/run.ts";
+import { loadGateFile, buildContract, citationSchema } from "../../src/pipeline/coding/contract.ts";
+import { runPipeline, codeGuidedPrimaryChunk, guidedCodingRequestBodies, guidedCodingChunks, chunkSpans, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
+import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
+import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
+import { spansDigest } from "../../src/pipeline/confirm/confirm.ts";
+import { writeCached, stageCacheKey } from "../../src/pipeline/cache/stage-cache.ts";
+import { ensurePipelineSchema, recordSecondCoding } from "../../src/pipeline/store/results.ts";
 import { A8_ITEMS, a8Section } from "../../src/pipeline/signoff/a8.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
-import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
-import { PINNED_MODEL, SECOND_CODER_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
+import { DollarBudget, estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
+import { PINNED_MODEL, SECOND_CODER_MODEL, buildChatBody, createClient } from "../../src/pipeline/coding/nebius-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const gatesPath = path.join(root, "vendor", "ai-output-to-value", "schemas", "v1", "decision-gates.json");
@@ -75,6 +80,252 @@ function fakeGateSpawnImpl(_command, args) {
 }
 
 const gateOverrides = { gateSpawnImpl: fakeGateSpawnImpl, pythonPath: "fake-python", gateScriptPath: "fake-gate.py" };
+
+async function correctionFixture(cacheKind = "approved") {
+  const dataDir = tempDir("prism-correction-data-");
+  const cacheDir = tempDir("prism-correction-cache-");
+  const db = freshDb();
+  await ensurePipelineSchema(db);
+  const project = { n: 1, hn_id: "fixture-correction", title: "Synthetic correction", final_url: "https://fixture.example.test/" };
+  const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+  const text = "# Synthetic project\n\nExplicit evidence for synthetic checks.";
+  const snap = buildSnapshot(project.final_url, "2026-01-01T00:00:00Z", text);
+  const spans = snap.spans.map(s => ({ ...s, id: `p1-${s.id}` }));
+  fs.mkdirSync(path.join(dataDir, "pipeline", "snapshots"), { recursive: true });
+  fs.mkdirSync(path.join(dataDir, "pipeline", "manifests"), { recursive: true });
+  fs.writeFileSync(path.join(dataDir, "pipeline", "snapshots", `${snap.snapshotHash}.json`), JSON.stringify({ ...snap, redactedText: text }));
+  const manifestPath = path.join(dataDir, "pipeline", "manifests", "1.json");
+  const manifest = { projectN: 1, hnId: project.hn_id, snapshots: [{ url: project.final_url, visibility: "fixture" }], snapshotHashesInCollectionOrder: [snap.snapshotHash], retainedMetadata: { untouched: true } };
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  const contract = buildContract(gateFile.checkIds);
+  const codebook = loadCodebook(path.join(root, "codebook.md"));
+  const target = contract.checkIds[0], untouched = contract.checkIds[1];
+  const baseline = contract.checkIds.map(checkId => ({ checkId, proposedState: checkId === untouched ? "pass" : "unknown", spanIds: checkId === untouched ? [spans[0].id] : [] }));
+  const hash = v => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
+  if (cacheKind === "legacy") {
+    const codingRequestHash = hash({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: [buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, spans)] });
+    writeCached(cacheDir, stageCacheKey(project.hn_id, "code", { spanIds: spans.map(s => s.id), hasSpans: true, codingRequestHash }), { checks: baseline, failedChunks: 0 });
+  } else if (cacheKind !== "missing") {
+    const schema = cacheKind === "repaired" ? citationSchema(contract.jsonSchema, spans.map(s => s.id)) : contract.jsonSchema;
+    const body = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(contract.checkIds, codebook, schema, spans), mode: "json_schema", schema: { name: "gate_checks", schema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+    writeCached(cacheDir, stageCacheKey(project.hn_id, "approved-recode-chunk", { digest: hash(body), provider: "token-factory" }), JSON.stringify({ checks: baseline }));
+  }
+  await db.insertInto("pipeline_project_results").values({ project_n: 1, hn_id: project.hn_id, model_id: PINNED_MODEL, codebook_version: codebook.codebookVersion, snapshot_hashes_json: JSON.stringify(manifest.snapshotHashesInCollectionOrder), completed_at: "2026-10-24T00:00:00Z", coding_all_unknown: 0 }).execute();
+  await db.insertInto("pipeline_check_states").values(baseline.map(c => ({ project_n: 1, check_id: c.checkId, proposed_state: c.proposedState, filtered_state: c.proposedState, span_ids_json: JSON.stringify(c.spanIds) }))).execute();
+  await recordSecondCoding(db, 1, { modelId: "fixture-second", allUnknown: false, checkStates: baseline.map(c => ({ ...c, filteredState: c.proposedState })) });
+  return { db, dataDir, cacheDir, sliceProjectsPath, manifestPath, manifest, contract, codebook, project, target, untouched, spans };
+}
+
+describe("retained-evidence coding corrections", () => {
+  test("sequential disjoint corrections preserve prior corrected states and combined scope", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, secondCoderIds: new Set(), guidance: { version: "fixture-c1", byCheck: { [f.target]: "Synthetic first correction.", [f.untouched]: "Synthetic second correction." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async (_url, init) => {
+      calls++;
+      const ids = JSON.parse(init.body).response_format.json_schema.schema.properties.checks.required;
+      return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: ids.map(checkId => ({ checkId, proposedState: checkId === f.target ? "claimed" : "fail", spanIds: [f.spans[0].id] })) }) } }] });
+    } } };
+    try {
+      const secondary = await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute();
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.untouched] })).ok, true);
+      const states = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.equal(states.find(r => r.check_id === f.target).filtered_state, "claimed");
+      assert.equal(states.find(r => r.check_id === f.untouched).filtered_state, "fail");
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")).codingCorrection.checks, [f.target, f.untouched]);
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal(calls, 2, "replaying either correction uses its existing request cache");
+      const resumed = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.deepEqual(resumed, states);
+      assert.deepEqual(await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute(), secondary);
+      const current = JSON.parse(fs.readFileSync(f.manifestPath, "utf8"));
+      assert.deepEqual(current.snapshotHashesInCollectionOrder, f.manifest.snapshotHashesInCollectionOrder);
+      assert.equal(current.codingCorrection.inputDigest, spansDigest(f.spans));
+      // Existing same-version records can be recovered from their durable CAS binding.
+      const legacy = structuredClone(current); delete legacy.codingCorrection.inputDigest;
+      fs.writeFileSync(f.manifestPath, JSON.stringify(legacy));
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal(calls, 2);
+      for (const correction of [{ ...current.codingCorrection, version: "stale-c0" }, { ...current.codingCorrection, inputDigest: "0".repeat(64) }]) {
+        fs.writeFileSync(f.manifestPath, JSON.stringify({ ...current, codingCorrection: correction }));
+        await assert.rejects(runPipeline({ ...options, onlyChecks: [f.untouched] }), /stale or mismatched prior correction/);
+        assert.equal(calls, 2, "stale correction scope is refused before HTTP");
+        assert.deepEqual(await f.db.selectFrom("pipeline_check_states").selectAll().execute(), states);
+      }
+    } finally { await f.db.destroy(); }
+  });
+
+  test("first correction preserves every current untargeted row even when compatible caches disagree", async () => {
+    const f = await correctionFixture("legacy");
+    let calls = 0;
+    try {
+      const extra = f.contract.checkIds.filter(id => ![f.target, f.untouched].includes(id));
+      await f.db.updateTable("pipeline_check_states").set({ span_ids_json: JSON.stringify(f.spans.map(s => s.id)) }).where("check_id", "=", f.untouched).execute();
+      await f.db.updateTable("pipeline_check_states").set({ proposed_state: "fail", filtered_state: "fail", span_ids_json: JSON.stringify([f.spans[1].id]) }).where("check_id", "=", extra[0]).execute();
+      await f.db.updateTable("pipeline_check_states").set({ proposed_state: "pass", filtered_state: "unknown", span_ids_json: "[]" }).where("check_id", "=", extra[1]).execute();
+      const before = await f.db.selectFrom("pipeline_check_states").selectAll().orderBy("check_id").execute();
+      const result = await runPipeline({ ...f, apiKeys: { tavily: "", nebius: "fixture", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => {
+        calls++; return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: [{ checkId: f.target, proposedState: "claimed", spanIds: [f.spans[0].id] }] }) } }] });
+      } } });
+      assert.equal(result.ok, true); assert.equal(calls, 1);
+      const after = await f.db.selectFrom("pipeline_check_states").selectAll().orderBy("check_id").execute();
+      assert.deepEqual(after.filter(row => row.check_id !== f.target), before.filter(row => row.check_id !== f.target));
+      assert.equal(after.find(row => row.check_id === f.target).filtered_state, "claimed");
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath)).codingCorrection.checks, [f.target]);
+    } finally { await f.db.destroy(); }
+  });
+
+  test("missing or stale current coding refuses the whole correction before external calls", async () => {
+    for (const mutation of ["record", "model", "codebook", "snapshots", "row", "citation", "filter"]) {
+      const f = await correctionFixture(); let calls = 0;
+      try {
+        if (mutation === "record") await f.db.deleteFrom("pipeline_project_results").execute();
+        if (mutation === "model") await f.db.updateTable("pipeline_project_results").set({ model_id: "wrong" }).execute();
+        if (mutation === "codebook") await f.db.updateTable("pipeline_project_results").set({ codebook_version: "stale" }).execute();
+        if (mutation === "snapshots") await f.db.updateTable("pipeline_project_results").set({ snapshot_hashes_json: "[]" }).execute();
+        if (mutation === "row") await f.db.deleteFrom("pipeline_check_states").where("check_id", "=", f.untouched).execute();
+        if (mutation === "citation") await f.db.updateTable("pipeline_check_states").set({ span_ids_json: '["absent"]' }).where("check_id", "=", f.untouched).execute();
+        if (mutation === "filter") await f.db.updateTable("pipeline_check_states").set({ filtered_state: "fail" }).where("check_id", "=", f.untouched).execute();
+        const denied = async () => { calls++; throw new Error("external call forbidden"); };
+        await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { nebiusFetchImpl: denied, ownSiteFetchImpl: denied, tavilyFetchImpl: denied, githubFetchImpl: denied } }), /current coding/);
+        assert.equal(calls, 0); assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath)), f.manifest);
+      } finally { await f.db.destroy(); }
+    }
+  });
+
+  test("an incomplete later current project refuses before the first correction request", async () => {
+    const f = await correctionFixture("legacy"); let calls = 0;
+    try {
+      const second = { ...f.project, n: 2, hn_id: "fixture-correction-2" };
+      writeSliceProjects(f.dataDir, [f.project, second]);
+      fs.writeFileSync(path.join(f.dataDir, "pipeline/manifests/2.json"), JSON.stringify({ ...f.manifest, projectN: 2, hnId: second.hn_id }));
+      const current = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      const checks = current.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) }));
+      const codingRequestHash = crypto.createHash("sha256").update(JSON.stringify({ model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, chunks: [buildCodingMessages(f.contract.checkIds, f.codebook, f.contract.jsonSchema, f.spans)] })).digest("hex");
+      writeCached(f.cacheDir, stageCacheKey(second.hn_id, "code", { spanIds: f.spans.map(s => s.id), hasSpans: true, codingRequestHash }), { checks, failedChunks: 0 });
+      await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; throw new Error("external call forbidden"); } } }), /project 2: missing or stale current coding/);
+      assert.equal(calls, 0); assert.deepEqual(await f.db.selectFrom("pipeline_check_states").selectAll().execute(), current);
+    } finally { await f.db.destroy(); }
+  });
+
+  test("collect-only retains the normal manifest without either model or coding rows", async () => {
+    const dataDir = tempDir("prism-collect-only-");
+    const cacheDir = tempDir("prism-collect-only-cache-");
+    const db = freshDb();
+    const project = { n: 301, hn_id: "fresh-collect", title: "Synthetic fresh project", final_url: "https://fresh-collect.test/" };
+    const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+    let modelCalls = 0;
+    const options = { dataDir, cacheDir, db, sliceProjectsPath, gatesPath, collectOnly: true, apiKeys: { tavily: "fixture", nebius: "", github: "fixture" }, guidance: { version: "fixture", byCheck: { [gateFile.checkIds[0]]: "Synthetic guidance." } }, overrides: {
+      useTavily: true, ...gateOverrides,
+      nebiusFetchImpl: async () => { modelCalls++; throw new Error("must not construct a model request"); },
+      tavilyFetchImpl: async (url, init) => { const body = JSON.parse(init.body); return jsonResponse(url.endsWith("/map") ? { results: [body.url], usage: { credits: 0 } } : { results: body.urls.map(url => ({ url, raw_content: "Synthetic collection evidence. ".repeat(30) })), usage: { credits: 0 } }); },
+      renderImpl: async () => "",
+    } };
+    try {
+      const result = await runPipeline(options);
+      assert.equal(result.ok, true);
+      assert.equal(modelCalls, 0);
+      const manifest = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline/manifests/301.json"), "utf8"));
+      assert.equal(manifest.hnId, project.hn_id);
+      assert.equal(manifest.snapshots.length, 1);
+      assert.equal(manifest.codingCorrection, undefined, "collection must not claim completed correction");
+      assert.ok(fs.existsSync(path.join(dataDir, "pipeline/snapshots", `${manifest.snapshotHashesInCollectionOrder[0]}.json`)));
+      assert.equal((await db.selectFrom("pipeline_project_results").selectAll().execute()).length, 0);
+      assert.equal((await db.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 0);
+      await assert.rejects(runPipeline({ ...options, onlyChecks: [gateFile.checkIds[0]] }), /collect-only cannot/);
+      fs.writeFileSync(sliceProjectsPath, JSON.stringify([{ ...project, n: 1 }]));
+      await assert.rejects(runPipeline(options), /original 300/);
+      assert.equal(modelCalls, 0);
+    } finally { await db.destroy(); }
+  });
+
+  for (const kind of ["legacy", "approved", "repaired"]) test(`${kind} baseline is reused; selected checks alone change and guided resume buys nothing`, async () => {
+    const f = await correctionFixture(kind);
+    let modelCalls = 0, gatesRun = 0;
+    const failCollection = async () => { throw new Error("collection must never run"); };
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, secondCoderIds: new Set(), onlyChecks: [f.target], guidance: { version: "fixture-v1", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: {
+      ...gateOverrides, gateSpawnImpl: (...args) => { gatesRun++; return fakeGateSpawnImpl(...args); }, ownSiteFetchImpl: failCollection, tavilyFetchImpl: failCollection, githubFetchImpl: failCollection,
+      nebiusFetchImpl: async (_url, init) => {
+        modelCalls++;
+        const body = JSON.parse(init.body);
+        assert.match(body.messages[0].content, /Coding guidance \(fixture-v1\)/);
+        const schema = body.response_format.json_schema.schema;
+        assert.deepEqual(schema.properties.checks.required, [f.target]);
+        assert.deepEqual(Object.keys(schema.properties.checks.properties), [f.target]);
+        assert.equal(body.messages[1].content, "Spans:\n\n" + f.spans.map(s => `${s.id}: ${s.text}`).join("\n\n"), "every original span remains in the request");
+        const checks = [{ checkId: f.target, proposedState: "claimed", spanIds: [f.spans[0].id] }];
+        return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks }) } }] });
+      } } };
+    try {
+      assert.deepEqual(preflightGuidedCorrections([f.project], f), { projects: 1, chunks: 1 });
+      const secondBefore = await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute();
+      const first = await runPipeline(options);
+      assert.equal(first.ok, true);
+      assert.equal(first.evidenceComputed, 0);
+      assert.equal(modelCalls, 1);
+      const rows = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.equal(rows.find(r => r.check_id === f.target).proposed_state, "claimed");
+      assert.equal(rows.find(r => r.check_id === f.untouched).proposed_state, "pass");
+      assert.equal(rows.filter(r => r.proposed_state === "fail").length, 0);
+      assert.deepEqual(await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute(), secondBefore);
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), { ...f.manifest, codingCorrection: { version: "fixture-v1", checks: [f.target], inputDigest: spansDigest(f.spans) } });
+      const gatesBefore = gatesRun;
+      const resumed = await runPipeline(options);
+      assert.equal(resumed.ok, true);
+      assert.equal(resumed.codeFromCache, 1);
+      assert.equal(modelCalls, 1);
+      assert.ok(gatesRun > gatesBefore, "claims and gates rerun even with cached coding");
+    } finally { await f.db.destroy(); }
+  });
+
+  test("missing baseline or incompatible snapshot fails before every external call", async () => {
+    for (const invalid of ["missing", "snapshot"]) {
+      const f = await correctionFixture(invalid === "missing" ? "missing" : "approved");
+      if (invalid === "snapshot") fs.writeFileSync(path.join(f.dataDir, "pipeline", "snapshots", `${f.manifest.snapshotHashesInCollectionOrder[0]}.json`), JSON.stringify({ url: "https://fixture.example.test/", redactedText: "Changed fixture" }));
+      let calls = 0;
+      const denied = async () => { calls++; throw new Error("external call forbidden"); };
+      try {
+        await assert.rejects(runPipeline({ ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic." } }, overrides: { nebiusFetchImpl: denied, ownSiteFetchImpl: denied, tavilyFetchImpl: denied, githubFetchImpl: denied } }), /unguided coding cache|integrity mismatch/);
+        assert.equal(calls, 0);
+        assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), f.manifest);
+      } finally { await f.db.destroy(); }
+    }
+  });
+
+  test("invalid guidance and explicit incomplete approval proof fail before HTTP", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "", nebius: "", github: "" }, gatesPath, overrides: { nebiusFetchImpl: async () => { calls++; throw new Error("forbidden"); } } };
+    try {
+      await assert.rejects(runPipeline({ ...options, onlyChecks: [f.target] }), /only-checks requires guidance/);
+      await assert.rejects(runPipeline({ ...options, guidance: { version: "fixture", byCheck: { fabricated: "Invalid check" } } }), /invalid coding guidance/);
+      const proofPath = path.join(f.dataDir, "incomplete-proof.json");
+      fs.writeFileSync(proofPath, "{}");
+      await assert.rejects(runPipeline({ ...options, priorApprovalProofPath: proofPath }), /proof|approval|version/i);
+      assert.equal(calls, 0);
+    } finally { await f.db.destroy(); }
+  });
+
+  test("guided output containing unrequested checks exhausts retries, preserves baseline and is not reused", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, onlyChecks: [f.target], guidance: { version: "fixture", byCheck: { [f.target]: "Synthetic clarification." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: f.contract.checkIds.map(checkId => ({ checkId, proposedState: "unknown", spanIds: [] })) }) } }] }); } } };
+    try {
+      for (let n = 1; n <= 2; n++) {
+        const result = await runPipeline(options);
+        assert.equal(result.ok, false);
+        assert.equal(result.failed, 1);
+        assert.match(result.outcomes[0].error, /guided coding retry exhausted/);
+        assert.equal(calls, n * 3);
+        assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), f.manifest);
+        const states = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+        assert.equal(states.length, f.contract.checkIds.length);
+        assert.equal(states.find(row => row.check_id === f.untouched).filtered_state, "pass");
+        assert.equal(states.find(row => row.check_id === f.target).filtered_state, "unknown");
+      }
+    } finally { await f.db.destroy(); }
+  });
+});
 
 function captureAccounting(accounting) {
   let stdout = "", stderr = "", signal;
@@ -874,5 +1125,114 @@ describe("run.ts's --slice flag (03-09)", () => {
     assert.equal(accounting.ranProjects, 1);
     assert.equal(accounting.accountedProjects, 1);
     assert.ok(threw, "run.ts exits non-zero when any project failed, so a run with failures can never pass on exit status");
+  });
+});
+
+describe("guided primary chunk retries and durable reuse", () => {
+  function chunkOptions() {
+    const cacheDir = tempDir("prism-guided-chunks-");
+    const codebook = loadCodebook(), contract = buildContract(gateFile.checkIds);
+    return { cacheDir, projectId: "synthetic-guided", snapshotHashes: ["a".repeat(64)], codebook, contract, spans: [{ id: "p1-s001", text: "Complete synthetic source evidence." }], guidance: { version: "c1", byCheck: { [contract.checkIds[0]]: "Synthetic clarification." } } };
+  }
+  const response = (contract, spanId) => JSON.stringify({ checks: contract.checkIds.map(checkId => ({ checkId, proposedState: "pass", spanIds: [spanId] })) });
+  const ok = content => ({ ok: true, status: 200, json: { choices: [{ message: { content } }] } });
+
+  test("invalid citation regenerates a complete strict reply using enumerated citations", async () => {
+    const o = chunkOptions(), bodies = [];
+    try {
+      const variants = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+      const result = await codeGuidedPrimaryChunk({ ...o, client: { request: async (_path, { body }) => {
+        bodies.push(body);
+        return ok(response(o.contract, bodies.length === 1 ? "invented-id" : o.spans[0].id));
+      } } });
+      assert.equal(result.valid, true); assert.equal(result.attempts, 2);
+      assert.deepEqual(bodies, variants);
+      const canonical = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(o.contract.checkIds, o.codebook, o.contract.jsonSchema, o.spans, o.guidance), mode: "json_schema", schema: { name: "gate_checks", schema: o.contract.jsonSchema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
+      assert.deepEqual(bodies[0], canonical);
+      assert.deepEqual(bodies[1].response_format.json_schema.schema.$defs.citedSpanId.enum, ["p1-s001"]);
+      assert.equal(bodies[1].messages[1].content, bodies[0].messages[1].content);
+      const record = JSON.parse(fs.readFileSync(path.join(o.cacheDir, fs.readdirSync(o.cacheDir)[0])));
+      assert.equal(record.raw, response(o.contract, "p1-s001"));
+      assert.equal(record.requestVariant, "citation-enumerated");
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("an interrupted later chunk resumes without buying earlier successful chunks", async () => {
+    const o = chunkOptions(); let calls = 0;
+    const second = { ...o, spans: [{ id: "p2-s001", text: "Different complete synthetic evidence." }] };
+    const working = { request: async (_path, { body }) => { calls++; const id = body.messages[1].content.includes("p2-s001") ? "p2-s001" : "p1-s001"; return ok(response(o.contract, id)); } };
+    try {
+      assert.equal((await codeGuidedPrimaryChunk({ ...o, client: working })).valid, true);
+      await assert.rejects(codeGuidedPrimaryChunk({ ...second, client: { request: async () => { calls++; throw new Error("synthetic interrupted request"); } } }), /interrupted/);
+      assert.equal(fs.readdirSync(o.cacheDir).length, 1);
+      assert.equal((await codeGuidedPrimaryChunk({ ...o, client: working })).attempts, 0);
+      assert.equal((await codeGuidedPrimaryChunk({ ...second, client: working })).valid, true);
+      assert.equal(calls, 3);
+      assert.equal((await codeGuidedPrimaryChunk({ ...second, client: working })).attempts, 0);
+      assert.equal(calls, 3);
+      await codeGuidedPrimaryChunk({ ...o, snapshotHashes: ["b".repeat(64)], client: working });
+      await codeGuidedPrimaryChunk({ ...o, guidance: { ...o.guidance, version: "c2" }, client: working });
+      assert.equal(calls, 5, "current evidence and guidance each invalidate the chunk cache");
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("an over-cap citation retry refuses before another HTTP request without truncating evidence", async () => {
+    const o = chunkOptions(); let calls = 0;
+    o.spans = Array.from({ length: 100 }, (_, i) => ({ id: `p1-s${String(i).padStart(3, "0")}`, text: "Complete synthetic evidence." }));
+    const bodies = guidedCodingRequestBodies(o.codebook, o.contract, o.spans, o.guidance);
+    const cap = estimateMessagesTokens(bodies[0].messages);
+    assert.ok(estimateMessagesTokens(bodies[1].messages) > cap);
+    const c = createClient({ baseUrl: "https://synthetic.example.test", apiKey: "fixture", tokenCap: cap, budget: new DollarBudget(1), maxRetries: 0, fetchImpl: async () => { calls++; return jsonResponse({ choices: [{ message: { content: response(o.contract, "invented-id") } }] }); } });
+    try {
+      await assert.rejects(codeGuidedPrimaryChunk({ ...o, client: c }), /too-large/);
+      assert.equal(calls, 1); assert.equal(o.spans.length, 100); assert.equal(fs.readdirSync(o.cacheDir).length, 0);
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+
+  test("three malformed replies remain failures and are never repaired or cached", async () => {
+    const o = chunkOptions(); let calls = 0;
+    try {
+      const out = await codeGuidedPrimaryChunk({ ...o, client: { request: async () => { calls++; return ok('{"checks":'); } } });
+      assert.equal(calls, 3); assert.equal(out.allUnknown, true); assert.equal(out.valid, false);
+      assert.equal(fs.readdirSync(o.cacheDir).length, 0);
+    } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+});
+
+describe("complete-span request fitting", () => {
+  test("optional fitting deterministically subdivides without changing evidence or default packing", () => {
+    const spans = Array.from({ length: 20 }, (_, i) => ({ id: `p1-s${i}`, text: `Whole synthetic span ${i}: ` + "x".repeat(2000) }));
+    const baseline = chunkSpans(spans);
+    const fitted = chunkSpans(spans, 40000, chunk => chunk.length <= 3);
+    assert.deepEqual(fitted.flat(), spans);
+    assert.ok(fitted.every(chunk => chunk.length <= 3 && chunk.reduce((n, span) => n + span.text.length, 0) <= 40000));
+    assert.deepEqual(chunkSpans(spans), baseline);
+    assert.deepEqual(chunkSpans(spans, 40000, () => true), baseline);
+    assert.deepEqual(chunkSpans(spans, 40000, chunk => chunk.length <= 3), fitted);
+    assert.ok(fitted.flat().every((span, i) => span === spans[i]), "retain original span objects and order");
+  });
+
+  test("guided fitting keeps both exact request variants under the pre-registered cap", () => {
+    const codebook = loadCodebook(), contract = buildContract(gateFile.checkIds);
+    const baseSpans = Array.from({ length: 150 }, (_, i) => ({ id: `p1-s${String(i).padStart(3, "0")}`, text: `Unique complete span ${i}: ` + "evidence ".repeat(24) }));
+    const guidance = { version: "synthetic-c1", byCheck: Object.fromEntries(contract.checkIds.map(id => [id, "Retain the entire rule and cited evidence. ".repeat(18)])) };
+    const original = chunkSpans(baseSpans);
+    assert.ok(guidedCodingRequestBodies(codebook, contract, original[0], guidance).some(body => estimateMessagesTokens(body.messages) > 20000));
+    const spans = [...baseSpans, { id: "p2-duplicate", text: baseSpans[0].text }];
+    const packed = guidedCodingChunks(spans, codebook, contract, guidance);
+    assert.ok(packed.length > original.length);
+    assert.deepEqual(packed.flat(), baseSpans, "send exact duplicate text only once per project");
+    assert.ok(packed.every(chunk => chunk.reduce((n, span) => n + span.text.length, 0) <= 40000));
+    assert.ok(packed.every(chunk => guidedCodingRequestBodies(codebook, contract, chunk, guidance).every(body => estimateMessagesTokens(body.messages) <= 20000)));
+    const smaller = baseSpans.slice(0, 2);
+    assert.deepEqual(guidedCodingChunks(smaller, codebook, contract, guidance), chunkSpans(smaller));
+  });
+
+  test("a single indivisible span refuses instead of truncating or silently dropping it", () => {
+    const span = { id: "p1-s001", text: "x".repeat(40001) };
+    assert.equal(chunkSpans([span])[0][0], span, "default legacy packing stays unchanged");
+    assert.throws(() => chunkSpans([span], 40000, () => true), /complete numbered span/);
+    assert.throws(() => chunkSpans([{ id: "p1-s002", text: "Complete evidence." }], 40000, () => false), /complete numbered span/);
+    assert.equal(span.text.length, 40001);
   });
 });

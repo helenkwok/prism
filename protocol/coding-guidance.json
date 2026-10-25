@@ -1,0 +1,21 @@
+{
+  "version": "c1",
+  "checks": {
+    "output-reproducible": "Source with run instructions, a usable public demo, or published weights/data are alternatives, not cumulative requirements; a bare openness assertion without a usable link is only claimed.",
+    "acceptance-criteria-defined": "A metric/threshold, pass-fail suite or named benchmark are alternatives. Do not demand numerical thresholds for every alternative or require results for a definition.",
+    "acceptance-criteria-met": "A score alone is not a met criterion: identify the bar and linked result/report/register. A badge without a verifiable ID/register remains claimed; leave live verification to confirmation.",
+    "failure-modes-tested": "Separate a tested named failure plus observed behaviour from a robustness promise. A report is cited where available, not an additional mandatory artefact.",
+    "operational-owner-assigned": "A responsible role, team or support contact can qualify; no named individual or formal on-call process is required. Bare maintenance claims do not identify ownership.",
+    "assurance-defined": "Identify an ongoing mechanism and its named failure-mode connection. Monitoring, recurring review or audit are alternatives; generic security or badges alone are insufficient.",
+    "support-maintenance-defined": "Any one help channel, cadence or approval process suffices; no SLA or link is mandatory. Legal/privacy/sales-only contacts and unexplained bare links do not establish product help.",
+    "outcome-measure-defined": "Identify the specific tracked outcome, not generic impact. Units/capture methods are specificity examples, not universally mandatory fields. Technical metrics need the stated outcome context.",
+    "baseline-defined": "A before value, control group or prior-period figure can qualify. Identify the counterfactual actually used; an unanchored improvement claim is insufficient.",
+    "outcome-measured": "Use an observed after-value, not a target or qualitative improvement claim. Do not impose the separate baseline check here; link an artefact only where one exists.",
+    "important-confounds-named": "Caveats must relate to the comparison. A relevant stated confidence interval can qualify; neither formal causal design nor several confounds is mandatory.",
+    "outcome-evidence-available": "Identify the measured result and baseline relied on for this decision. Generic demos/data are insufficient; referencing or quoting relevant evidence need not add an external report.",
+    "full-cost-accounted": "Require a stated figure explicitly naming multiple relevant components, not an inferred boundary. Build-plus-operation is an example, not the only eligible pair.",
+    "risk-tradeoffs-assessed": "Distinguish a material decision-related risk/trade-off from an unrelated feature limit. One named consideration suffices; no numerical score or formal report is required.",
+    "alternatives-compared": "Name a specific alternative actually considered and why rejected. Status quo qualifies; competitor lists or feature differences alone do not show a decision comparison.",
+    "value-rule-explicit": "Identify the actual decision rule, not an unrelated alert threshold or post-hoc satisfaction. Explicit informal rules can qualify without a numerical threshold or formal preregistration."
+  }
+}

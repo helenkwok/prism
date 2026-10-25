@@ -63,6 +63,12 @@ export function uniform(seed: string, i: number): number {
   return parseInt(hex.slice(0, 13), 16) / 2 ** 52;
 }
 
+function percentileCI(vals: number[]): [number, number] | null {
+  if (vals.length === 0) return null;
+  vals.sort((x, y) => x - y);
+  return [vals[Math.floor(0.025 * (vals.length - 1))]!, vals[Math.ceil(0.975 * (vals.length - 1))]!];
+}
+
 /** Percentile bootstrap CI over projects; one running counter i (R07, A7.9). */
 export function bootstrapCI(
   projects: string[],
@@ -79,11 +85,7 @@ export function bootstrapCI(
     const v = stat(sample);
     if (v !== null && Number.isFinite(v)) vals.push(v);
   }
-  if (vals.length === 0) return null;
-  vals.sort((x, y) => x - y);
-  const lo = vals[Math.floor(0.025 * (vals.length - 1))]!;
-  const hi = vals[Math.ceil(0.975 * (vals.length - 1))]!;
-  return [lo, hi];
+  return percentileCI(vals);
 }
 
 /** Wilson score interval for a proportion (R07). */
@@ -104,10 +106,10 @@ function isPass(s: string): boolean {
   return s === "pass";
 }
 
-/** Four-state AC1 (R06 secondary). pe = [1/(k-1)] sum pi_j (1 - pi_j), k=4. */
+/** Four-state agreement, Cohen kappa and AC1 (R06 secondary), k=4. */
 export function fourState(a: string[], b: string[]) {
   const n = a.length;
-  if (n === 0 || b.length !== n) return { n: 0, pa: 0, ac1: 0 };
+  if (n === 0 || b.length !== n) return { n: 0, pa: 0, ac1: 0, kappa: null as number | null };
   let agree = 0;
   const countA: Record<string, number> = Object.fromEntries(FOUR_STATES.map((s) => [s, 0]));
   const countB: Record<string, number> = Object.fromEntries(FOUR_STATES.map((s) => [s, 0]));
@@ -117,14 +119,15 @@ export function fourState(a: string[], b: string[]) {
     if (b[i]! in countB) countB[b[i]!]!++;
   }
   const pa = agree / n;
-  let sum = 0;
+  let sum = 0; let peK = 0;
   for (const s of FOUR_STATES) {
     const pi = (countA[s]! / n + countB[s]! / n) / 2;
     sum += pi * (1 - pi);
+    peK += (countA[s]! / n) * (countB[s]! / n);
   }
   const pe = sum / (FOUR_STATES.length - 1);
   const ac1 = pe === 1 ? 0 : (pa - pe) / (1 - pe);
-  return { n, pa, ac1 };
+  return { n, pa, ac1, kappa: peK === 1 ? null : (pa - peK) / (1 - peK) };
 }
 
 export type AgreementRow = { projectN: number; checkId: string; a: string; b: string };
@@ -143,12 +146,17 @@ function emptyCheckEntry(checkId: string) {
     goldPasses: 0,
     coderPasses: 0,
     fourStateAc1: 0,
+    fourStatePa: 0,
+    fourStateKappa: null as number | null,
     estimable: false,
     ac1CI: null as Ci,
     precisionCI: null as Ci,
     recallCI: null as Ci,
     kappaCI: null as Ci,
     paCI: null as Ci,
+    fourStateAc1CI: null as Ci,
+    fourStatePaCI: null as Ci,
+    fourStateKappaCI: null as Ci,
   };
 }
 
@@ -170,6 +178,8 @@ function statsForRows(rows: AgreementRow[]) {
   return {
     ...bin,
     fourStateAc1: fs.ac1,
+    fourStatePa: fs.pa,
+    fourStateKappa: fs.kappa,
     estimable: estimable(bin.goldPasses),
   };
 }
@@ -189,45 +199,41 @@ export function agreementByCheck(rows: AgreementRow[], checkIds: string[], seed:
   const projectSet = new Set<number>();
   for (const row of rows) projectSet.add(row.projectN);
   const projectIds = [...projectSet].map(String);
+  // Each metric historically starts the same seeded stream. Share those exact draws,
+  // retaining every occurrence, rather than hashing the sequence again per metric/check.
+  let counter = 0;
+  const draws = Array.from({ length: B }, () => Uint32Array.from({ length: projectIds.length }, () => Math.floor(uniform(seed, counter++) * projectIds.length)));
+  const ciMetrics = { ac1CI: "ac1", paCI: "pa", precisionCI: "precision", recallCI: "recall", kappaCI: "kappa", fourStateAc1CI: "fourStateAc1", fourStatePaCI: "fourStatePa", fourStateKappaCI: "fourStateKappa" } as const;
 
   function withCIs(checkId: string, checkRows: AgreementRow[]) {
     const base = statsForRows(checkRows);
     const entry = { ...emptyCheckEntry(checkId), ...base, checkId };
     if (checkRows.length === 0 || projectIds.length === 0) return entry;
 
-    const rowsOf = (projSample: string[]) => {
-      const want = new Set(projSample.map(Number));
-      return checkRows.filter((r) => want.has(r.projectN));
-    };
-
-    entry.ac1CI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).ac1, seed, B);
-    entry.paCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).pa, seed, B);
-    entry.precisionCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).precision, seed, B);
-    entry.recallCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).recall, seed, B);
-    entry.kappaCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).kappa, seed, B);
+    const clusters = new Map<string, AgreementRow[]>();
+    for (const row of checkRows) {
+      const key = String(row.projectN); const cluster = clusters.get(key) ?? [];
+      cluster.push(row); clusters.set(key, cluster);
+    }
+    const metrics = Object.entries(ciMetrics) as [keyof typeof ciMetrics, (typeof ciMetrics)[keyof typeof ciMetrics]][];
+    const values = Object.fromEntries(metrics.map(([key]) => [key, [] as number[]])) as Record<keyof typeof ciMetrics, number[]>;
+    for (const draw of draws) {
+      const sampleRows: AgreementRow[] = [];
+      for (const index of draw) for (const row of clusters.get(projectIds[index]!) ?? []) sampleRows.push(row);
+      const sample = statsForRows(sampleRows);
+      for (const [key, metric] of metrics) {
+        const value = sample[metric];
+        if (value !== null && Number.isFinite(value)) values[key].push(value);
+      }
+    }
+    for (const [key] of metrics) entry[key] = percentileCI(values[key]);
     return entry;
   }
 
   const checks = checkIds.map((id) => withCIs(id, byCheck.get(id) ?? []));
 
   // Pooled: all rows; bootstrap still over projects. Never mutates checks.
-  const pooledBase = statsForRows(rows);
-  const pooled = {
-    ...emptyCheckEntry("pooled"),
-    ...pooledBase,
-    checkId: "pooled",
-  };
-  if (rows.length > 0 && projectIds.length > 0) {
-    const rowsOf = (projSample: string[]) => {
-      const want = new Set(projSample.map(Number));
-      return rows.filter((r) => want.has(r.projectN));
-    };
-    pooled.ac1CI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).ac1, seed, B);
-    pooled.paCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).pa, seed, B);
-    pooled.precisionCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).precision, seed, B);
-    pooled.recallCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).recall, seed, B);
-    pooled.kappaCI = bootstrapCI(projectIds, (s) => statsForRows(rowsOf(s)).kappa, seed, B);
-  }
+  const pooled = withCIs("pooled", rows);
 
   return { checks, pooled };
 }

@@ -12,7 +12,8 @@ import type { Kysely } from "kysely";
 
 import { resolveDataDir, getDb } from "../../app/server/db.ts";
 import { assertOutsideRepo, resolveRepoRoot } from "../../../scripts/check-data-dir.mjs";
-import { projectSpans } from "../confirm/confirm.ts";
+import { loadCodebook } from "../coding/codebook-prompt.ts";
+import { confirmationMatches, effectiveStates, spansDigest, projectSpans } from "../confirm/confirm.ts";
 
 const SCHEMA_PATH = path.join(process.cwd(), "protocol", "labelled-dataset.schema.json");
 
@@ -31,6 +32,13 @@ export type ExportLabelledResult = {
   gold: number;
   edit: number;
   path: string;
+  excluded: {
+    confirmationStale: number;
+    goldStale: number;
+    goldCodebook: number;
+    goldNoGold: number;
+    goldMissingOutcome: number;
+  };
 };
 
 function compileValidator(schemaPath: string) {
@@ -61,7 +69,20 @@ function spanMap(dataDir: string, projectN: number): Map<string, string> {
   }
 }
 
+function confirmationProvider(row: any): string | null {
+  if (row.confirmer_kind !== "agent") return null;
+  if (row.confirmer_id.startsWith("agent:ollama:")) return "ollama";
+  if (row.confirmer_id.startsWith("agent:nebius:") ||
+      (row.confirmer_id === `agent:${row.model_id}` && row.model_id?.startsWith("nvidia/"))) return "nebius";
+  return null;
+}
+
 export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLabelledResult> {
+  if (fs.realpathSync(opts.dataDir).split(path.sep).some(part => /^(?:backups?|archives?)$/i.test(part))) {
+    throw new Error("refusing labelled export from an archived or backup store");
+  }
+  const codebook = loadCodebook();
+  if (codebook.codebookVersion !== opts.codebookVersion) throw new Error("export codebook version is not current");
   const version = opts.version ?? "v1.0";
   const outPath = resolveOutPath(opts.dataDir, version, opts.out);
   const validate = compileValidator(opts.schemaPath ?? SCHEMA_PATH);
@@ -71,9 +92,27 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
   let confirmation = 0;
   let gold = 0;
   let edit = 0;
+  const excluded = { confirmationStale: 0, goldStale: 0, goldCodebook: 0, goldNoGold: 0, goldMissingOutcome: 0 };
 
   const tables = await opts.db.introspection.getTables();
   const has = (name: string) => tables.some((t) => t.name === name);
+  const states = has("pipeline_check_states") ? await effectiveStates(opts.db, ns) : [];
+  const currentByCheck = new Map(states.map(state => [`${state.projectN}:${state.checkId}`, state]));
+  const outcomes = has("pipeline_gold_outcomes")
+    ? await opts.db.selectFrom("pipeline_gold_outcomes").selectAll().where("project_n", "in", ns).execute() : null;
+  const flags = has("pipeline_injection_flags")
+    ? await opts.db.selectFrom("pipeline_injection_flags").select(["project_n", "span_id"]).where("project_n", "in", ns).execute() : [];
+  const flagsByProject = new Map<number, string[]>();
+  for (const flag of flags as any[]) {
+    const ids = flagsByProject.get(flag.project_n) ?? [];
+    ids.push(flag.span_id);
+    flagsByProject.set(flag.project_n, ids);
+  }
+  const spanCache = new Map<number, Map<string, string>>();
+  const spansOf = (n: number) => {
+    if (!spanCache.has(n)) spanCache.set(n, spanMap(opts.dataDir, n));
+    return spanCache.get(n)!;
+  };
 
   if (has("pipeline_confirmations")) {
     const rows = await opts.db
@@ -82,8 +121,16 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
       .where("project_n", "in", ns)
       .execute();
     for (const r of rows as any[]) {
-      const byId = spanMap(opts.dataDir, r.project_n);
+      const byId = spansOf(r.project_n);
       const spanIds: string[] = JSON.parse(r.span_ids_json);
+      const current = currentByCheck.get(`${r.project_n}:${r.check_id}`);
+      const currentSpans = current?.spanIds.map(id => ({ id, text: byId.get(id) ?? "" })) ?? [];
+      if (!current || !["pass", "claimed"].includes(current.filteredState) || currentSpans.some(span => !byId.has(span.id)) ||
+          !confirmationMatches(r, { projectN: r.project_n, checkId: r.check_id, state: current.filteredState as "pass" | "claimed", spans: currentSpans,
+            flaggedSpanIds: flagsByProject.get(r.project_n) ?? [] }, codebook, { editActorId: current.editActorId })) {
+        excluded.confirmationStale += 1;
+        continue;
+      }
       const record = {
         kind: "confirmation" as const,
         projectN: r.project_n,
@@ -96,7 +143,7 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
         actor: {
           id: r.confirmer_id,
           kind: r.confirmer_kind === "person" ? ("person" as const) : ("agent" as const),
-          provider: r.confirmer_kind === "agent" ? "nebius" : null,
+          provider: confirmationProvider(r),
           modelId: r.model_id,
         },
         timestamp: r.decided_at,
@@ -112,12 +159,20 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
   }
 
   if (has("pipeline_gold_labels")) {
-    let q = opts.db.selectFrom("pipeline_gold_labels").selectAll().where("project_n", "in", ns);
-    q = q.where("codebook_version", "=", opts.codebookVersion) as typeof q;
-    const rows = await q.execute();
+    const rows = await opts.db.selectFrom("pipeline_gold_labels").selectAll().where("project_n", "in", ns).execute();
     for (const r of rows as any[]) {
-      const byId = spanMap(opts.dataDir, r.project_n);
+      const byId = spansOf(r.project_n);
       const spanIds: string[] = JSON.parse(r.span_ids_json);
+      if (r.codebook_version !== opts.codebookVersion) { excluded.goldCodebook += 1; continue; }
+      if (!byId.size || r.input_digest !== spansDigest([...byId].map(([id, text]) => ({ id, text }))) || spanIds.some(id => !byId.has(id))) {
+        excluded.goldStale += 1;
+        continue;
+      }
+      if (outcomes) {
+        const outcome = outcomes.find((o: any) => o.project_n === r.project_n && o.codebook_version === r.codebook_version && o.labeller_id === r.labeller_id && o.input_digest === r.input_digest);
+        if (!outcome) { excluded.goldMissingOutcome += 1; continue; }
+        if (outcome.outcome !== "labelled") { excluded.goldNoGold += 1; continue; }
+      }
       const record = {
         kind: "gold" as const,
         projectN: r.project_n,
@@ -130,7 +185,7 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
         actor: {
           id: r.labeller_id,
           kind: r.labeller_kind === "person" ? ("person" as const) : ("agent" as const),
-          provider: r.provider,
+          provider: r.labeller_kind === "person" ? null : r.provider,
           modelId: r.model_id,
         },
         timestamp: r.labelled_at,
@@ -148,7 +203,7 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
   if (has("pipeline_edits")) {
     const rows = await opts.db.selectFrom("pipeline_edits").selectAll().where("project_n", "in", ns).execute();
     for (const r of rows as any[]) {
-      const byId = spanMap(opts.dataDir, r.project_n);
+      const byId = spansOf(r.project_n);
       const spanIds: string[] = JSON.parse(r.span_ids_json);
       const record = {
         kind: "edit" as const,
@@ -179,7 +234,8 @@ export async function exportLabelled(opts: ExportLabelledOpts): Promise<ExportLa
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true, mode: 0o700 });
   fs.writeFileSync(outPath, lines.length ? lines.join("\n") + "\n" : "", { mode: 0o600 });
-  return { confirmation, gold, edit, path: outPath };
+  fs.chmodSync(outPath, 0o600);
+  return { confirmation, gold, edit, path: outPath, excluded };
 }
 
 function parseArgs(argv: string[]) {

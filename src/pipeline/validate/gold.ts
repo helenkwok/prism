@@ -21,6 +21,7 @@ import { buildContract, citationSchema, isSchemaValid } from "../coding/contract
 import { uniqueProjectSpans } from "../coding/span-packing.ts";
 import { readRepairIndex, recordRepairMetadata } from "../coding/repair-index.ts";
 import { assertIndependent, ROLE_CONFIG, roleClient, type RoleSpec } from "./providers.ts";
+import { DEFAULT_TOKEN_CAP, estimateMessagesTokens } from "../coding/spend-guards.ts";
 
 const DEFAULT_CONCURRENCY = 4;
 export const GOLD_ATTEMPT_REVISION = "format-feedback-v1";
@@ -86,6 +87,32 @@ function reasoningStored(role: RoleSpec): string {
   return typeof role.reasoning === "boolean" ? String(role.reasoning) : role.reasoning;
 }
 
+function goldFeedback(stage: string | undefined, checkIds: string[], spanIds: string[]): string | undefined {
+  if (stage === "json_parse") return "Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check.";
+  if (stage === "zod") return `Return exactly the required checks object keyed by all ${checkIds.length} ids: ${checkIds.join(", ")}. Each check contains only proposedState (pass, fail, unknown or claimed) and spanIds (an array of strings, empty when unsupported). Do not add, rename or omit keys. Match the supplied schema exactly; no prose or fences.`;
+  if (stage === "span_resolve") return `Your previous citations did not resolve. Cite only these exact span ids: ${JSON.stringify(spanIds)}. Never invent, alias or shorten an id. Use an empty spanIds array when no listed span supports the state. Return every required check.`;
+}
+
+function goldBody(codebook: Codebook, role: RoleSpec, jsonSchema: unknown, checkIds: string[], spans: { id: string; text: string }[], feedback?: string) {
+  return buildChatBody({ model: role.model,
+    messages: buildCodingMessages(checkIds, codebook, jsonSchema, spans).map((message, i) => i === 0 && feedback ? { ...message, content: `${message.content}\n\nFormat correction (${GOLD_ATTEMPT_REVISION}): ${feedback}` } : message),
+    mode: "json_schema", schema: { name: "gate_checks", schema: jsonSchema, strict: true }, thinking: false,
+    ...(typeof role.reasoning === "string" ? { reasoningEffort: role.reasoning } : {}), maxTokens: CODING_MAX_TOKENS });
+}
+
+/** Preflight every existing strict-regeneration variant without changing response parsing. */
+export function goldRequestBodies(codebook: Codebook, contract: RetryContract, spans: { id: string; text: string }[], role: RoleSpec) {
+  const ids = spans.map(s => s.id);
+  return [undefined, "json_parse", "zod", "span_resolve"].map(stage => goldBody(codebook, role,
+    stage === "span_resolve" ? citationSchema(contract.jsonSchema, ids) : contract.jsonSchema,
+    contract.checkIds, spans, goldFeedback(stage, contract.checkIds, ids)));
+}
+
+export function goldCodingChunks(spans: { id: string; text: string }[], codebook: Codebook, contract: RetryContract, role: RoleSpec) {
+  return chunkSpans(uniqueProjectSpans(spans), 40000, chunk => goldRequestBodies(codebook, contract, chunk, role)
+    .every(body => estimateMessagesTokens(body.messages) <= DEFAULT_TOKEN_CAP));
+}
+
 function makeGoldCallOnce(
   codebook: Codebook,
   spansById: Map<string, string>,
@@ -101,24 +128,14 @@ function makeGoldCallOnce(
   const attempts = new Map<string, number>();
   return async (_client, _cfg, jsonSchema, checkIds, spanIds) => {
     const spans = spanIds.map((id) => ({ id, text: spansById.get(id) ?? "" }));
-    const makeBody = (schema: unknown, feedback?: string) => buildChatBody({
-      model: role.model,
-      messages: buildCodingMessages(checkIds, codebook, schema, spans).map((message, i) => i === 0 && feedback ? { ...message, content: `${message.content}\n\nFormat correction (${GOLD_ATTEMPT_REVISION}): ${feedback}` } : message),
-      mode: "json_schema",
-      schema: { name: "gate_checks", schema, strict: true },
-      thinking: false,
-      ...(typeof role.reasoning === "string" ? { reasoningEffort: role.reasoning } : {}),
-      maxTokens: CODING_MAX_TOKENS,
-    });
+    const makeBody = (schema: unknown, feedback?: string) => goldBody(codebook, role, schema, checkIds, spans, feedback);
     let body = makeBody(jsonSchema);
     const baseDigest = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const baseCache = readCached<string>(cacheDir, stageCacheKey(hnId, "gold-valid-chunk", { provider: role.provider, model: role.model, reasoning: role.reasoning, requestHash: baseDigest }));
     if (baseCache.hit && isSchemaValid(baseCache.value, spanIds, buildContract(checkIds).zodSchema).valid) return baseCache.value;
     const failure = failures.get(baseDigest) ?? (role.provider === "ollama" && /^glm-5\.3-flash(?::cloud)?$/.test(role.model) ? "json_parse" : undefined);
     // Cloud schemas are advisory; local validation is strict and retry feedback is trusted text.
-    if (failure === "json_parse") body = makeBody(jsonSchema, "Return exactly one valid JSON object, with no prose, markdown fences or text outside the object. Do not omit any required check.");
-    if (failure === "zod") body = makeBody(jsonSchema, `Return exactly the required checks object keyed by all ${checkIds.length} ids: ${checkIds.join(", ")}. Each check contains only proposedState (pass, fail, unknown or claimed) and spanIds (an array of strings, empty when unsupported). Do not add, rename or omit keys. Match the supplied schema exactly; no prose or fences.`);
-    if (failure === "span_resolve") body = makeBody(citationSchema(jsonSchema, spanIds), `Your previous citations did not resolve. Cite only these exact span ids: ${JSON.stringify(spanIds)}. Never invent, alias or shorten an id. Use an empty spanIds array when no listed span supports the state. Return every required check.`);
+    if (failure) body = makeBody(failure === "span_resolve" ? citationSchema(jsonSchema, spanIds) : jsonSchema, goldFeedback(failure, checkIds, spanIds));
     const requestHash = crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const { value } = await withStageCache(
       cacheDir,
@@ -171,6 +188,7 @@ export async function labelProject({
   contract,
   role,
   client,
+  boundedChunks = false,
 }: {
   db: Kysely<any>;
   dataDir: string;
@@ -182,6 +200,7 @@ export async function labelProject({
   contract: RetryContract;
   role: RoleSpec;
   client: { request: (p: string, init: { method: string; body: unknown }) => Promise<{ ok: boolean; status: number; json: unknown; text?: string }> };
+  boundedChunks?: boolean;
 }): Promise<GoldOutcome> {
   assertIndependent("gold", role.model);
   await ensureGoldSchema(db);
@@ -205,7 +224,7 @@ export async function labelProject({
   }
 
   const spansById = new Map(spans.map((s) => [s.id, s.text]));
-  const chunks = chunkSpans(uniqueProjectSpans(spans));
+  const chunks = boundedChunks ? goldCodingChunks(spans, codebook, contract, role) : chunkSpans(uniqueProjectSpans(spans));
   const callOnce = makeGoldCallOnce(codebook, spansById, role, client, cacheDir, hnId, dataDir, projectN);
   const perChunk = [];
   for (const chunk of chunks) {
