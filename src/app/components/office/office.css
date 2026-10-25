@@ -1,0 +1,123 @@
+.webOffice{font-family:"Avenir Next",Avenir,"Segoe UI",sans-serif;color:#172b4d;background:#f4f6fa;font-synthesis:none;font-weight:400;--ink:#172b4d;--muted:#59677d;--line:#dce2ec;--orange:#2563eb}
+.webOffice button,.webOffice input{font:inherit}
+.webOffice button{cursor:pointer}
+.webOffice button,.webOffice a,.webOffice input{-webkit-tap-highlight-color:transparent}
+.webOffice button{color:inherit}
+.webOffice button:focus-visible,.webOffice a:focus-visible,.webOffice input:focus-visible{outline:3px solid #2563eb;outline-offset:4px}
+.webOffice button{border:0;background:none}
+.webOffice button:disabled{cursor:wait}
+.webOffice button:hover{filter:brightness(.96)}
+.webOffice [hidden]{display:none!important}
+.webOffice a{color:inherit}
+.webOffice .workspace{height:100dvh;display:grid;grid-template-columns:218px minmax(0,1fr);grid-template-rows:78px minmax(0,1fr)}
+.webOffice .topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 34px;border-bottom:1px solid var(--line);background:#ffffff}
+.webOffice .brand{display:flex;align-items:center;gap:12px;font-size:25px;letter-spacing:-1.1px;font-weight:700;padding:0}
+.webOffice .brand-mark{background:#172b4d;color:#ffffff;width:35px;height:36px;border-radius:10px;font-family:inherit;font-size:33px;line-height:28px;letter-spacing:-5px;padding-right:5px}
+.webOffice .brand-mark span{color:#8fc9ff}
+.webOffice .brand-light{font-weight:400}
+.webOffice .prototype{font-size:10px;letter-spacing:.7px;background:#e9eff8;padding:4px 7px;border-radius:4px;margin:4px 0 0 2px;font-weight:500}
+.webOffice .topbar-right{display:flex;gap:23px;align-items:center}
+.webOffice .local-label{font-size:12px;color:#59677d;display:flex;align-items:center;gap:8px}
+.webOffice .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82b6;flex-shrink:0}
+.webOffice .help-button{border:1px solid #dce2ec;border-radius:50%;width:28px;height:28px;font-family:inherit}
+.webOffice .sidebar{border-right:1px solid var(--line);padding:34px 18px 26px;display:flex;flex-direction:column;justify-content:space-between}
+.webOffice .nav-caption{display:block;font-size:9px;letter-spacing:1.6px;color:#66758b;margin:0 14px 15px}
+.webOffice .nav-item{width:100%;display:flex;align-items:center;gap:13px;padding:13px 15px;min-height:48px;border-radius:6px;text-align:left;font-size:13px;margin-bottom:5px}
+.webOffice .nav-item.selected{background:#e5edfc;font-weight:600}
+.webOffice .home-nav>span:first-child{font-size:25px;line-height:20px;width:20px}
+.webOffice .nav-divider{border-top:1px solid var(--line);margin:24px 13px 25px}
+.webOffice .tool-icon.small{width:20px;height:23px;color:var(--tool-color);flex-shrink:0}
+.webOffice .session-dot{width:5px;height:5px;border-radius:50%;background:var(--tool-color);margin-left:auto}
+.webOffice .sidebar-bottom{padding:0 15px}
+.webOffice .sidebar-bottom p{font:600 20px/1.35 "Avenir Next",Avenir,"Segoe UI",sans-serif;letter-spacing:-.5px;margin:0 0 12px}
+.webOffice .sidebar-bottom>span{color:#66758b;font-size:11px}
+.webOffice .install-button{display:block;font-size:11px;margin-top:20px;padding:10px 0;border-bottom:1px solid #c2cddd;text-align:left}
+.webOffice .main{min-height:0;min-width:0;overflow:auto;position:relative;display:flex;flex-direction:column}
+.webOffice .home-view{max-width:1280px;width:100%;padding:55px 58px 28px;margin:0 auto}
+.webOffice .home-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:37px}
+.webOffice .eyebrow{font-size:9px;font-weight:600;letter-spacing:1.8px;color:#526782;margin:0 0 18px}
+.webOffice h1{font-family:inherit;font-size:clamp(30px,3.3vw,49px);line-height:1.15;font-weight:600;letter-spacing:-1.3px;margin:0 0 13px}
+.webOffice .intro{font-size:13px;color:#59677d;margin:0;line-height:1.6}
+.webOffice .tool-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.webOffice .tool-card{border:1px solid #dce2ec;border-radius:8px;padding:17px 18px 0;text-align:left;background:#ffffff;overflow:hidden;transition:transform .18s,border-color .18s;animation:arrive .4s both;animation-delay:var(--delay)}
+.webOffice .tool-card:hover{transform:translateY(-4px);border-color:var(--tool-color);filter:none}
+.webOffice .card-top{display:flex;align-items:center;justify-content:space-between}
+.webOffice .tool-number{font-size:10px;color:#6e7c91;font-variant-numeric:tabular-nums}
+.webOffice .format{font-size:8px;letter-spacing:.7px;color:var(--tool-color);border:1px solid color-mix(in srgb,var(--tool-color) 20%,transparent);border-radius:3px;padding:3px 5px}
+.webOffice .paper-preview{height:117px;position:relative;display:flex;align-items:center;justify-content:center;color:var(--tool-color)}
+.webOffice .paper-preview:before{content:"";width:82px;height:82px;background:var(--tool-paper);border-radius:50%;position:absolute}
+.webOffice .tool-icon{width:46px;height:55px;position:relative;z-index:1}
+.webOffice .tool-card h2{font-size:17px;font-weight:500;letter-spacing:-.45px;margin:6px 0 9px}
+.webOffice .tool-card p{font-size:11px;line-height:1.65;color:#59677d;margin:0 0 23px;min-height:37px}
+.webOffice .card-action{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tool-color);padding:14px 0;border-top:1px solid var(--line)}
+.webOffice .card-action>span{font-size:18px}
+.webOffice .library-section{margin-top:46px}
+.webOffice .section-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px}
+.webOffice .section-heading h2{font-size:17px;letter-spacing:-.4px;font-weight:500;margin:0 0 8px}
+.webOffice .section-heading h2>span{color:#66758b;font-size:10px;margin-left:8px;letter-spacing:.7px}
+.webOffice .section-heading p{font-size:11px;margin:0;color:#59677d}
+.webOffice .open-file{border:1px solid #c8d3e3;background:#ffffff;border-radius:5px;padding:10px 14px;min-height:40px;white-space:nowrap;font-size:11px;display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.webOffice .open-file>span{font-size:18px;line-height:10px}
+.webOffice .empty-desk{min-height:153px;border:1px dashed #ccd6e4;border-radius:7px;display:flex;align-items:center;justify-content:center;gap:25px;background:#edf2f9;padding:25px}
+.webOffice .empty-paper{width:42px;height:53px;border:1px solid #a8b9cf;border-radius:2px;transform:rotate(-8deg);padding:15px 9px;background:#ffffff;box-shadow:5px 4px 0 #dde6f1;flex-shrink:0}
+.webOffice .empty-paper span{display:block;border-top:1px solid #a8b9cf;margin-bottom:6px}
+.webOffice .empty-paper span:last-child{width:65%}
+.webOffice .empty-desk h3{font:500 17px "Avenir Next",Avenir,"Segoe UI",sans-serif;letter-spacing:-.3px;margin:0 0 10px}
+.webOffice .empty-desk p{font-size:11px;line-height:1.8;color:#59677d;margin:0}
+.webOffice .home-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:1px solid var(--line);margin-top:37px;padding-top:21px;font-size:9px;color:#59677d}
+.webOffice .home-footer>span{display:flex;gap:7px;align-items:center}
+.webOffice .home-footer button{font-size:9px;padding:0}
+.webOffice .home-footer button span{margin-left:5px}
+.webOffice .notice{background:#e8f0fe;padding:12px 22px;font-size:12px;line-height:1.6;display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #c5d7f8;flex-shrink:0}
+.webOffice .notice button{font-size:20px;padding:0 6px;align-self:flex-start}
+.webOffice .editor-toolbar{min-height:51px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 18px;gap:12px;background:#ffffff;flex-shrink:0;font-size:12px}
+.webOffice .editor-toolbar>div{display:flex;align-items:center;gap:9px}
+.webOffice .editor-toolbar strong{font-weight:500}
+.webOffice .editor-subtitle{font-size:10px;color:#59677d;margin-left:9px}
+.webOffice .editor-toolbar>button{font-size:11px;white-space:nowrap;min-height:32px}
+.webOffice .editors{flex:1;min-height:0;position:relative}
+.webOffice .editor-panel{height:100%;position:relative}
+.webOffice .editor-panel iframe{border:0;width:100%;height:100%;display:block;background:#fff}
+.webOffice .loading-editor{position:absolute;inset:0;z-index:2;background:#f4f6fa;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.webOffice .loading-editor h2{font:600 25px "Avenir Next",Avenir,"Segoe UI",sans-serif}
+.webOffice .loading-editor p{font-size:12px;line-height:1.7;color:#59677d}
+.webOffice .search-label{display:flex;align-items:center;gap:12px;font-size:11px;margin-bottom:16px}
+.webOffice .search-label input{border:1px solid #c8d3e3;border-radius:5px;padding:9px;background:#ffffff;max-width:100%;min-width:0}
+.webOffice .file-list{border-top:1px solid var(--line)}
+.webOffice .file-row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:7px 0;gap:12px}
+.webOffice .file-open{display:flex;gap:14px;align-items:center;min-width:0;text-align:left;padding:10px 8px;flex:1}
+.webOffice .file-open>span:last-child{min-width:0}
+.webOffice .file-open strong{display:block;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.webOffice .file-open small{display:block;font-size:10px;color:#59677d;margin-top:5px}
+.webOffice .download-button{font-size:10px;padding:13px}
+.webOffice .download-button span{margin-left:10px}
+.webOffice .no-results{font-size:12px;padding:15px}
+.webOffice .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.webOffice .skip-link{position:fixed;left:10px;top:-70px;z-index:20;background:#172b4d;color:white;padding:12px}
+.webOffice .skip-link:focus{top:10px}
+.webOffice dialog[open]{position:relative;margin:0;max-width:540px;max-height:90dvh;overflow:auto;border:1px solid #d1d6c6;border-radius:12px;background:#ffffff;color:var(--ink);padding:40px;box-shadow:0 22px 100px #142d2d22}
+.webOffice dialog h2{font:600 29px "Avenir Next",Avenir,"Segoe UI",sans-serif;letter-spacing:-1px;margin:0 0 20px}
+.webOffice dialog p:not(.eyebrow){font-size:13px;line-height:1.8;color:#59677d}
+.webOffice dialog .open-file{margin-top:15px}
+.webOffice .modal-close{position:absolute;right:13px;top:10px;font-size:25px;min-width:32px;min-height:32px}
+@keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rotate{to{transform:rotate(360deg)}}
+@media(min-width:1500px){.webOffice .home-view{padding-top:70px}.webOffice .paper-preview{height:145px}.webOffice .tool-card p{min-height:20px}.webOffice .tool-card{padding-left:24px;padding-right:24px}.webOffice .empty-desk{min-height:185px}}
+@media(max-width:1100px){.webOffice .workspace{grid-template-columns:176px minmax(0,1fr)}.webOffice .home-view{padding:40px 30px 25px}.webOffice .sidebar{padding-left:10px;padding-right:10px}.webOffice .tool-grid{gap:11px}.webOffice .tool-card{padding-left:13px;padding-right:13px}.webOffice .tool-card h2{font-size:15px}.webOffice .tool-card p{font-size:10px}.webOffice .editor-subtitle{display:none}}
+@media(max-width:850px){.webOffice .workspace{grid-template-columns:76px minmax(0,1fr);grid-template-rows:66px minmax(0,1fr)}.webOffice .topbar{padding:0 22px}.webOffice .sidebar{padding:20px 10px}.webOffice .nav-caption,.webOffice .nav-item>span:not(:first-child),.webOffice .nav-item>svg+span,.webOffice .sidebar-bottom,.webOffice .nav-divider{display:none}.webOffice .nav-item{justify-content:center;padding:13px 10px;margin-bottom:10px}.webOffice .home-nav{margin-bottom:25px}.webOffice .nav-item>span.session-dot{display:block;position:absolute;right:4px;top:7px}.webOffice .nav-item{position:relative}.webOffice .tool-icon.small{width:23px;height:26px}.webOffice .home-view{padding:34px 28px 24px}.webOffice .home-heading{margin-bottom:28px}.webOffice .tool-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.webOffice .tool-card{padding:14px 17px 0}.webOffice .paper-preview{height:78px}.webOffice .paper-preview:before{width:65px;height:65px}.webOffice .paper-preview>.tool-icon{height:44px;width:39px}.webOffice .tool-card h2{font-size:17px;margin-top:7px}.webOffice .tool-card p{min-height:0;margin-bottom:15px;font-size:11px}.webOffice .card-action{padding:10px 0}.webOffice .library-section{margin-top:29px}.webOffice .home-footer{margin-top:26px}.webOffice .empty-desk{padding:24px 17px}.webOffice .empty-desk h3{font-size:18px}.webOffice .section-heading p{max-width:230px;line-height:1.5}.webOffice .sidebar .session-dot{display:block}.webOffice .brand{font-size:23px}}
+@media(max-width:520px){.webOffice .workspace{grid-template-columns:1fr;grid-template-rows:60px auto minmax(0,1fr)}.webOffice .topbar{padding:0 16px}.webOffice .brand{gap:9px;font-size:22px}.webOffice .brand-mark{height:31px;width:31px;font-size:29px;line-height:25px;border-radius:8px}.webOffice .prototype{font-size:8px;margin-left:0}.webOffice .local-label{display:none}.webOffice .sidebar{grid-row:2;border-right:0;border-bottom:1px solid var(--line);padding:5px 8px;background:#ffffff}.webOffice .sidebar-top{display:flex;justify-content:space-between}.webOffice .nav-item{flex:1;width:auto;min-height:44px;margin:0;padding:10px 8px;gap:5px;border-radius:5px}.webOffice .nav-item>svg{width:18px!important;height:22px!important}.webOffice .nav-item>span.session-dot{top:4px;right:5px}.webOffice .home-nav>span:first-child{font-size:25px}.webOffice .nav-item>svg+span{display:none}.webOffice .home-view{padding:27px 19px 20px}.webOffice .eyebrow{font-size:8px;letter-spacing:1.3px;margin-bottom:13px}.webOffice h1{font-size:30px;letter-spacing:-1px}.webOffice .intro{font-size:11px;max-width:235px}.webOffice .home-heading{margin-bottom:23px}.webOffice .tool-grid{gap:11px}.webOffice .tool-card{padding:13px 13px 0}.webOffice .tool-card h2{font-size:16px}.webOffice .tool-card p{font-size:10px;min-height:32px;margin-bottom:10px}.webOffice .paper-preview{height:75px}.webOffice .section-heading{gap:8px}.webOffice .section-heading h2{font-size:16px}.webOffice .section-heading p{font-size:10px;max-width:180px}.webOffice .open-file{padding:9px 10px;font-size:10px;gap:5px}.webOffice .empty-desk{gap:16px;min-height:143px}.webOffice .empty-desk h3{font-size:16px;line-height:1.35}.webOffice .empty-desk p{font-size:10px}.webOffice .empty-paper{width:33px;height:44px;padding:12px 7px}.webOffice .home-footer{font-size:8px;gap:6px}.webOffice .home-footer button{font-size:8px;max-width:125px;text-align:right}.webOffice .editor-toolbar{padding:6px 12px;min-height:45px;font-size:11px}.webOffice .editor-toolbar>button{font-size:10px}.webOffice .download-button{font-size:9px;padding:10px 6px}.webOffice dialog[open]{padding:32px 24px}.webOffice .file-open{padding-left:0}}
+@media(prefers-reduced-motion:reduce){.webOffice *,.webOffice *:before,.webOffice *:after{animation:none!important;transition:none!important}}
+/* Keep inactive canvases at their normal dimensions so switching does not reset editor layout. */
+.webOffice .editors[hidden]{display:block!important;position:absolute;inset:51px 0 0;visibility:hidden;pointer-events:none}
+.webOffice .editor-panel{overflow:hidden}
+.webOffice .editor-panel[hidden]{display:block!important;position:absolute;inset:0;visibility:hidden;pointer-events:none}
+.webOffice .editor-panel iframe{width:calc(100% / var(--editor-scale));height:calc(100% / var(--editor-scale));transform:scale(var(--editor-scale));transform-origin:top left}
+.webOffice .editor-options{display:flex;align-items:center;gap:18px}
+.webOffice .editor-options>button{font-size:11px;min-height:32px;white-space:nowrap}
+.webOffice .editor-size{display:flex;align-items:center;gap:8px;font-size:10px;color:#59677d;white-space:nowrap}
+.webOffice .editor-size select{font:inherit;color:var(--ink);border:1px solid #c8d3e3;border-radius:4px;min-height:32px;padding:4px;background:#ffffff}
+@media(max-width:520px){.webOffice .editor-options{gap:9px}.webOffice .editor-size{gap:5px}.webOffice .editor-size>span{display:none}.webOffice .editor-options>button{font-size:10px}}
+.webOffice .loading-spinner{width:32px;height:32px;border:3px solid #dce6f5;border-top-color:#2563eb;border-radius:50%;animation:rotate .8s linear infinite}
+.webOffice .about-dialog[open]{margin:auto}
+.webOffice .about-dialog::backdrop{background:#172b4d66}
+.webOffice .not-published{font-size:11px;line-height:1.7;color:#59677d;border:1px dashed #ccd6e4;border-radius:7px;background:#edf2f9;padding:12px 16px;margin:16px 0 0}

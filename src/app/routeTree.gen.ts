@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MethodRouteImport } from './routes/method'
+import { Route as OfficeRouteImport } from './routes/office'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ApiReportDotpdfRouteImport } from './routes/api/report[.]pdf'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const MethodRoute = MethodRouteImport.update({
   id: '/method',
   path: '/method',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficeRoute = OfficeRouteImport.update({
+  id: '/office',
+  path: '/office',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
@@ -86,6 +92,7 @@ const PProjectIdSnapshotHashRoute = PProjectIdSnapshotHashRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/method': typeof MethodRoute
+  '/office': typeof OfficeRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/method': typeof MethodRoute
+  '/office': typeof OfficeRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/method': typeof MethodRoute
+  '/office': typeof OfficeRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sign-in': typeof SignInRoute
   '/api/report.pdf': typeof ApiReportDotpdfRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/method'
+    | '/office'
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/method'
+    | '/office'
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/method'
+    | '/office'
     | '/robots.txt'
     | '/sign-in'
     | '/api/report.pdf'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MethodRoute: typeof MethodRoute
+  OfficeRoute: typeof OfficeRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignInRoute: typeof SignInRoute
   ApiReportDotpdfRoute: typeof ApiReportDotpdfRoute
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/method'
       fullPath: '/method'
       preLoaderRoute: typeof MethodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/office': {
+      id: '/office'
+      path: '/office'
+      fullPath: '/office'
+      preLoaderRoute: typeof OfficeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots.txt': {
@@ -278,6 +298,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MethodRoute: MethodRoute,
+  OfficeRoute: OfficeRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SignInRoute: SignInRoute,
   ApiReportDotpdfRoute: ApiReportDotpdfRoute,
