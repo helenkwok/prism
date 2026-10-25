@@ -77,6 +77,52 @@ test("a favorable pooled figure never rescues a failing check", async () => {
   assert.equal(g.checks[1].status, "missed"); assert.throws(() => assertPublishable(g, ids[1]));
   await f.db.destroy();
 });
+test("a partial correction cannot release a formerly missed check through current point estimates", async () => {
+  const f = await fixture();
+  try {
+    assert.equal((await evaluateGate(f)).checks[1].status, "missed");
+    await f.db.updateTable("pipeline_check_states").set({ filtered_state: "unknown", span_ids_json: "[]" }).where("check_id", "=", ids[1]).where("project_n", ">", 12).execute();
+    const file = path.join(f.dataDir, "pipeline/manifests/13.json"), manifest = JSON.parse(fs.readFileSync(file));
+    manifest.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(file, JSON.stringify(manifest));
+    const gate = await evaluateGate(f);
+    assert.equal(gate.checks[1].ac1, 1); assert.equal(gate.checks[1].precision, 1);
+    assert.equal(gate.checks[1].status, "missed");
+    assert.throws(() => assertPublishable(gate, ids[1]));
+    for (const n of f.sampleNs) {
+      const name = path.join(f.dataDir, `pipeline/manifests/${n}.json`), current = JSON.parse(fs.readFileSync(name));
+      current.codingCorrection = { version: "c1", checks: [ids[1], ids[2]] }; fs.writeFileSync(name, JSON.stringify(current));
+    }
+    const completeWithoutProof = await evaluateGate(f);
+    assert.equal(completeWithoutProof.checks[1].status, "missed");
+    assert.equal(completeWithoutProof.checks[2].status, "missed");
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+test("funding withholding after partial correction requires a bound original missed gate", async () => {
+  const f = await fixture();
+  try {
+    const baseline = await evaluateGate(f); baseline.generatedAt = new Date(Date.now() - 60_000).toISOString();
+    const documentPath = path.join(f.dataDir, "validation/original-gate.json");
+    const save = () => { const text = JSON.stringify(baseline); fs.writeFileSync(documentPath, text); return { documentPath, docDigest: sha(text) }; };
+    const correctionBaseline = save(), funding = fundingFiles(f);
+    await f.db.updateTable("pipeline_check_states").set({ filtered_state: "unknown", span_ids_json: "[]" }).where("check_id", "=", ids[1]).where("project_n", ">", 12).execute();
+    const name = path.join(f.dataDir, "pipeline/manifests/13.json"), manifest = JSON.parse(fs.readFileSync(name));
+    manifest.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(name, JSON.stringify(manifest));
+    await f.db.updateTable("pipeline_project_results").set({ completed_at: new Date().toISOString() }).where("project_n", "=", 13).execute();
+    const options = { ...f, fundingFallback: { policyPath: funding.policyPath, decisionPath: funding.decisionPath }, actions: funding.actions };
+    await assert.rejects(evaluateGate(options), /bound pre-application baseline/);
+    const gate = await evaluateGate({ ...options, correctionBaseline });
+    assert.equal(gate.checks[1].ac1, 1); assert.equal(gate.checks[1].status, "withheld");
+    assert.equal(gate.correctionBaselineEvidence.docDigest, correctionBaseline.docDigest);
+    assert.doesNotMatch(gate.checks[1].reason, /fresh correction did not pass/);
+    await assert.rejects(evaluateGate({ ...options, correctionBaseline: { ...correctionBaseline, docDigest: "0".repeat(64) } }), /baseline digest/);
+    baseline.checks[1].status = "released";
+    await assert.rejects(evaluateGate({ ...options, correctionBaseline: save() }), /missed its original gate/);
+    baseline.checks[1].status = "missed"; baseline.generatedAt = new Date(Date.now() + 10_000).toISOString();
+    await assert.rejects(evaluateGate({ ...options, correctionBaseline: save() }), /pre-application provenance/);
+    baseline.generatedAt = new Date(Date.now() - 60_000).toISOString(); baseline.sampleNs.pop();
+    await assert.rejects(evaluateGate({ ...options, correctionBaseline: save() }), /baseline digest, scope/);
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
 test("current labelled gold alone contributes; stale version/digest/outcome and wrong model are counted", async () => {
   const f = await fixture();
   await f.db.updateTable("pipeline_gold_outcomes").set({ outcome: "no-gold" }).where("project_n", "=", 1).execute();
@@ -236,6 +282,36 @@ test("verified fresh values must agree even when the affected check is withheld 
       await assert.rejects(evaluateGate({ ...options, revalidation: { ...f.revalidation, checks } }), /supplied revalidation metrics/);
     }
     assert.equal(f.revalidation.checks[1].ac1, 1);
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+test("complete verified corrections require current independent Ultra-on decisions for every positive", async () => {
+  const f = await verifiedFreshFixture();
+  try {
+    const contract = buildContract([ids[1]]), guidance = { version: "c1", byCheck: { [ids[1]]: "Synthetic unchanged-rule clarification." } };
+    for (const n of f.sampleNs) {
+      const file = path.join(f.dataDir, `pipeline/manifests/${n}.json`), manifest = JSON.parse(fs.readFileSync(file));
+      manifest.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(file, JSON.stringify(manifest));
+      const prompt_hash = sha(JSON.stringify({ schema: contract.jsonSchema, guidance, messages: chunkSpans(projectSpans(f.dataDir, n)).map(chunk => buildCodingMessages([ids[1]], cb, contract.jsonSchema, chunk, guidance)) }));
+      await f.db.updateTable("pipeline_project_results").set({ prompt_hash }).where("project_n", "=", n).execute();
+    }
+    const options = { ...f, actions: { checks: [{ checkId: ids[1], action: "apply-correction", applied: true }] } };
+    assert.equal((await evaluateGate(options)).checks[1].status, "missed");
+    for (let n = 1; n <= 18; n++) {
+      const positive = { projectN: n, checkId: ids[1], state: "pass", spans: projectSpans(f.dataDir, n), flaggedSpanIds: [] };
+      await f.db.insertInto("pipeline_confirmations").values({ project_n: n, check_id: ids[1], input_digest: inputDigest(cb, positive), decision: "rejected", confirmed_state: null, reason: "Synthetic independent rejection.", span_ids_json: JSON.stringify(positive.spans.map(s => s.id)), confirmer_id: "agent:ollama:nemotron-3-ultra:thinking-on", confirmer_kind: "agent", model_id: "nemotron-3-ultra:cloud", decided_at: "2026-10-24T01:00:00Z" }).execute();
+    }
+    assert.equal((await evaluateGate(options)).checks[1].status, "corrected-revalidated");
+    // Project 300 has no gold outcome, but its changed positive still needs independent confirmation.
+    await f.db.updateTable("pipeline_check_states").set({ filtered_state: "pass", proposed_state: "pass", span_ids_json: '["p1-s001"]' }).where("project_n", "=", 300).where("check_id", "=", ids[1]).execute();
+    assert.equal((await evaluateGate(options)).checks[1].status, "missed");
+    const noGoldPositive = { projectN: 300, checkId: ids[1], state: "pass", spans: projectSpans(f.dataDir, 300), flaggedSpanIds: [] };
+    await f.db.insertInto("pipeline_confirmations").values({ project_n: 300, check_id: ids[1], input_digest: inputDigest(cb, noGoldPositive), decision: "rejected", confirmed_state: null, reason: "Synthetic no-gold rejection.", span_ids_json: '["p1-s001"]', confirmer_id: "agent:ollama:nemotron-3-ultra:thinking-on", confirmer_kind: "agent", model_id: "nemotron-3-ultra:cloud", decided_at: "2026-10-24T01:00:00Z" }).execute();
+    assert.equal((await evaluateGate(options)).checks[1].status, "corrected-revalidated");
+    await f.db.updateTable("pipeline_confirmations").set({ confirmer_id: "agent:ollama:nemotron-3-ultra:thinking-off" }).where("project_n", "=", 18).execute();
+    assert.equal((await evaluateGate(options)).checks[1].status, "missed");
+    await f.db.updateTable("pipeline_confirmations").set({ confirmer_id: "agent:ollama:nemotron-3-ultra:thinking-on", input_digest: "stale" }).where("project_n", "=", 18).execute();
+    assert.equal((await evaluateGate(options)).checks[1].status, "missed");
   } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
 });
 

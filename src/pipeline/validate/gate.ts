@@ -37,6 +37,7 @@ export type GateOptions = {
   fundingFallback?: FundingFallbackOptions;
   revalidationProof?: RevalidationProofOptions;
   correctionApprovalFailures?: CorrectionApprovalFailure[];
+  correctionBaseline?: { documentPath: string; docDigest: string };
 };
 
 function within(metrics: { ac1: number; precision: number | null }): boolean {
@@ -202,6 +203,37 @@ export async function evaluateGate(o: GateOptions) {
         })) throw new Error("supplied revalidation metrics differ from complete verified fresh evidence");
   }
   const activeSample = sampleNs.filter(n => !a3.includes(n));
+  const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
+  let correctionBaseline: any;
+  if (o.correctionBaseline) {
+    const file = path.resolve(o.correctionBaseline.documentPath), real = fs.realpathSync(file);
+    const root = fs.realpathSync(path.join(o.dataDir, "validation"));
+    if (path.dirname(real) !== root || fs.lstatSync(file).isSymbolicLink() || path.extname(real) !== ".json") throw new Error("correction baseline must be a direct validation JSON document");
+    const text = fs.readFileSync(real, "utf8"), baseline = JSON.parse(text), at = Date.parse(baseline.generatedAt);
+    if (!/^[a-f0-9]{64}$/.test(o.correctionBaseline.docDigest) || sha(text) !== o.correctionBaseline.docDigest ||
+        baseline.codebookVersion !== o.codebookVersion || baseline.gateSha !== o.gateFile.sha256 || !Number.isFinite(at) || at < cutoff || at > Date.now() ||
+        JSON.stringify(baseline.sampleNs) !== JSON.stringify(sampleNs) || !Array.isArray(baseline.checks) || baseline.checks.length !== checkIds.length ||
+        baseline.checks.some((c: any, i: number) => c.checkId !== checkIds[i] || c.correctionApplied !== false || Object.hasOwn(c, "revalidation")) ||
+        (detached ? baseline.approvalEvidence?.proofDigest !== detached.proofDigest || baseline.approvalEvidence?.a7Digest !== detached.a7Digest : baseline.approvalEvidence !== undefined) ||
+        activeSample.some(n => {
+          if (!manifests.get(n)?.codingCorrection) return false;
+          const completed = Date.parse(projects.find(row => row.project_n === n)?.completed_at);
+          return !Number.isFinite(completed) || completed <= at;
+        })) throw new Error("correction baseline digest, scope or pre-application provenance differs");
+    correctionBaseline = baseline;
+  }
+  const currentEffective = activeSample.length ? await effectiveStates(o.db, activeSample) : [];
+  const correctionConfirmed = (id: string) => activeSample.every(n => {
+    if (!currentPrimary.includes(n)) return false;
+    const state = currentEffective.find(e => e.projectN === n && e.checkId === id);
+    if (!state) return false;
+    if (!["pass", "claimed"].includes(state.filteredState)) return true;
+    if (state.editActorId === "agent:ollama:nemotron-3-ultra" || state.editActorId?.startsWith("agent:ollama:nemotron-3-ultra:")) return false;
+    const known = new Map((spans.get(n) ?? []).map(s => [s.id, s.text]));
+    const positive = { projectN: n, checkId: id, state: state.filteredState as "pass" | "claimed", spans: state.spanIds.map(id => ({ id, text: known.get(id) ?? "" })), flaggedSpanIds: flags.filter(f => f.project_n === n).map(f => f.span_id) };
+    return confirmations.some(row => row.confirmer_kind === "agent" && row.confirmer_id === "agent:ollama:nemotron-3-ultra:thinking-on" && Date.parse(row.decided_at) >= cutoff &&
+      confirmationMatches(row, positive, o.codebook, { editActorId: state.editActorId, allowedModelIds: ["nemotron-3-ultra"] }));
+  });
   const personCoverage = (id: string) => activeSample.length > 0 && activeSample.every(n => {
     const candidates = edits.filter(e => e.project_n === n && e.check_id === id).sort((a, b) => String(b.edited_at).localeCompare(String(a.edited_at)));
     const e = candidates[0];
@@ -224,6 +256,8 @@ export async function evaluateGate(o: GateOptions) {
       rv.goldPasses === recomputed.goldPasses && rv.ac1 === recomputed.ac1 && rv.precision === recomputed.precision;
     let status = metric.n === 0 ? "missed" : !estimable(metric.goldPasses) ? "released-not-estimable" : within(metric) ? "released" : "missed";
     let reason = status === "released-not-estimable" ? "validated by confirmation only; agreement not estimable (fewer than 10 gold passes)" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
+    const uncorrectedStatus = status;
+    if (versions.length) { status = "missed"; reason = "correction requires complete approved application, verified fresh validation and current confirmation before release"; }
     const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
     const approvalFailure = approvalFailures.find(failure => failure.checkId === metric.checkId);
     if (approvalFailure) {
@@ -233,16 +267,15 @@ export async function evaluateGate(o: GateOptions) {
       reason = "independent approval of the correction was rejected; correction remains unapplied and the originally missed check is withheld; any fresh metrics remain reported separately";
     }
     else if (fundingWithheld) {
-      if (status !== "missed") throw new Error("funding fallback may only withhold a check that missed its original gate");
+      if (versions.length ? correctionBaseline?.checks.find((c: any) => c.checkId === metric.checkId)?.status !== "missed" : uncorrectedStatus !== "missed") throw new Error("funding fallback may only withhold a check that missed its original gate; corrected checks require a bound pre-application baseline");
       status = "withheld";
       reason = `funding envelope prevents ${funding!.step}; withheld under the standing funding directive; any fresh revalidation result remains reported separately`;
     }
     else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
-    else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied && verifiedCorrection) { status = "corrected-revalidated"; reason = "passed recomputed current fresh revalidation with approved guidance applied across the scoped sample"; }
+    else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied && verifiedCorrection && correctionConfirmed(metric.checkId)) { status = "corrected-revalidated"; reason = "passed recomputed current fresh revalidation with approved guidance applied across the scoped sample and all current positives independently confirmed"; }
     return { ...metric, status, reason, correctionApplied, ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
-  const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
   const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
   const flaggedProjects = new Set(flags.map(f => f.project_n));
   const injectionDecisions: Record<string, number> = {};
@@ -264,6 +297,7 @@ export async function evaluateGate(o: GateOptions) {
     ...(funding ? { fundingFallback: funding } : {}),
     ...(approvalFailures.length ? { correctionApprovalFailures: approvalFailures } : {}),
     ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
+    ...(correctionBaseline ? { correctionBaselineEvidence: { docDigest: o.correctionBaseline!.docDigest, generatedAt: correctionBaseline.generatedAt } } : {}),
     bootstrap: { resamples: 2000, unit: "projects", primarySeed: goldSeed, secondModelSeed: secondSeed },
     thresholds: { ac1: AC1_THRESHOLD, passPrecision: PRECISION_THRESHOLD, goldPassesForEstimability: 10, basis: "point estimates; pooled results never rescue a check" },
     labeller: { kind: "agent", provider: "ollama", modelId: GOLD_MODEL, reasoning: "low", wording: "agreement with an independent labeller (GLM-5.3)" },
