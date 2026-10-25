@@ -11,6 +11,9 @@
 #   caddy <sha7>       that tree's Caddyfile and prism-caddy only (the findings site); the app untouched
 #   op <node args>     node <args> in a one-off container from the current image, with the
 #                      rsynced tracked tree at /app/ops (operator scripts: seed, backup, views)
+#   set-env <NAME>     reads one line from stdin into app-env (allow-listed names; prints only `ENV <NAME> set`)
+#   unset-env <NAME>   removes that line (prints only `ENV <NAME> removed`)
+#   env-present <NAME> prints only `ENV <NAME> file=<yes|no> container=<yes|no>`; `up` applies a change
 #   status             the prism-* containers
 #   session-ip-check   booleans about the newest session's stored address, never the address
 #
@@ -192,6 +195,45 @@ cmd_op() {
     "prism-app:$sha" node "$@"
 }
 
+ENV_NAMES="NEBIUS_API_KEY TAVILY_API_KEY GITHUB_TOKEN PRISM_LIVE_RUN_CAP_USD PRISM_LIVE_RUNNER"
+env_name() {
+  case " $ENV_NAMES " in *" ${1:-} "*) ;; *) die "name not allowed (allowed: $ENV_NAMES)" ;; esac
+}
+
+# Rewrites app-env without the NAME line, plus the given line when one is passed; atomic, mode 600, uid 10001.
+write_env() {
+  local tmp
+  [ -f "$SECRETS/app-env" ] || die "no secrets; run secrets first"
+  tmp=$(mktemp "$SECRETS/.app-env.XXXXXX")
+  { grep -v "^$1=" "$SECRETS/app-env" || true; [ $# -gt 1 ] && printf '%s=%s\n' "$1" "$2"; } >"$tmp"
+  chown "$APP_UID:$APP_UID" "$tmp"; chmod 600 "$tmp"
+  mv -f "$tmp" "$SECRETS/app-env"
+}
+
+cmd_set_env() {
+  env_name "${1:-}"
+  local value
+  IFS= read -r value || [ -n "$value" ] || die "no value on stdin"
+  value=${value%$'\r'}
+  [ -n "$value" ] || die "empty value"
+  write_env "$1" "$value"
+  echo "ENV $1 set"
+}
+
+cmd_unset_env() {
+  env_name "${1:-}"
+  write_env "$1"
+  echo "ENV $1 removed"
+}
+
+cmd_env_present() {
+  env_name "${1:-}"
+  local file=no container=no
+  grep -q "^$1=" "$SECRETS/app-env" 2>/dev/null && file=yes
+  docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' prism-app 2>/dev/null | grep -q "^$1=" && container=yes
+  echo "ENV $1 file=$file container=$container"
+}
+
 cmd_status() {
   docker ps -a --filter name=^prism- --format '{{.Names}} {{.Image}} {{.Status}}'
 }
@@ -223,7 +265,10 @@ case "${1:-}" in
   up) shift; cmd_up "$@" ;;
   caddy) shift; cmd_caddy "$@" ;;
   op) shift; cmd_op "$@" ;;
+  set-env) shift; cmd_set_env "$@" ;;
+  unset-env) shift; cmd_unset_env "$@" ;;
+  env-present) shift; cmd_env_present "$@" ;;
   status) cmd_status ;;
   session-ip-check) cmd_session_ip_check ;;
-  *) die "usage: vm-deploy.sh secrets|build <sha7>|check <sha7>|up <sha7>|caddy <sha7>|op <node args>|status|session-ip-check" ;;
+  *) die "usage: vm-deploy.sh secrets|build <sha7>|check <sha7>|up <sha7>|caddy <sha7>|op <node args>|set-env|unset-env|env-present <NAME>|status|session-ip-check" ;;
 esac
