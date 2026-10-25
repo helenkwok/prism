@@ -18,7 +18,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 
 import { loadGateFile, buildContract, citationSchema } from "../../src/pipeline/coding/contract.ts";
-import { runPipeline, codeGuidedPrimaryChunk, guidedCodingRequestBodies, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
+import { runPipeline, codeGuidedPrimaryChunk, guidedCodingRequestBodies, guidedCodingChunks, chunkSpans, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
 import { spansDigest } from "../../src/pipeline/confirm/confirm.ts";
@@ -1140,5 +1140,43 @@ describe("guided primary chunk retries and durable reuse", () => {
       assert.equal(calls, 3); assert.equal(out.allUnknown, true); assert.equal(out.valid, false);
       assert.equal(fs.readdirSync(o.cacheDir).length, 0);
     } finally { fs.rmSync(o.cacheDir, { recursive: true, force: true }); }
+  });
+});
+
+describe("complete-span request fitting", () => {
+  test("optional fitting deterministically subdivides without changing evidence or default packing", () => {
+    const spans = Array.from({ length: 20 }, (_, i) => ({ id: `p1-s${i}`, text: `Whole synthetic span ${i}: ` + "x".repeat(2000) }));
+    const baseline = chunkSpans(spans);
+    const fitted = chunkSpans(spans, 40000, chunk => chunk.length <= 3);
+    assert.deepEqual(fitted.flat(), spans);
+    assert.ok(fitted.every(chunk => chunk.length <= 3 && chunk.reduce((n, span) => n + span.text.length, 0) <= 40000));
+    assert.deepEqual(chunkSpans(spans), baseline);
+    assert.deepEqual(chunkSpans(spans, 40000, () => true), baseline);
+    assert.deepEqual(chunkSpans(spans, 40000, chunk => chunk.length <= 3), fitted);
+    assert.ok(fitted.flat().every((span, i) => span === spans[i]), "retain original span objects and order");
+  });
+
+  test("guided fitting keeps both exact request variants under the pre-registered cap", () => {
+    const codebook = loadCodebook(), contract = buildContract(gateFile.checkIds);
+    const baseSpans = Array.from({ length: 150 }, (_, i) => ({ id: `p1-s${String(i).padStart(3, "0")}`, text: `Unique complete span ${i}: ` + "evidence ".repeat(24) }));
+    const guidance = { version: "synthetic-c1", byCheck: Object.fromEntries(contract.checkIds.map(id => [id, "Retain the entire rule and cited evidence. ".repeat(18)])) };
+    const original = chunkSpans(baseSpans);
+    assert.ok(guidedCodingRequestBodies(codebook, contract, original[0], guidance).some(body => estimateMessagesTokens(body.messages) > 20000));
+    const spans = [...baseSpans, { id: "p2-duplicate", text: baseSpans[0].text }];
+    const packed = guidedCodingChunks(spans, codebook, contract, guidance);
+    assert.ok(packed.length > original.length);
+    assert.deepEqual(packed.flat(), baseSpans, "send exact duplicate text only once per project");
+    assert.ok(packed.every(chunk => chunk.reduce((n, span) => n + span.text.length, 0) <= 40000));
+    assert.ok(packed.every(chunk => guidedCodingRequestBodies(codebook, contract, chunk, guidance).every(body => estimateMessagesTokens(body.messages) <= 20000)));
+    const smaller = baseSpans.slice(0, 2);
+    assert.deepEqual(guidedCodingChunks(smaller, codebook, contract, guidance), chunkSpans(smaller));
+  });
+
+  test("a single indivisible span refuses instead of truncating or silently dropping it", () => {
+    const span = { id: "p1-s001", text: "x".repeat(40001) };
+    assert.equal(chunkSpans([span])[0][0], span, "default legacy packing stays unchanged");
+    assert.throws(() => chunkSpans([span], 40000, () => true), /complete numbered span/);
+    assert.throws(() => chunkSpans([{ id: "p1-s002", text: "Complete evidence." }], 40000, () => false), /complete numbered span/);
+    assert.equal(span.text.length, 40001);
   });
 });

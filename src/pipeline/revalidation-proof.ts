@@ -6,9 +6,8 @@ import type { Kysely } from "kysely";
 import type { Codebook } from "./coding/codebook-prompt.ts";
 import { buildContract } from "./coding/contract.ts";
 import { PINNED_MODEL } from "./coding/nebius-client.ts";
-import { uniqueProjectSpans } from "./coding/span-packing.ts";
 import { projectSpans, spansDigest } from "./confirm/confirm.ts";
-import { buildCodingMessages, chunkSpans, type CodingGuidance } from "./run.ts";
+import { buildCodingMessages, guidedCodingChunks, type CodingGuidance } from "./run.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED, SAMPLING_SEED } from "./select/draw-sample.ts";
 import { SIGNOFF_MODEL } from "./signoff/signoff.ts";
 import { agreementByCheck, type AgreementRow } from "./validate/agreement.ts";
@@ -77,8 +76,8 @@ export async function verifyRevalidationProof(o: {
     return { manifest, spans, record };
   };
   const promptHash = (spans: { id: string; text: string }[], ids: string[], g: CodingGuidance) => {
-    const schema = buildContract(ids).jsonSchema;
-    return hash({ schema, guidance: g, messages: chunkSpans(uniqueProjectSpans(spans)).map(chunk => buildCodingMessages(ids, o.codebook, schema, chunk, g)) });
+    const contract = buildContract(ids), schema = contract.jsonSchema;
+    return hash({ schema, guidance: g, messages: guidedCodingChunks(spans, o.codebook, contract, g).map(chunk => buildCodingMessages(ids, o.codebook, schema, chunk, g)) });
   };
   for (const entry of draw.value) {
     const { manifest, spans, record } = currentProject(entry.n);

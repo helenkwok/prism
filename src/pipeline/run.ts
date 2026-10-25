@@ -41,7 +41,7 @@ import {
   isQuotaResponse,
   type FetchImpl as NebiusFetchImpl,
 } from "./coding/nebius-client.ts";
-import { requireTfBudget, DollarBudget } from "./coding/spend-guards.ts";
+import { requireTfBudget, DollarBudget, DEFAULT_TOKEN_CAP, estimateMessagesTokens } from "./coding/spend-guards.ts";
 import { uniqueProjectSpans } from "./coding/span-packing.ts";
 import { codeProjectWithRetry, allUnknownChecks, type CallOnce, type RetryContract } from "./coding/retry.ts";
 import { applyQuoteOrUnknownFilter } from "./coding/filter.ts";
@@ -150,6 +150,11 @@ function codingBody(model: string, codebook: Codebook, jsonSchema: unknown, chec
 /** Both complete request variants can be inventoried before any guided coding. */
 export function guidedCodingRequestBodies(codebook: Codebook, contract: RetryContract, spans: { id: string; text: string }[], guidance: CodingGuidance, model = PINNED_MODEL) {
   return [contract.jsonSchema, citationSchema(contract.jsonSchema, spans.map(s => s.id))].map(schema => codingBody(model, codebook, schema, contract.checkIds, spans, guidance));
+}
+
+/** Keep every numbered span intact while fitting both complete guided request variants. */
+export function guidedCodingChunks<T extends { id: string; text: string }>(spans: T[], codebook: Codebook, contract: RetryContract, guidance: CodingGuidance): T[][] {
+  return chunkSpans(uniqueProjectSpans(spans), CODING_CHUNK_CHARS, chunk => guidedCodingRequestBodies(codebook, contract, chunk, guidance).every(body => estimateMessagesTokens(body.messages) <= DEFAULT_TOKEN_CAP));
 }
 
 /** Retain successful whole-chunk replies; invalid replies are regenerated, never edited. */
@@ -314,18 +319,15 @@ async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<
     for (const id of previous.checks as string[]) retained.set(id, entries.find(e => e.checkId === id)!);
   }
   const cumulativeChecks = ctx.contract.checkIds.filter(id => checks.includes(id) || retained.has(id));
-  const messages = input.chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
+  const chunks = guidedCodingChunks(input.spans, codebook, contract, guidance);
+  const messages = chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
   const guided = await withStageCache(cacheDir, String(project.hn_id), "code-guided", { model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages, guidance }, async () => {
     if (!input.spans.length) return { checks: allUnknownChecks(contract.checkIds), attempts: 0 };
     const client = createClient({ baseUrl: PINNED_BASE_URL, apiKey: ctx.apiKeys.nebius, fetchImpl: overrides.nebiusFetchImpl,
       ...(overrides.tfBudget != null ? { budget: overrides.tfBudget } : overrides.nebiusFetchImpl ? { skipBudgetGate: true } : { budget: requireTfBudget() }) });
-    const callOnce = makeNebiusCallOnce(codebook, new Map(input.spans.map(s => [s.id, s.text])), PINNED_MODEL, guidance);
     const results = [];
-    for (const chunk of input.chunks) {
-      const cached = await withStageCache(cacheDir, String(project.hn_id), "code-guided-chunk",
-        { requestDigest: digestJson(codingBody(PINNED_MODEL, codebook, contract.jsonSchema, contract.checkIds, chunk, guidance)) },
-        () => codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map(s => s.id), callOnce }), result => result.valid);
-      const result = cached.value;
+    for (const chunk of chunks) {
+      const result = await codeGuidedPrimaryChunk({ cacheDir, projectId: String(project.hn_id), snapshotHashes: input.manifest.snapshotHashesInCollectionOrder, client, codebook, contract, spans: chunk, guidance });
       if (!result.valid) throw new Error(`project ${project.n}: guided coding retry exhausted`);
       if (!isSchemaValid(JSON.stringify(result.data), chunk.map(s => s.id), contract.zodSchema).valid) throw new Error(`project ${project.n}: invalid guided chunk cache`);
       results.push(result);
@@ -608,10 +610,12 @@ async function processProject(
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
   const chunks = chunkSpans(uniqueProjectSpans(segmented.spans as { id: string; text: string }[]));
+  const primaryChunks = ctx.guidance ? guidedCodingChunks(segmented.spans as { id: string; text: string }[], codebook, contract, ctx.guidance) : chunks;
   const codeWith = (model: string, stage: string, guidance?: CodingGuidance) => {
+    const requestChunks = guidance && model === PINNED_MODEL ? primaryChunks : chunks;
     const codingRequestHash = crypto
       .createHash("sha256")
-      .update(JSON.stringify({ model, maxTokens: CODING_MAX_TOKENS, chunks: chunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance)) }))
+      .update(JSON.stringify({ model, maxTokens: CODING_MAX_TOKENS, chunks: requestChunks.map((c) => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance)) }))
       .digest("hex");
     return withStageCache(
       cacheDir,
@@ -637,7 +641,7 @@ async function processProject(
         });
         const callOnce = makeNebiusCallOnce(codebook, spansById, model, guidance);
         const results: any[] = [];
-        for (const chunk of chunks) {
+        for (const chunk of requestChunks) {
           results.push(guidance && model === PINNED_MODEL
             ? await codeGuidedPrimaryChunk({ cacheDir, projectId, snapshotHashes: segmented.snapshotHashesInCollectionOrder, client, codebook, contract, spans: chunk, guidance })
             : await codeProjectWithRetry({ client, cfg: {}, contract, spanIds: chunk.map((s) => s.id), callOnce }));
@@ -706,7 +710,7 @@ async function processProject(
     }));
     const gateSha = (Object.values(claims)[0] as any).gateResult.gateSha;
     const promptHash = ctx.guidance
-      ? digestJson({ schema: contract.jsonSchema, guidance: ctx.guidance, messages: chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, ctx.guidance)) })
+      ? digestJson({ schema: contract.jsonSchema, guidance: ctx.guidance, messages: primaryChunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, ctx.guidance)) })
       : crypto.createHash("sha256").update(JSON.stringify(contract.jsonSchema)).digest("hex");
 
     await recordProjectResult(db, {
@@ -908,7 +912,7 @@ export const CODING_CHUNK_CHARS = 40_000;
 
 /** Group spans into chunks of whole pages (span ids are `p<k>-...`), each under `limit` characters where a
  * page allows; a single page over the limit is split at span boundaries. */
-export function chunkSpans<T extends { id: string; text: string }>(spans: T[], limit = CODING_CHUNK_CHARS): T[][] {
+export function chunkSpans<T extends { id: string; text: string }>(spans: T[], limit = CODING_CHUNK_CHARS, fits?: (chunk: T[]) => boolean): T[][] {
   const pages: T[][] = [];
   for (const s of spans) {
     const page = s.id.split("-")[0];
@@ -939,7 +943,14 @@ export function chunkSpans<T extends { id: string; text: string }>(spans: T[], l
     }
   }
   flush();
-  return chunks;
+  if (!fits) return chunks;
+  const divide = (chunk: T[]): T[][] => {
+    if (chunk.reduce((n, span) => n + span.text.length, 0) <= limit && fits(chunk)) return [chunk];
+    if (chunk.length === 1) throw new Error("a complete numbered span cannot fit the request limits");
+    const middle = Math.floor(chunk.length / 2);
+    return [...divide(chunk.slice(0, middle)), ...divide(chunk.slice(middle))];
+  };
+  return chunks.flatMap(divide);
 }
 
 const STATE_RANK: Record<string, number> = { pass: 3, claimed: 2, fail: 1, unknown: 0 };
