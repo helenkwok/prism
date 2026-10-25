@@ -4,6 +4,16 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { cappedSignoff, projectSignoff } from "../../src/pipeline/signoff/capped.ts";
+import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
+
+test("the host reserve allowance refuses a review before HTTP despite its larger per-call cap", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-review-host-")); let calls = 0;
+  const parentBudget = new DollarBudget(.001);
+  try {
+    await assert.rejects(cappedSignoff({ dataDir, doc: "Evidence", context: "Rules", item: "final", apiKey: "fixture", parentBudget, fetchImpl: async () => { calls++; throw new Error("unexpected HTTP"); } }), /budget exceeded/);
+    assert.equal(calls, 0); assert.equal(parentBudget.spent, 0); assert.equal(parentBudget.reserved, 0);
+  } finally { fs.rmSync(dataDir, { recursive: true }); }
+});
 
 test("oversized review preserves evidence and refuses before any request", async () => {
   assert.throws(() => projectSignoff("x".repeat(100000), "rules", "final"), /preserve the full evidence/);

@@ -95,6 +95,17 @@ test("coding and collect stages use retained proof, free collection, no second c
   assert.equal(calls, 2);
 });
 
+test("a shared reserve envelope supersedes planning ceilings while standalone budgets stay bounded", async () => {
+  const o = await fixture();
+  const parent = new DollarBudget(2);
+  const hostBound = new DollarBudget(1.5, { parent });
+  let calls = 0;
+  const pipeline = async options => { calls++; assert.equal(options.overrides.tfBudget, hostBound); return { ok: true, outcomes: [] }; };
+  assert.equal((await runFreshValidation({ ...o, stage: "code", coding: { ...o.coding, budget: hostBound } }, { proof, pipeline })).ok, true);
+  await assert.rejects(runFreshValidation({ ...o, stage: "code", coding: { ...o.coding, budget: new DollarBudget(1.5) } }, { proof, pipeline }), /bounded budget/);
+  assert.equal(calls, 1); assert.equal(parent.spent, 0);
+});
+
 test("gold locks its independent role, accounts honest no-gold and never starts another stage", async () => {
   const o = await fixture();
   const lines = [];

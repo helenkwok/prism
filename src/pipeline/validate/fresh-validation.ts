@@ -23,7 +23,9 @@ const privateJson = (file: string, value: unknown) => {
   fs.renameSync(`${file}.next`, file);
 };
 function checkBudget(budget: DollarBudget, cap: number) {
-  if (!(budget instanceof DollarBudget) || !Number.isFinite(budget.cap) || budget.cap <= 0 || budget.cap > cap) throw new Error("fresh stage requires a bounded budget");
+  // The standing balance reserve supersedes earlier per-stage planning ceilings.
+  const limit = budget instanceof DollarBudget ? budget.parent?.cap ?? cap : cap;
+  if (!(budget instanceof DollarBudget) || !Number.isFinite(budget.cap) || budget.cap <= 0 || budget.cap > limit) throw new Error("fresh stage requires a bounded budget");
 }
 
 /** The full registered extension is required; incomplete screening never becomes a final sample. */

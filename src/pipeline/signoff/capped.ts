@@ -15,7 +15,7 @@ export function projectSignoff(doc: string, context: string, item: string) {
   return { inputTokens, outputTokens: 2048, inputDigest: sha(JSON.stringify({ doc, context, item })), cap: .50, upperBoundUsd };
 }
 
-export async function cappedSignoff(o: { dataDir: string; doc: string; context: string; item: string; apiKey: string; fetchImpl?: typeof fetch; recordFile?: string }) {
+export async function cappedSignoff(o: { dataDir: string; doc: string; context: string; item: string; apiKey: string; fetchImpl?: typeof fetch; recordFile?: string; parentBudget?: DollarBudget }) {
   const plan = projectSignoff(o.doc, o.context, o.item);
   const recordFile = o.recordFile ?? "signoff.jsonl";
   if (path.basename(recordFile) !== recordFile) throw new Error("review record must be a decisions filename");
@@ -32,7 +32,7 @@ export async function cappedSignoff(o: { dataDir: string; doc: string; context: 
   }
   const evidence: any = { state: "prepared", plan, recordFile, usage: [] };
   const persist = () => fs.writeFileSync(file, JSON.stringify(evidence) + "\n", { mode: 0o600 });
-  const budget = new DollarBudget(plan.cap, { onChange: state => { evidence.budget = state; persist(); } });
+  const budget = new DollarBudget(plan.cap, { parent: o.parentBudget, onChange: state => { evidence.budget = state; persist(); } });
   const fetchImpl: typeof fetch = async (input, init) => {
     const response = await (o.fetchImpl ?? fetch)(input, init);
     evidence.raw = await response.clone().text(); persist();
