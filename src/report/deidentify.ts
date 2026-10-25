@@ -27,6 +27,8 @@ export const WORD_MASK = "▇▇";
 export const DF_K = 3;
 export const NGRAM = 6;
 export const QUOTE_WORDS = 40;
+/** A term is vocabulary when every word of it occurs in the quotes of at least this many sampled projects. */
+export const VOCAB_DF = 10;
 
 // Function words carry no identity, and a small corpus can leave some of them
 // below K; masking them would make every quote unreadable for no privacy gain.
@@ -196,6 +198,12 @@ function tokenize(t: string): Tok[] {
   }
   if (last < t.length) out.push({ kind: "sep", text: t.slice(last) });
   return out;
+}
+
+/** True when every word of the term occurs in the quotes of VOCAB_DF or more sampled projects (real-sample rule). */
+export function isVocabulary(term: string, corpus: Corpus, v = VOCAB_DF): boolean {
+  const ws = term.toLowerCase().normalize("NFC").split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+  return ws.length > 0 && ws.every((w) => (corpus.df.get(w) ?? 0) >= v);
 }
 
 /** Mask one quote's text; counts are added to `c`. */

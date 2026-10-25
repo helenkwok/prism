@@ -15,8 +15,12 @@
 // ~/Library/Application Support/prism/pseudonym.key; there is no default key.
 // Every row is written in one transaction, and only after every check passes;
 // a refusal prints "DEID REFUSED <reason>", writes nothing and exits 1.
-// Output names pseudonyms only, never a project name or host. Plan 07-14 adds
-// the real-store mode.
+// Output names pseudonyms only, never a project name or host.
+//
+// --store (plan 07-14) builds the real sample from PRISM_DATA_DIR on the Mac:
+//   node scripts/materialize-views.mjs --store --db <private temp sqlite> --key-file <pseudonym key> [--js-gate]
+// It needs the signed gate, writes only to --db (never the app database), writes the §11 and sponsor
+// candidates to PRISM_DATA_DIR/exports/judge-access-candidates.json (mode 600) and prints counts only.
 //
 // When synthetic-method.json sits next to the corpus, the same transaction also
 // writes the method audit's one row (plan 07-10) and prints "METHOD rows=1 ...".
@@ -48,8 +52,13 @@ const { values } = parseArgs({
     "js-gate": { type: "boolean" },
     deidentify: { type: "boolean" },
     "key-file": { type: "string" },
+    store: { type: "boolean" },
   },
 });
+if (values.store) {
+  await storeMode();
+  process.exit(0);
+}
 if (!values.fixture) {
   console.error("usage: materialize-views.mjs --fixture <corpus.json> [--db <sqlite>] [--js-gate] [--deidentify [--key-file <path>]]");
   process.exit(2);
@@ -75,6 +84,134 @@ async function jsGate() {
   const pin = JSON.parse(fs.readFileSync(path.join(root, "vendor", "ai-output-to-value", "PIN.json"), "utf8"));
   const gateSha = `js:${pin.files["packages/mcp/src/core.mjs"].sha256}`;
   return async (record) => ({ status: evaluateClaim(record, loadBundledGates()).status, raw: null, gateSha });
+}
+
+async function storeMode() {
+  const { resolveDataDir } = await import("../src/app/server/db.ts");
+  const { assertOutsideRepo } = await import("./check-data-dir.mjs");
+  const { signedGate } = await import("../src/publish/read-store.ts");
+  const { sourceFromStore } = await import("../src/report/source-from-store.ts");
+  const { projectSpans } = await import("../src/pipeline/confirm/confirm.ts");
+  const { PINNED_MODEL } = await import("../src/pipeline/coding/nebius-client.ts");
+  const { materializeStore, MaterializeRefusal } = await import("../src/report/materialize-store.ts");
+
+  const dataDir = resolveDataDir();
+  if (!values.db) refuse("no-db");
+  const target = path.resolve(values.db);
+  assertOutsideRepo(path.dirname(target), root);
+  if (target === path.join(dataDir, "prism.sqlite")) refuse("db-is-app-database");
+  const key = readKey();
+  const gate = signedGate(dataDir);
+  if (!gate) refuse("unsigned-gate");
+
+  const pipe = path.join(dataDir, "pipeline");
+  const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
+  const sample = readJson(path.join(pipe, "sample-projects.json"));
+  const byId = new Map(sample.map((e) => [`S${String(e.n).padStart(3, "0")}`, e]));
+  const TF = "Nebius Token Factory";
+  const OLLAMA = "Ollama Cloud";
+  const pipelineDb = new Kysely({ dialect: new SqliteDialect({ database: new Database(path.join(dataDir, "prism.sqlite"), { readonly: true }) }) });
+  const personEdits = new Map();
+  for (const e of await pipelineDb.selectFrom("pipeline_edits").select(["project_n", "check_id", "actor_kind"]).execute()) {
+    if (e.actor_kind === "person") personEdits.set(e.project_n, (personEdits.get(e.project_n) ?? new Set()).add(e.check_id));
+  }
+
+  const codebook = loadCodebook(path.join(root, "codebook.md"));
+  const gapText = loadGapText({ repoRoot: root, codebook });
+  const sourceOf = async ({ projectId }) => {
+    const e = byId.get(projectId);
+    const manifestFile = path.join(pipe, "manifests", `${e.n}.json`);
+    const manifest = fs.existsSync(manifestFile) ? readJson(manifestFile) : { snapshotHashesInCollectionOrder: [] };
+    const hashes = manifest.snapshotHashesInCollectionOrder ?? [];
+    const snaps = hashes.map((h) => readJson(path.join(pipe, "snapshots", `${h}.json`)));
+    const collectedAt = snaps.map((s) => s.retrievedAt).filter(Boolean).sort()[0] ?? gate.generatedAt;
+    const edited = personEdits.get(e.n)?.size ?? 0;
+    const source = await sourceFromStore(pipelineDb, dataDir, codebook, e.n, {
+      projectId,
+      title: e.title,
+      hnId: Number(e.hn_id),
+      collectedAt,
+      generatedAt: new Date().toISOString(),
+      renderAvailable: true,
+      roles: {
+        coding: { role: "coder", modelId: PINNED_MODEL, host: TF },
+        confirmation: { role: "confirmer", modelId: "nemotron-3-ultra", host: OLLAMA },
+        humanEdits: edited ? `${edited} check${edited === 1 ? "" : "s"} edited by a person` : "None",
+      },
+    });
+    const snapshots = Object.fromEntries(hashes.map((h, i) => [h, snaps[i].redactedText]));
+    const spans = projectSpans(dataDir, e.n).map((s) => ({ projectId, spanId: s.id, text: s.text, url: snaps[Number(/^p(\d+)-/.exec(s.id)?.[1]) - 1]?.url ?? null }));
+    return { source, snapshots, spans };
+  };
+
+  // The method audit from the signed gate; PRISMA from the screening log and frame the export used.
+  const bare = (m) => String(m).replace(/:cloud$/, "");
+  const counts = readJson(path.join(pipe, "sample-screening-log.json")).counts;
+  const failed = gate.collection?.projectNs?.length ?? 0;
+  const method = {
+    generatedAt: gate.generatedAt,
+    labeller: { role: "independent labeller", modelId: bare(gate.labeller.modelId), host: gate.labeller.provider === "ollama" ? OLLAMA : TF },
+    agreement: gate.checks.map((c) => ({
+      checkId: c.checkId,
+      status: c.status,
+      ac1: c.ac1 ?? undefined,
+      ac1CI: c.ac1CI ?? undefined,
+      ...(typeof c.precision === "number" && c.coderPasses > 0 ? { precision: { c: Math.round(c.precision * c.coderPasses), m: c.coderPasses } } : {}),
+      reason: c.reason,
+    })),
+    prisma: [
+      { label: "Show HN posts in the sampling frame", count: readJson(path.join(pipe, "frame.json")).posts.length },
+      { label: "Records screened", count: counts.screened },
+      ...Object.entries(counts)
+        .filter(([k]) => /^(stage\d|not-collectable):/.test(k))
+        .map(([k, v]) => ({ label: k.startsWith("not-collectable:") ? `Not collectable: ${k.slice(16)}` : `Excluded at ${k.replace(":", ": ")}`, count: v })),
+      { label: "Included", count: counts.included },
+      { label: "Included with too little page text to judge", count: counts["included-insufficient-text"] ?? 0 },
+      { label: "Sampled", count: sample.length },
+      { label: "Collection failed", count: failed },
+    ],
+  };
+
+  const out = new Kysely({ dialect: new SqliteDialect({ database: new Database(target) }) });
+  let res;
+  try {
+    res = await materializeStore({
+      entries: [...byId.keys()].map((projectId) => ({ projectId, hnId: Number(byId.get(projectId).hn_id) })),
+      sourceOf,
+      workedCaseHnIds: [46838772],
+      key,
+      codebook,
+      gatesPath,
+      runGate: values["js-gate"] ? await jsGate() : (record) => runGate(record, { repoRoot: root }),
+      gapText,
+      method,
+      db: out,
+    });
+  } catch (e) {
+    if (e instanceof MaterializeRefusal) {
+      for (const [k, v] of Object.entries(e.diagnosis).sort((a, b) => b[1] - a[1])) console.log(`DEID hits=${v} ${k}`);
+      refuse(e.reason);
+    }
+    throw e;
+  } finally {
+    await out.destroy();
+    await pipelineDb.destroy();
+  }
+  fs.chmodSync(target, 0o600);
+
+  const exports = path.join(dataDir, "exports");
+  fs.mkdirSync(exports, { recursive: true, mode: 0o700 });
+  assertOutsideRepo(exports, root);
+  const candidatesFile = path.join(exports, "judge-access-candidates.json");
+  fs.writeFileSync(candidatesFile, JSON.stringify({ generatedAt: new Date().toISOString(), candidates: res.candidates, sponsors: res.sponsors }, null, 2) + "\n", { mode: 0o600 });
+  fs.chmodSync(candidatesFile, 0o600);
+
+  const projectsOf = (xs) => new Set(xs.map((x) => x.projectId)).size;
+  console.log(`REPORT rows=${res.reportRows}`);
+  console.log(`SNAPSHOT rows=${res.snapshots}`);
+  console.log(`DEID scan hits=0 views=${res.deidViews}`);
+  console.log(`METHOD rows=1`);
+  console.log(`CANDIDATES well-known=${projectsOf(res.candidates)} (${res.candidates.length} quotes) sponsor=${projectsOf(res.sponsors)} worked-case-excluded=${res.excludedWorkedCase}`);
 }
 
 const key = values.deidentify ? readKey() : null;
