@@ -405,3 +405,25 @@ Reason: observed recode spend was approximately $0.0115 per project, projecting 
 Changed rule: the 30-positive Ultra spike compares thinking on versus off, not low. The model advertises only boolean thinking settings. Keep the $0.50 combined spike cap, identical cited evidence in both conditions, and independent reading of every decision against its cited spans. Report the comparison before full confirmation; the latter retains its $5.00 cap and uses the winning setting.
 
 Reason: compare supported settings without silently translating an unsupported setting.
+
+## Addendum 2026-10-25 (A11)
+
+Adopted on Helen's standing existing-balance instruction of 2026-10-25. This supersedes asking for separate spending approval within the protected envelope; evidence rules and agreement thresholds remain unchanged.
+
+### A11.1 Existing balances and protected reserves
+
+Changed rule: use existing balances only, with no top-up, credit purchase or new sign-in grant. Token Factory spending must leave at least $1.00 for judges' live runs. Ollama spending must leave at least $0.50 of included monthly credit; purchased credit is not usable. Verify starting balances, freeze the release allowance and retain every subsequent charge and unresolved reservation across stages and restarts. Each request reserves its complete bounded cost before transmission. Retain the default 20000-token prompt guard and the previously approved exact-nine confirmation exceptions only. Decisions within this envelope are autonomous and actual spend is reported afterwards. The fresh 76-project stage and the single extra guidance adjudication are authorized within this envelope.
+
+Reason: shared remaining balances must fund completion while preserving live-run and included-credit reserves.
+
+### A11.2 No-spend publication fallback
+
+Changed rule: when a required correction, application or confirmation would exceed the remaining protected allowance, record its projection and a digest-bound copy of the budget evidence and withhold the affected unreleased checks under D-55b. A fresh passing result can remain withheld when application or confirmation is unaffordable; its fresh metrics remain reported. A correction without independent approval remains unapplied and its check is withheld. Preserve the original states, evidence, failed decisions and explicit limitation. The all-17 application scenario is not authorized. The original 300 never become the correction test set, and the labeller's states never replace primary coding.
+
+Reason: a failed or unaffordable step must produce a truthful withheld result within the existing allowance.
+
+### A11.3 Complete bounded gate review
+
+Changed rule: keep every agreement number and project-bootstrap interval intact. Where the complete gate plus the full protocol exceeds the request limit, review complete agreement matrices as separate named JSON documents. The final gate manifest retains the primary release decisions and other metadata; each complete matrix is either supplied inline or named by an approved attachment's exact digest. Every review receives the full protocol. Loading the signed gate requires the final manifest approval, each attachment's latest matching approval, exact file digests and a lossless reconstruction matching the complete-gate digest. This changes only review representation; the statistics, scope and release thresholds are unchanged. All numbers and intervals remain readable and exact.
+
+Reason: bounded review requests must preserve the full evidence and the existing publication input contract.
