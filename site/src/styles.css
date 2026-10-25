@@ -1,0 +1,175 @@
+/* Public dashboard stylesheet (06-UI-SPEC). Tailwind scans src/ only. No font file, no icons,
+   no motion: tw-animate-css is not used on public pages. */
+@import "tailwindcss" source("./");
+
+/* 06-UI-SPEC "Color": tokens on :root (D-71). Light is the default and the only print scheme;
+   dark applies only through prefers-color-scheme (no toggle, pages need no JS). */
+:root {
+  --radius: 0.625rem;
+  --background: #fcfcfb;
+  --foreground: #14161a;
+  --card: #ffffff;
+  --card-foreground: #14161a;
+  --primary: #14161a;
+  --primary-foreground: #fcfcfb;
+  --secondary: #f3f2ee;
+  --secondary-foreground: #14161a;
+  --muted: #f3f2ee;
+  --muted-foreground: #52514e;
+  --accent: #f3f2ee;
+  --accent-foreground: #14161a;
+  --accent-ink: #8f5a08;
+  --border: #d9d6cd;
+  --input: #d9d6cd;
+  --ring: #8f5a08;
+  --chart-blue: #3987e5;
+  --chart-red: #e66767;
+  --chart-neutral: #8a8982;
+  --chart-ink: var(--foreground);
+  --chart-ink-2: var(--muted-foreground);
+  --chart-grid: var(--border);
+  color-scheme: light dark;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.205 0.006 285);
+    --foreground: oklch(0.96 0 0);
+    --card: oklch(0.24 0.006 285);
+    --card-foreground: oklch(0.96 0 0);
+    --primary: oklch(0.96 0 0);
+    --primary-foreground: oklch(0.205 0.006 285);
+    --secondary: oklch(0.29 0.008 285);
+    --secondary-foreground: oklch(0.96 0 0);
+    --muted: oklch(0.29 0.008 285);
+    --muted-foreground: oklch(0.72 0.01 285);
+    --accent: oklch(0.29 0.008 285);
+    --accent-foreground: oklch(0.96 0 0);
+    --accent-ink: #d39a3c;
+    --border: oklch(0.38 0.01 285);
+    --input: oklch(0.38 0.01 285);
+    --ring: #d39a3c;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --font-sans: system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background font-sans text-foreground; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  h1 { font-size: 2rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
+  h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
+  h3 { font-size: 1rem; font-weight: 600; }
+  a { color: var(--foreground); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
+}
+
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus { left: 16px; top: 16px; background: var(--background); padding: 8px; }
+
+.site-header { max-width: 880px; margin: 0 auto; padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+.site-header .brand { font-weight: 600; text-decoration: none; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.site-header nav a, .subnav a { text-decoration: none; }
+.site-header nav a[aria-current="page"], .subnav a[aria-current="page"] { border-bottom: 2px solid var(--accent-ink); }
+.subnav { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.8125rem; margin-bottom: 24px; }
+
+main { max-width: 880px; margin: 0 auto; padding: 64px 24px 0; }
+@media (min-width: 640px) { main, .site-header, .site-footer { padding-left: 32px; padding-right: 32px; } }
+main > * + * { margin-top: 16px; }
+main p { max-width: 75ch; }
+main section { margin-top: 48px; }
+
+.kicker { color: var(--accent-ink); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+.fixture-banner { background: var(--muted); border: 1px solid var(--foreground); padding: 16px; }
+.release-badge { display: inline-block; border: 1px solid var(--accent-ink); border-radius: 4px; padding: 4px 8px; font-size: 0.8125rem; }
+.muted { color: var(--muted-foreground); }
+
+figure.figure { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 32px 0 0; }
+figure.figure figcaption { font-size: 1.25rem; font-weight: 600; line-height: 1.2; margin-bottom: 16px; }
+figure.figure figcaption .measure { display: block; font-size: 0.8125rem; font-weight: 400; color: var(--muted-foreground); margin-top: 4px; }
+.chart-wrap { max-width: 640px; overflow-x: auto; }
+.chart-wrap svg { min-width: 480px; display: block; font-family: inherit; }
+
+.chart-tick, .chart-label, .chart-state, .chart-detail { font-size: 13px; }
+.chart-label, .chart-pct { fill: var(--chart-ink); }
+.chart-tick, .chart-state, .chart-detail { fill: var(--chart-ink-2); }
+.chart-pct { font-size: 16px; font-weight: 600; }
+.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-bar { fill: var(--chart-blue); forced-color-adjust: auto; }
+.chart-bar-red { fill: var(--chart-red); forced-color-adjust: auto; }
+.chart-whisker { stroke: var(--chart-ink-2); stroke-width: 2; }
+.chart-state-tick { stroke: var(--chart-neutral); stroke-width: 2; }
+
+.how-we-know { background: var(--muted); border-radius: 8px; padding: 16px; margin-top: 24px; font-size: 0.8125rem; line-height: 1.4; }
+.how-we-know h3 { font-size: 0.875rem; font-weight: 600; margin: 0 0 8px; }
+.how-we-know dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 8px 16px; margin: 0; }
+.how-we-know dt { color: var(--muted-foreground); }
+.how-we-know dd { margin: 0; }
+@media (max-width: 480px) { .how-we-know dl { grid-template-columns: 1fr; gap: 0; } .how-we-know dd { margin-bottom: 8px; } }
+
+.table-view { margin-top: 16px; }
+.table-view summary { cursor: pointer; font-size: 0.8125rem; }
+.table-scroll { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font-size: 1rem; margin-top: 8px; }
+table.data caption { text-align: left; font-size: 0.8125rem; color: var(--muted-foreground); padding-bottom: 4px; }
+table.data th, table.data td { border-bottom: 1px solid var(--border); padding: 4px 16px 4px 0; text-align: left; vertical-align: top; }
+table.data thead th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; background: var(--muted); }
+table.data td.num { text-align: right; white-space: nowrap; }
+
+.findings-list { margin-top: 16px; padding-left: 1.25rem; list-style: disc; }
+.findings-list li + li { margin-top: 8px; }
+ol.findings-list { list-style: decimal; }
+/* Review sections (sections.tsx): paragraph rhythm inside a section, room above each sub-heading. */
+main section > * + * { margin-top: 12px; }
+main section > :is(h2, h3):not(:first-child) { margin-top: 32px; }
+.process-figures > div + div { margin-top: 8px; }
+.process-figures dt { font-weight: 600; }
+.process-figures dt::first-letter { text-transform: uppercase; }
+.process-figures dd { margin: 0; }
+
+.site-footer { max-width: 880px; margin: 64px auto 0; padding: 16px 24px 32px; font-size: 0.8125rem; color: var(--muted-foreground); border-top: 1px solid var(--border); }
+
+.prisma-box { fill: none; stroke: var(--border); stroke-width: 1; }
+.prisma-arrow { stroke: var(--chart-ink-2); stroke-width: 1; fill: none; }
+.prisma-head { fill: var(--chart-ink-2); }
+
+/* The PDF link is a control: its outline must reach 3:1 against the page (the --border rule is decorative). */
+a[data-pdf-link] { border-color: var(--muted-foreground); }
+
+/* 06-UI-SPEC "Print Layout" (D-73): the review printed to A4, light tokens only (dark is screen-only above). */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  :root { color-scheme: light; }
+  html { font-size: 87.5%; }
+  body { max-width: none; padding: 0; }
+  main, .site-header, .site-footer { max-width: none; padding-left: 0; padding-right: 0; }
+  main, .site-header { padding-top: 0; }
+  .site-header nav, .subnav, .skip-link, details.table-view > summary, [data-print-hide] { display: none !important; }
+  figure, table, svg, tr, .how-we-know, .stat-tile, [data-exploratory], .process-figures > div { break-inside: avoid; }
+  h2, h3, caption { break-after: avoid; }
+  #appendix-a { break-before: page; }
+  .chart-wrap, .table-scroll { overflow: visible; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; }
+}

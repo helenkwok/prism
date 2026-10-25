@@ -441,3 +441,20 @@ Reason: span-identifier and schema overhead can make a complete prompt exceed th
 ## Addendum 2026-10-25 (A13)
 
 The single qualifying correction passed fresh validation and was applied across all 300 projects, but confirmation preflight found 87 pending positives, including two complete cited-only prompts estimated at 26628 and 49454 tokens. Neither matches an approved exact-nine request; the default 20000-token limit therefore refuses them before transmission. The projected confirmation cost fits the protected allowance, so this is a request-limit refusal, not a funding shortfall. Apply D-55b by withholding the entire affected check, retaining its fresh metrics, corrected coding, every cited span, unchanged raw responses and a digest-bound refusal inventory that is recomputed against current evidence and the retained exception registry. Do not truncate, repack confirmation evidence, extend an exception, substitute gold labels or mark an unconfirmed positive as confirmed. Acceptance must report incomplete full-sample confirmation separately from verified cached coverage of every current positive outside the withheld check; publication requires the signed final gate and refuses the withheld check. This records the existing guarded withholding path after observing the refusal, without changing a threshold, request limit or dollar cap.
+
+## Addendum 2026-10-23 (A14)
+
+Numbered A14 at the branch merge because A11 to A13 were already taken; drafted as A11. Adopted on Helen's 2026-10-23 decision D-83, through the A6 sign-off role. Results seen when this was written: the Phase 4 screening-audit, collection-recall, label-edit and confirmation figures. No release had been made. No real-data release may use this exception until this addendum is signed digest-bound.
+
+### A14.1 Process figures outside the k = 10 rule
+
+Changed rule: section 6.2 primary suppression covers statistics about launches. Four process figures describe the instrument, not any launch, and are published in full:
+
+- `screening-audit`: the screening error of the audited exclusions (errors of audited, with its interval), and its exploratory re-measure.
+- `collection-recall`: supported and raw collection recall, with the counts of gathered items that were supported, unsupported and boilerplate.
+- `person-edits`: the count of published check states edited by a person.
+- `confirmation-total`: the total number and share of proposed positives changed at confirmation.
+
+Each is listed in the release manifest's process figures with this addendum as its basis, and passes the identifier scan like every other byte of the release. The total changed at confirmation enters the disclosure audit as a published constant, so its split into rejected and downgraded stays protected under section 6. Pass precision per check and changes at confirmation per check stay under section 6.
+
+Reason: these figures describe how the coding was done, not any launch, and under k = 10 the pre-registered section 4 validation results could not be reported.
