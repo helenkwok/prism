@@ -49,7 +49,7 @@ import { detectInjection } from "./coding/injection-flag.ts";
 import { buildClaimsForProject } from "./claims/build-claims.ts";
 import { runGate, type SpawnImpl } from "./gate/run-gate.ts";
 import { withStageCache, defaultCacheDir, readCached, stageCacheKey } from "./cache/stage-cache.ts";
-import { projectSpans } from "./confirm/confirm.ts";
+import { projectSpans, spansDigest } from "./confirm/confirm.ts";
 import {
   ensurePipelineSchema,
   recordProjectResult,
@@ -268,6 +268,22 @@ async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<
   const checks = ctx.onlyChecks!;
   const contract = buildContract(checks);
   const guidance = { version: ctx.guidance!.version, byCheck: Object.fromEntries(checks.map(id => [id, ctx.guidance!.byCheck[id]])) };
+  const inputDigest = spansDigest(input.spans);
+  const previous = input.manifest.codingCorrection;
+  const prior = await db.selectFrom("pipeline_project_results").selectAll().where("project_n", "=", project.n).executeTakeFirst();
+  const retained = new Map<string, CheckEntry>();
+  if (previous) {
+    if (previous.version !== guidance.version || !Array.isArray(previous.checks) || !previous.checks.length || new Set(previous.checks).size !== previous.checks.length || previous.checks.some((id: string) => !ctx.contract.checkIds.includes(id)) ||
+        (previous.inputDigest !== undefined && previous.inputDigest !== inputDigest) || !prior || String(prior.hn_id) !== String(project.hn_id) || prior.codebook_version !== CODEBOOK_VERSION || prior.model_id !== PINNED_MODEL ||
+        digestJson(JSON.parse(prior.snapshot_hashes_json)) !== digestJson(input.manifest.snapshotHashesInCollectionOrder)) throw new Error(`project ${project.n}: stale or mismatched prior correction`);
+    const rows = await db.selectFrom("pipeline_check_states").selectAll().where("project_n", "=", project.n).execute();
+    const entries = rows.map(row => ({ checkId: row.check_id, proposedState: row.proposed_state, spanIds: JSON.parse(row.span_ids_json) })) as CheckEntry[];
+    if (!isSchemaValid(JSON.stringify({ checks: entries }), input.spanIds, ctx.contract.zodSchema).valid) throw new Error(`project ${project.n}: incompatible prior corrected states`);
+    const filteredPrior = applyQuoteOrUnknownFilter(entries, input.spanIds);
+    if (rows.some(row => filteredPrior.find(e => e.checkId === row.check_id)?.proposedState !== row.filtered_state)) throw new Error(`project ${project.n}: incompatible prior corrected states`);
+    for (const id of previous.checks as string[]) retained.set(id, entries.find(e => e.checkId === id)!);
+  }
+  const cumulativeChecks = ctx.contract.checkIds.filter(id => checks.includes(id) || retained.has(id));
   const messages = input.chunks.map(c => buildCodingMessages(contract.checkIds, codebook, contract.jsonSchema, c, guidance));
   const guided = await withStageCache(cacheDir, String(project.hn_id), "code-guided", { model: PINNED_MODEL, maxTokens: CODING_MAX_TOKENS, messages, guidance }, async () => {
     if (!input.spans.length) return { checks: allUnknownChecks(contract.checkIds), attempts: 0 };
@@ -287,17 +303,16 @@ async function processGuidedCorrection(project: SliceEntryLike, ctx: Parameters<
     return { checks: mergeChunkCodings(contract.checkIds, results.map(r => r.data!.checks)), attempts: results.reduce((n, r) => n + r.attempts, 0) };
   });
   if (!isSchemaValid(JSON.stringify({ checks: guided.value.checks }), input.spanIds, contract.zodSchema).valid) throw new Error(`project ${project.n}: invalid guided cache`);
-  const codeChecks = input.baseline.map(entry => checks.includes(entry.checkId) ? guided.value.checks.find(c => c.checkId === entry.checkId)! : entry);
+  const codeChecks = input.baseline.map(entry => checks.includes(entry.checkId) ? guided.value.checks.find(c => c.checkId === entry.checkId)! : retained.get(entry.checkId) ?? entry);
   const filtered = applyQuoteOrUnknownFilter(codeChecks, input.spanIds);
   const claims = await buildClaimsForProject({ project: project.title, filteredStates: filtered, spanUrls: input.spanUrls,
     runGate: record => runGate(record, { spawnImpl: overrides.gateSpawnImpl, pythonPath: overrides.pythonPath, gateScriptPath: overrides.gateScriptPath }), gatesPath: ctx.gateFile.path });
-  const prior = await db.selectFrom("pipeline_project_results").select("missing_data").where("project_n", "=", project.n).executeTakeFirst();
   await recordProjectResult(db, { projectN: project.n, hnId: String(project.hn_id), modelId: PINNED_MODEL, promptHash: digestJson({ schema: contract.jsonSchema, guidance, messages }), codebookVersion: CODEBOOK_VERSION,
     gateSha: (Object.values(claims)[0] as any).gateResult.gateSha, snapshotHashesInCollectionOrder: input.manifest.snapshotHashesInCollectionOrder,
     codingAttempts: guided.value.attempts, codingAllUnknown: !input.spans.length, missingData: prior?.missing_data ?? null,
     checkStates: filtered.map(f => ({ checkId: f.checkId, proposedState: codeChecks.find(c => c.checkId === f.checkId)!.proposedState, filteredState: f.proposedState, spanIds: f.spanIds })),
     claims: Object.entries(claims).map(([decisionId, v]: [string, any]) => ({ decisionId, claimJson: v.record, gateStatus: v.gateResult.status })) });
-  fs.writeFileSync(input.manifestPath, JSON.stringify({ ...input.manifest, codingCorrection: { version: guidance.version, checks } }, null, 2), { mode: 0o600 });
+  fs.writeFileSync(input.manifestPath, JSON.stringify({ ...input.manifest, codingCorrection: { version: guidance.version, checks: cumulativeChecks, inputDigest } }, null, 2), { mode: 0o600 });
   return { n: project.n, hnId: String(project.hn_id), status: "ok", boundaryFromCache: true, evidenceFromCache: true, redactFromCache: true, segmentFromCache: true, injectionFromCache: true, codeFromCache: guided.fromCache, filterFromCache: false, claimsFromCache: false, recordFromCache: false, tavilyCreditsSpent: 0 };
 }
 

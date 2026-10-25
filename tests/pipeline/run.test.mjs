@@ -21,6 +21,7 @@ import { loadGateFile, buildContract, citationSchema } from "../../src/pipeline/
 import { runPipeline, reportRunAccounting, buildCodingMessages, preflightGuidedCorrections, CODING_MAX_TOKENS } from "../../src/pipeline/run.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
+import { spansDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { writeCached, stageCacheKey } from "../../src/pipeline/cache/stage-cache.ts";
 import { ensurePipelineSchema, recordSecondCoding } from "../../src/pipeline/store/results.ts";
 import { A8_ITEMS, a8Section } from "../../src/pipeline/signoff/a8.ts";
@@ -114,6 +115,46 @@ async function correctionFixture(cacheKind = "approved") {
 }
 
 describe("retained-evidence coding corrections", () => {
+  test("sequential disjoint corrections preserve prior corrected states and combined scope", async () => {
+    const f = await correctionFixture();
+    let calls = 0;
+    const options = { ...f, apiKeys: { tavily: "fixture", nebius: "fixture", github: "fixture" }, gatesPath, secondCoderIds: new Set(), guidance: { version: "fixture-c1", byCheck: { [f.target]: "Synthetic first correction.", [f.untouched]: "Synthetic second correction." } }, overrides: { ...gateOverrides, nebiusFetchImpl: async (_url, init) => {
+      calls++;
+      const ids = JSON.parse(init.body).response_format.json_schema.schema.properties.checks.required;
+      return jsonResponse({ choices: [{ message: { content: JSON.stringify({ checks: ids.map(checkId => ({ checkId, proposedState: checkId === f.target ? "claimed" : "fail", spanIds: [f.spans[0].id] })) }) } }] });
+    } } };
+    try {
+      const secondary = await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute();
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.untouched] })).ok, true);
+      const states = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.equal(states.find(r => r.check_id === f.target).filtered_state, "claimed");
+      assert.equal(states.find(r => r.check_id === f.untouched).filtered_state, "fail");
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")).codingCorrection.checks, [f.target, f.untouched]);
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal(calls, 2, "replaying either correction uses its existing request cache");
+      const resumed = await f.db.selectFrom("pipeline_check_states").selectAll().execute();
+      assert.deepEqual(resumed, states);
+      assert.deepEqual(await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute(), secondary);
+      const current = JSON.parse(fs.readFileSync(f.manifestPath, "utf8"));
+      assert.deepEqual(current.snapshotHashesInCollectionOrder, f.manifest.snapshotHashesInCollectionOrder);
+      assert.equal(current.codingCorrection.inputDigest, spansDigest(f.spans));
+      // Existing same-version records can be recovered from their durable CAS binding.
+      const legacy = structuredClone(current); delete legacy.codingCorrection.inputDigest;
+      fs.writeFileSync(f.manifestPath, JSON.stringify(legacy));
+      assert.equal((await runPipeline({ ...options, onlyChecks: [f.target] })).ok, true);
+      assert.equal(calls, 2);
+      for (const correction of [{ ...current.codingCorrection, version: "stale-c0" }, { ...current.codingCorrection, inputDigest: "0".repeat(64) }]) {
+        fs.writeFileSync(f.manifestPath, JSON.stringify({ ...current, codingCorrection: correction }));
+        const refused = await runPipeline({ ...options, onlyChecks: [f.untouched] });
+        assert.equal(refused.ok, false);
+        assert.match(refused.outcomes[0].error, /stale or mismatched prior correction/);
+        assert.equal(calls, 2, "stale correction scope is refused before HTTP");
+        assert.deepEqual(await f.db.selectFrom("pipeline_check_states").selectAll().execute(), states);
+      }
+    } finally { await f.db.destroy(); }
+  });
+
   test("collect-only retains the normal manifest without either model or coding rows", async () => {
     const dataDir = tempDir("prism-collect-only-");
     const cacheDir = tempDir("prism-collect-only-cache-");
@@ -174,7 +215,7 @@ describe("retained-evidence coding corrections", () => {
       assert.equal(rows.find(r => r.check_id === f.untouched).proposed_state, "pass");
       assert.equal(rows.filter(r => r.proposed_state === "fail").length, 0);
       assert.deepEqual(await f.db.selectFrom("pipeline_second_coder_states").selectAll().execute(), secondBefore);
-      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), { ...f.manifest, codingCorrection: { version: "fixture-v1", checks: [f.target] } });
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.manifestPath, "utf8")), { ...f.manifest, codingCorrection: { version: "fixture-v1", checks: [f.target], inputDigest: spansDigest(f.spans) } });
       const gatesBefore = gatesRun;
       const resumed = await runPipeline(options);
       assert.equal(resumed.ok, true);
