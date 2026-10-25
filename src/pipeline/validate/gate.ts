@@ -13,6 +13,8 @@ import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../select/draw-sam
 import { assertA9Signed, a9Section } from "../signoff/a9.ts";
 import { agreementByCheck, estimable, type AgreementRow } from "./agreement.ts";
 import { loadReleaseProof } from "./release-proof.ts";
+import { expandGateReviewBundle } from "./gate-review-bundle.ts";
+import { loadFundingFallback, type FundingFallbackOptions } from "./funding-fallback.ts";
 
 export const AC1_THRESHOLD = 0.70;
 export const PRECISION_THRESHOLD = 0.85;
@@ -21,7 +23,7 @@ const GOLD_MODEL = "glm-5.3-flash:cloud";
 const GOLD_LABELLER = `agent:ollama:${GOLD_MODEL}`;
 const STATES = new Set(["pass", "fail", "unknown", "claimed"]);
 const sha = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
-type Action = { checkId: string; action: string; applied?: boolean; correctionVersion?: string };
+type Action = { checkId: string; action: string; applied?: boolean; correctionVersion?: string; basis?: string };
 type Revalidation = { kind?: string; sampleNs?: number[]; checks?: { checkId: string; goldPasses: number; ac1: number; precision: number | null }[] };
 type Manifest = { hnId?: string; snapshotHashesInCollectionOrder: string[]; codingCorrection?: { version: string; checks: string[] } };
 export type GateOptions = {
@@ -30,6 +32,7 @@ export type GateOptions = {
   revalidation?: Revalidation; actions?: { checks: Action[] }; protocolPath?: string;
   screeningAuditAction?: { documentPath: string; signoffPath?: string };
   priorApprovalProofPath?: string;
+  fundingFallback?: FundingFallbackOptions;
 };
 
 function within(metrics: { ac1: number; precision: number | null }): boolean {
@@ -174,6 +177,8 @@ export async function evaluateGate(o: GateOptions) {
   const secondaryPairs = pairs.map(row => ({ ...row, a: published.find(p => p.projectN === row.projectN && p.checkId === row.checkId)?.published ?? "unknown" }));
   const actions = o.actions?.checks ?? [];
   if (actions.some(a => !checkIds.includes(a.checkId)) || (o.revalidation?.checks ?? []).some(c => !checkIds.includes(c.checkId))) throw new Error("action or revalidation contains an unknown check");
+  const funding = o.fundingFallback ? loadFundingFallback(o.fundingFallback, o.dataDir, sampleNs, checkIds, actions) : undefined;
+  if (!funding && actions.some(a => a.basis === "funding-envelope")) throw new Error("funding fallback evidence is required");
   const freshNs = o.revalidation?.sampleNs ?? [];
   const freshDraw = readJson(path.join(o.dataDir, "pipeline", "fresh-projects.json"));
   const quarters = Array.isArray(freshDraw) ? [1, 2, 3, 4].map(q => freshDraw.filter(e => freshNs.includes(e.n) && e.quarter === q).length) : null;
@@ -199,10 +204,16 @@ export async function evaluateGate(o: GateOptions) {
     const correctionApplied = activeSample.length > 0 && versions.length === activeSample.length && versions.every(v => !!v && v === versions[0] && (!action?.correctionVersion || v === action.correctionVersion));
     let status = metric.n === 0 ? "missed" : !estimable(metric.goldPasses) ? "released-not-estimable" : within(metric) ? "released" : "missed";
     let reason = status === "released-not-estimable" ? "validated by confirmation only; agreement not estimable (fewer than 10 gold passes)" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
-    if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
+    const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
+    if (fundingWithheld) {
+      if (status !== "missed") throw new Error("funding fallback may only withhold a check that missed its original gate");
+      status = "withheld";
+      reason = `funding envelope prevents ${funding!.step}; withheld under the standing funding directive; any fresh revalidation result remains reported separately`;
+    }
+    else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
     else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied) { status = "corrected-revalidated"; reason = "passed estimable fresh revalidation and correction is recorded on every scoped sample manifest"; }
-    return { ...metric, status, reason, correctionApplied, ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
+    return { ...metric, status, reason, correctionApplied, ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
   const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
   const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
@@ -222,6 +233,7 @@ export async function evaluateGate(o: GateOptions) {
   }
   return {
     generatedAt: new Date().toISOString(), codebookVersion: o.codebookVersion, gateSha: o.gateFile.sha256, sampleNs, revalidationSampleNs: fresh ? freshNs : [],
+    ...(funding ? { fundingFallback: funding } : {}),
     ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
     bootstrap: { resamples: 2000, unit: "projects", primarySeed: goldSeed, secondModelSeed: secondSeed },
     thresholds: { ac1: AC1_THRESHOLD, passPrecision: PRECISION_THRESHOLD, goldPassesForEstimability: 10, basis: "point estimates; pooled results never rescue a check" },
@@ -244,7 +256,7 @@ export function assertPublishable(gate: { checks: { checkId: string; status: str
 export function loadSignedGate(gatePath: string, signoffPath: string): any | null {
   try {
     const signed = signedDocument(gatePath, signoffPath, "VAL-07 gate record (final)");
-    return signed ? JSON.parse(signed.text) : null;
+    return signed ? expandGateReviewBundle(JSON.parse(signed.text), path.dirname(gatePath), signoffPath) : null;
   } catch { return null; }
 }
 

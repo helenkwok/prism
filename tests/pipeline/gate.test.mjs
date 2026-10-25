@@ -14,6 +14,7 @@ import { PINNED_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
 import { ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../../src/pipeline/select/draw-sample.ts";
+import { prepareGateReviewBundle } from "../../src/pipeline/validate/gate-review-bundle.ts";
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 const book = loadCodebook();
 const ids = Object.keys(book.checks).slice(0, 3);
@@ -141,6 +142,82 @@ test("only latest approved exact-byte final sign-off permits loading a record", 
   const record = { item: "VAL-07 gate record (final)", docDigest: sha(text), decision: "approved", decidedAt: "2026-10-24T00:00:00.000Z" }; fs.writeFileSync(sig, JSON.stringify(record) + "\n"); assert.ok(loadSignedGate(file, sig));
   fs.appendFileSync(sig, JSON.stringify({ ...record, decision: "rejected", decidedAt: "2026-10-24T01:00:00.000Z" }) + "\n"); assert.equal(loadSignedGate(file, sig), null);
   fs.writeFileSync(sig, JSON.stringify(record) + "\n"); fs.appendFileSync(file, " "); assert.equal(loadSignedGate(file, sig), null);
+});
+
+test("signed matrix manifests expand only with every exact component approval", async () => {
+  const f = await fixture();
+  try {
+    const gate = await evaluateGate(f);
+    const dir = path.join(f.dataDir, "validation");
+    const bundle = prepareGateReviewBundle(gate, dir);
+    const file = path.join(dir, "gate-bundle.json"), sig = path.join(dir, "release-signoffs.jsonl");
+    fs.writeFileSync(file, bundle.manifestText);
+    const final = { item: "VAL-07 gate record (final)", docDigest: sha(bundle.manifestText), decision: "approved", decidedAt: "2026-10-25T00:00:00Z" };
+    fs.writeFileSync(sig, JSON.stringify(final) + "\n");
+    assert.equal(loadSignedGate(file, sig), null);
+    fs.appendFileSync(sig, bundle.components.map(c => JSON.stringify({ item: c.item, docDigest: c.docDigest, decision: "approved", decidedAt: final.decidedAt })).join("\n") + "\n");
+    assert.deepEqual(loadSignedGate(file, sig), gate);
+    fs.appendFileSync(sig, JSON.stringify({ item: bundle.components[0].item, docDigest: bundle.components[0].docDigest, decision: "rejected", decidedAt: "2026-10-26T00:00:00Z" }) + "\n");
+    assert.equal(loadSignedGate(file, sig), null);
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+function fundingFiles(f) {
+  const dir = path.join(f.dataDir, "validation");
+  const snapshot = { tokenFactory: { remainingUsd: 3, reserveUsd: 1, observedAt: new Date().toISOString(), source: "user-verified-balance" }, ollama: { remainingIncludedUsd: 2, reserveUsd: .5, observedAt: new Date().toISOString(), source: "user-verified-balance" } };
+  const budget = { version: 1, snapshot, snapshotDigest: sha(JSON.stringify(snapshot)), stages: { paid: { host: "ollama", cap: 1, spent: .5, reserved: .1, estimated: .7 } } };
+  const budgetText = JSON.stringify(budget);
+  const budgetEvidencePath = path.join(dir, `funding-budget-${sha(budgetText)}.json`);
+  fs.writeFileSync(budgetEvidencePath, budgetText);
+  const policy = { version: 1, source: "standing-user-directive", existingBalancesOnly: true, topUpAllowed: false, tokenFactoryReserveUsd: 1, ollamaReserveUsd: .5, noSpendAction: "withhold" };
+  const policyPath = path.join(dir, "funding-policy.json"); fs.writeFileSync(policyPath, JSON.stringify(policy));
+  const decision = { version: 1, policyDigest: sha(fs.readFileSync(policyPath, "utf8")), sampleNs: f.sampleNs, checkIds: [ids[1]], step: "fresh-validation", reason: "projection-exceeds-envelope", projectionUsd: { tokenFactory: 2.1, ollama: .5 }, availableUsd: { tokenFactory: 2, ollama: .9 }, budgetEvidenceDigest: sha(budgetText), budgetEvidencePath };
+  const decisionPath = path.join(dir, "funding-decision.json"); fs.writeFileSync(decisionPath, JSON.stringify(decision));
+  return { policy, decision, budget, policyPath, decisionPath, budgetEvidencePath, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true, basis: "funding-envelope" }] } };
+}
+
+test("funding stops withhold a missed check without inventing failed fresh validation", async () => {
+  const f = await fixture();
+  try {
+    const p = fundingFiles(f);
+    const options = { ...f, fundingFallback: { policyPath: p.policyPath, decisionPath: p.decisionPath }, actions: p.actions };
+    let gate = await evaluateGate(options);
+    assert.equal(gate.checks[1].status, "withheld");
+    assert.match(gate.checks[1].reason, /funding envelope/);
+    assert.equal(gate.checks[1].fundingDecisionDigest, sha(fs.readFileSync(p.decisionPath, "utf8")));
+    assert.equal(gate.checks[1].revalidation, undefined);
+    assert.throws(() => assertPublishable(gate, ids[1]));
+    p.decision.step = "apply-correction"; fs.writeFileSync(p.decisionPath, JSON.stringify(p.decision));
+    gate = await evaluateGate({ ...options, revalidation: { sampleNs: Array.from({ length: 76 }, (_, i) => i + 301), checks: [{ checkId: ids[1], goldPasses: 12, ac1: .8, precision: .9 }] } });
+    assert.equal(gate.checks[1].status, "withheld");
+    assert.equal(gate.checks[1].revalidation.ac1, .8);
+    assert.doesNotMatch(gate.checks[1].reason, /did not pass|not estimable/);
+    assert.equal(gate.checks[0].status, "released");
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+test("funding evidence rejects policy tampering, fake available funds and scope mismatches", async () => {
+  const f = await fixture();
+  try {
+    for (const mutate of [
+      p => { p.policy.ollamaReserveUsd = 0; },
+      p => { p.decision.availableUsd.ollama = .1; },
+      p => { p.decision.projectionUsd = { tokenFactory: 1, ollama: .5 }; },
+      p => { p.decision.sampleNs = [1]; },
+      p => { p.decision.checkIds = [ids[1], ids[1]]; },
+      p => { p.decision.checkIds = ["unknown-check"]; },
+      p => { p.decision.checkIds = [ids[0]]; p.actions.checks[0].checkId = ids[0]; },
+      p => { p.actions.checks[0].applied = false; },
+      p => { p.decision.projectionUsd.ollama = -1; },
+      p => { p.decision.availableUsd.unrecognisedHost = 0; },
+      p => { p.decision.budgetEvidenceDigest = "f".repeat(64); },
+    ]) {
+      const p = fundingFiles(f); mutate(p);
+      fs.writeFileSync(p.policyPath, JSON.stringify(p.policy));
+      fs.writeFileSync(p.decisionPath, JSON.stringify(p.decision));
+      await assert.rejects(() => evaluateGate({ ...f, fundingFallback: { policyPath: p.policyPath, decisionPath: p.decisionPath }, actions: p.actions }), /funding/);
+    }
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
 });
 
 test("same-case screening refit never replaces the raw miss; an approved companion permits limitation wording only", async () => {
