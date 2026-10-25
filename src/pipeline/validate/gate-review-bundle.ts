@@ -8,6 +8,8 @@ const FORMAT = "signed-matrix-manifest-v1";
 const sha = (text: string) => crypto.createHash("sha256").update(text).digest("hex");
 const fail = (reason: string): never => { throw new Error(`gate review bundle: ${reason}`); };
 const MATRIX_NAMES = ["published", "second-vs-gold", "second-vs-primary"] as const;
+type MatrixName = typeof MATRIX_NAMES[number] | "revalidation";
+const INLINE_METRICS = new Set(["n", "ac1", "precision", "goldPasses", "estimable"]);
 const METRICS = ["n", "pa", "ac1", "kappa", "precision", "recall", "goldPasses", "coderPasses", "fourStateAc1", "fourStatePa", "fourStateKappa", "estimable",
   "ac1CI", "precisionCI", "recallCI", "kappaCI", "paCI", "fourStateAc1CI", "fourStatePaCI", "fourStateKappaCI"];
 const itemFor = (name: string) => `VAL-07 gate matrix (${name})`;
@@ -54,10 +56,12 @@ function matrixShape(matrix: any, ids: string[]): void {
   });
   metric(matrix.pooled);
 }
-function matrixAt(gate: any, name: typeof MATRIX_NAMES[number]): any {
+function matrixAt(gate: any, name: MatrixName): any {
+  if (name === "revalidation") return gate.recomputedRevalidation;
   return name === "published" ? gate.published : gate.secondModel[name === "second-vs-gold" ? "vsGold" : "vsPrimary"];
 }
-function replaceMatrix(gate: any, name: typeof MATRIX_NAMES[number], value: any): void {
+function replaceMatrix(gate: any, name: MatrixName, value: any): void {
+  if (name === "revalidation") { gate.recomputedRevalidation = value; return; }
   if (name === "published") gate.published = value;
   else gate.secondModel[name === "second-vs-gold" ? "vsGold" : "vsPrimary"] = value;
 }
@@ -68,17 +72,22 @@ function validationDir(dir: string): string {
 }
 
 export type GateReviewComponent = { name: string; basename: string; path: string; doc: string; docDigest: string; item: string };
+function primaryInline(matrix: any): any {
+  const row = (value: any) => Object.fromEntries(Object.entries(value).filter(([key]) => !METRICS.includes(key) || INLINE_METRICS.has(key)));
+  return { checks: matrix.checks.map(row), pooled: row(matrix.pooled) };
+}
 
-/** Writes three content-addressed components without changing any gate value. Existing files are immutable. */
-export function prepareGateReviewBundle(gate: any, dir: string): { manifest: any; manifestText: string; components: GateReviewComponent[] } {
+/** Writes complete content-addressed matrices without changing any gate value. Existing files are immutable. */
+export function prepareGateReviewBundle(gate: any, dir: string, options: { primaryMetrics?: boolean } = {}): { manifest: any; manifestText: string; components: GateReviewComponent[] } {
   const manifest = jsonCopy(gate);
-  if (Object.hasOwn(manifest, "reviewFormat") || Object.hasOwn(manifest, "completeGateDigest")) fail("reserved manifest fields already exist");
+  if (["reviewFormat", "completeGateDigest", "primaryMetrics"].some(key => Object.hasOwn(manifest, key))) fail("reserved manifest fields already exist");
   const ids = primaryShape(manifest);
-  for (const name of MATRIX_NAMES) matrixShape(matrixAt(manifest, name), ids);
+  const names: MatrixName[] = [...MATRIX_NAMES, ...(Object.hasOwn(manifest, "recomputedRevalidation") ? ["revalidation" as const] : [])];
+  for (const name of names) matrixShape(matrixAt(manifest, name), ids);
   const root = validationDir(dir);
   const components: GateReviewComponent[] = [];
-  for (const name of MATRIX_NAMES) {
-    const doc = JSON.stringify(matrixAt(manifest, name)) + "\n";
+  const write = (name: string, matrix: any) => {
+    const doc = JSON.stringify(matrix) + "\n";
     const docDigest = sha(doc);
     const basename = `gate-review-${name}-${docDigest}.json`;
     const file = path.join(root, basename);
@@ -89,7 +98,13 @@ export function prepareGateReviewBundle(gate: any, dir: string): { manifest: any
     }
     const item = itemFor(name);
     components.push({ name, basename, path: file, doc, docDigest, item });
-    replaceMatrix(manifest, name, { $ref: basename, docDigest, item });
+    return { $ref: basename, docDigest, item };
+  };
+  for (const name of names) replaceMatrix(manifest, name, write(name, matrixAt(manifest, name)));
+  if (options.primaryMetrics) {
+    const matrix = { checks: manifest.checks, pooled: manifest.pooled };
+    manifest.primaryMetrics = write("primary", matrix);
+    Object.assign(manifest, primaryInline(matrix));
   }
   manifest.reviewFormat = FORMAT;
   manifest.completeGateDigest = sha(JSON.stringify(gate));
@@ -103,11 +118,9 @@ export function expandGateReviewBundle(manifest: any, dir: string, signoffPath?:
   if (manifest.reviewFormat !== FORMAT || typeof manifest.completeGateDigest !== "string" || !/^[a-f0-9]{64}$/.test(manifest.completeGateDigest)) fail("unknown format or complete gate digest");
   if (typeof signoffPath !== "string" || !signoffPath) return fail("an explicit component approval ledger is required");
   const expanded = jsonCopy(manifest);
-  const ids = primaryShape(expanded);
   const root = validationDir(dir);
   const records = fs.readFileSync(signoffPath, "utf8").split(/\r?\n/).filter(Boolean).map((line, order) => ({ ...JSON.parse(line), order }));
-  for (const name of MATRIX_NAMES) {
-    const ref = matrixAt(expanded, name);
+  const read = (name: string, ref: any) => {
     if (!exactKeys(ref, ["$ref", "docDigest", "item"]) || typeof ref.docDigest !== "string" || !/^[a-f0-9]{64}$/.test(ref.docDigest) ||
         ref.$ref !== `gate-review-${name}-${ref.docDigest}.json` || ref.item !== itemFor(name)) fail("invalid component reference fields or path");
     const file = path.join(root, ref.$ref);
@@ -118,7 +131,19 @@ export function expandGateReviewBundle(manifest: any, dir: string, signoffPath?:
     if (approvals.some(row => !Number.isFinite(Date.parse(row.decidedAt)))) fail("component approval timestamp is invalid");
     approvals.sort((a, b) => Date.parse(b.decidedAt) - Date.parse(a.decidedAt) || b.order - a.order);
     if (approvals[0]?.decision !== "approved") fail("component approval missing or rejected");
-    const matrix = JSON.parse(text);
+    return JSON.parse(text);
+  };
+  if (Object.hasOwn(expanded, "primaryMetrics")) {
+    const primary = read("primary", expanded.primaryMetrics);
+    if (!exactKeys(primary, ["checks", "pooled"]) || !Array.isArray(primary.checks)) fail("invalid primary component");
+    if (!isDeepStrictEqual(primaryInline(primary), { checks: expanded.checks, pooled: expanded.pooled })) fail("inline primary decisions or metrics conflict with component");
+    Object.assign(expanded, primary);
+    delete expanded.primaryMetrics;
+  }
+  const ids = primaryShape(expanded);
+  const names: MatrixName[] = [...MATRIX_NAMES, ...(Object.hasOwn(expanded, "recomputedRevalidation") ? ["revalidation" as const] : [])];
+  for (const name of names) {
+    const matrix = read(name, matrixAt(expanded, name));
     matrixShape(matrix, ids);
     replaceMatrix(expanded, name, matrix);
   }

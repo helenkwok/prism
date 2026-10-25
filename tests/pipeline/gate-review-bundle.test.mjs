@@ -131,3 +131,84 @@ test("shape checks reject missing metric intervals, extra matrix fields and non-
     }
   } finally { fs.rmSync(s.root, { recursive: true, force: true }); }
 });
+
+test("fresh and optional primary attachments preserve exact decisions, intervals and metadata", () => {
+  const s = store();
+  try {
+    const gate = fixture(); gate.recomputedRevalidation = structuredClone(gate.published);
+    for (const primaryMetrics of [false, true]) {
+      const bundle = prepareGateReviewBundle(gate, s.dir, { primaryMetrics });
+      assert.equal(bundle.components.length, primaryMetrics ? 5 : 4);
+      assert.equal(bundle.manifest.checks[0].status, gate.checks[0].status);
+      assert.equal(bundle.manifest.checks[0].ac1, gate.checks[0].ac1);
+      assert.equal(bundle.manifest.checks[0].precision, gate.checks[0].precision);
+      assert.equal(Object.hasOwn(bundle.manifest.checks[0], "ac1CI"), !primaryMetrics);
+      approvals(bundle, s.ledger);
+      assert.deepEqual(expandGateReviewBundle(bundle.manifest, s.dir, s.ledger), gate);
+      assert.equal(JSON.stringify(expandGateReviewBundle(bundle.manifest, s.dir, s.ledger)), JSON.stringify(gate));
+    }
+  } finally { fs.rmSync(s.root, { recursive: true, force: true }); }
+});
+
+test("each optional attachment requires exact current approval and unchanged bytes", () => {
+  for (const name of ["revalidation", "primary"]) {
+    const s = store();
+    try {
+      const gate = fixture(); gate.recomputedRevalidation = structuredClone(gate.published);
+      const bundle = prepareGateReviewBundle(gate, s.dir, { primaryMetrics: true });
+      const c = bundle.components.find(c => c.name === name);
+      approvals(bundle, s.ledger);
+      const rows = fs.readFileSync(s.ledger, "utf8").split("\n").filter(Boolean).map(JSON.parse);
+      fs.writeFileSync(s.ledger, rows.filter(row => row.item !== c.item).map(JSON.stringify).join("\n"));
+      assert.throws(() => expandGateReviewBundle(bundle.manifest, s.dir, s.ledger), /approval/);
+      approvals(bundle, s.ledger);
+      fs.appendFileSync(s.ledger, JSON.stringify({ item: c.item, docDigest: c.docDigest, decision: "rejected", decidedAt: "2026-10-26T00:00:00Z" }) + "\n");
+      assert.throws(() => expandGateReviewBundle(bundle.manifest, s.dir, s.ledger), /approval/);
+      approvals(bundle, s.ledger);
+      fs.writeFileSync(c.path, c.doc + " ");
+      assert.throws(() => expandGateReviewBundle(bundle.manifest, s.dir, s.ledger), /digest/);
+      fs.unlinkSync(c.path);
+      assert.throws(() => expandGateReviewBundle(bundle.manifest, s.dir, s.ledger));
+    } finally { fs.rmSync(s.root, { recursive: true, force: true }); }
+  }
+});
+
+test("primary inline conflicts and omitted fresh attachments cannot change the reconstructed gate", () => {
+  const s = store();
+  try {
+    const gate = fixture(); gate.recomputedRevalidation = structuredClone(gate.published);
+    const bundle = prepareGateReviewBundle(gate, s.dir, { primaryMetrics: true }); approvals(bundle, s.ledger);
+    for (const mutate of [
+      m => { m.checks[0].status = "withheld"; },
+      m => { m.checks[0].ac1 = .25; },
+      m => { m.checks[0].ac1CI = [0, 1]; },
+      m => { delete m.recomputedRevalidation; },
+      m => { m.recomputedRevalidation = gate.recomputedRevalidation; },
+      m => { m.primaryMetrics.extra = true; },
+      m => { delete m.primaryMetrics; },
+    ]) {
+      const changed = structuredClone(bundle.manifest); mutate(changed);
+      assert.throws(() => expandGateReviewBundle(changed, s.dir, s.ledger));
+    }
+  } finally { fs.rmSync(s.root, { recursive: true, force: true }); }
+});
+
+test("new hashes and approvals cannot conceal changed fresh or primary intervals", () => {
+  const s = store();
+  try {
+    const gate = fixture(); gate.recomputedRevalidation = structuredClone(gate.published);
+    const bundle = prepareGateReviewBundle(gate, s.dir, { primaryMetrics: true });
+    for (const name of ["revalidation", "primary"]) {
+      const c = bundle.components.find(c => c.name === name);
+      const matrix = JSON.parse(c.doc); matrix.checks[0].ac1CI = [.123, .987];
+      const text = JSON.stringify(matrix) + "\n", digest = sha(text);
+      const basename = `gate-review-${name}-${digest}.json`;
+      fs.writeFileSync(path.join(s.dir, basename), text);
+      const changed = structuredClone(bundle.manifest);
+      changed[name === "primary" ? "primaryMetrics" : "recomputedRevalidation"] = { $ref: basename, docDigest: digest, item: c.item };
+      approvals(bundle, s.ledger);
+      fs.appendFileSync(s.ledger, JSON.stringify({ item: c.item, docDigest: digest, decision: "approved", decidedAt: "2026-10-25T00:00:00Z" }) + "\n");
+      assert.throws(() => expandGateReviewBundle(changed, s.dir, s.ledger), /complete gate digest/);
+    }
+  } finally { fs.rmSync(s.root, { recursive: true, force: true }); }
+});
