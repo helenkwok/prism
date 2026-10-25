@@ -178,7 +178,7 @@ export function createClient({
         if (mapped) body = { ...body, model: mapped };
         const model = String((body as any).model ?? "");
         requestModel = model || "deepseek-ai/DeepSeek-V4-Flash-0731";
-        body = { ...body, max_tokens: outputTokenLimit((body as any).max_tokens) };
+        body = { ...(body as object), max_tokens: outputTokenLimit((body as any).max_tokens) };
         try {
           ({ projectedUsd } = assertRequestAllowed({
             messages,
