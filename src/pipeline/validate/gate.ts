@@ -192,6 +192,15 @@ export async function evaluateGate(o: GateOptions) {
     (!quarters || quarters.every(n => n === 19));
   const verifiedFresh = o.revalidationProof ? await verifyRevalidationProof({ db: o.db, dataDir: o.dataDir, codebook: o.codebook,
     checkIds, sampleNs, freshNs, cutoff, proof: o.revalidationProof }) : undefined;
+  if (verifiedFresh) {
+    const supplied = o.revalidation?.checks;
+    if (!Array.isArray(supplied) || supplied.length !== checkIds.length || new Set(supplied.map(row => row.checkId)).size !== checkIds.length ||
+        checkIds.some(id => {
+          const row = supplied.find(row => row.checkId === id);
+          const actual = verifiedFresh.metrics.checks.find(row => row.checkId === id);
+          return !row || !actual || row.goldPasses !== actual.goldPasses || row.ac1 !== actual.ac1 || row.precision !== actual.precision;
+        })) throw new Error("supplied revalidation metrics differ from complete verified fresh evidence");
+  }
   const activeSample = sampleNs.filter(n => !a3.includes(n));
   const personCoverage = (id: string) => activeSample.length > 0 && activeSample.every(n => {
     const candidates = edits.filter(e => e.project_n === n && e.check_id === id).sort((a, b) => String(b.edited_at).localeCompare(String(a.edited_at)));

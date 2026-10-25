@@ -13,7 +13,10 @@ import { ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
 import { PINNED_MODEL } from "../../src/pipeline/coding/nebius-client.ts";
 import { ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans, spansDigest } from "../../src/pipeline/confirm/confirm.ts";
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
-import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../../src/pipeline/select/draw-sample.ts";
+import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED, SAMPLING_SEED, QUARTER_STARTS } from "../../src/pipeline/select/draw-sample.ts";
+import { buildContract } from "../../src/pipeline/coding/contract.ts";
+import { buildCodingMessages, chunkSpans } from "../../src/pipeline/run.ts";
+import { verifyRevalidationProof } from "../../src/pipeline/revalidation-proof.ts";
 import { prepareGateReviewBundle } from "../../src/pipeline/validate/gate-review-bundle.ts";
 import { loadCorrectionApprovalFailures } from "../../src/pipeline/validate/correction-approval-failure.ts";
 import { SIGNOFF_MODEL } from "../../src/pipeline/signoff/signoff.ts";
@@ -177,6 +180,64 @@ function fundingFiles(f) {
   const decisionPath = path.join(dir, "funding-decision.json"); fs.writeFileSync(decisionPath, JSON.stringify(decision));
   return { policy, decision, budget, policyPath, decisionPath, budgetEvidencePath, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true, basis: "funding-envelope" }] } };
 }
+
+async function verifiedFreshFixture() {
+  const f = await fixture();
+  const write = (name, value) => fs.writeFileSync(path.join(f.dataDir, name), JSON.stringify(value));
+  const hash = value => sha(JSON.stringify(value));
+  const guidance = { version: "c1", checks: { [ids[1]]: "Synthetic unchanged-rule clarification." } };
+  const doc = JSON.stringify(guidance), context = "Synthetic full rule context.", item = "Codebook correction c1";
+  write("validation/guidance.json", guidance); write("validation/proposal.json", { doc, context, item });
+  fs.writeFileSync(path.join(f.dataDir, "decisions/release-signoff.jsonl"), JSON.stringify({ item, docDigest: sha(doc), inputDigest: hash({ doc, context, item }), decision: "approved", decidedAt: "2026-10-23T01:00:00Z", reviewer: { kind: "agent", id: `agent:${SIGNOFF_MODEL}`, modelId: SIGNOFF_MODEL } }) + "\n");
+  const previousEntries = Array.from({ length: 300 }, (_, i) => ({ n: i + 1, hn_id: String(1001 + i), quarter: Math.floor(i / 75) + 1, created_at: QUARTER_STARTS[Math.floor(i / 75)] + "T00:00:00Z", final_url: "https://example.test/" }));
+  const entries = Array.from({ length: 76 }, (_, i) => ({ n: i + 301, hn_id: String(2001 + i), quarter: Math.floor(i / 19) + 1, created_at: QUARTER_STARTS[Math.floor(i / 19)] + "T00:00:00Z", final_url: "https://example.test/" }));
+  const source = { posts: entries.map(e => ({ id: e.hn_id, created_at: e.created_at })), previousEntries, previousLog: [] };
+  write("validation/sampling-source.json", source); write("pipeline/fresh-projects.json", entries);
+  write("pipeline/fresh-validation-sample.json", { version: 1, seed: SAMPLING_SEED, perQuarter: 19, entriesDigest: hash(entries), sourceDigest: hash({ seed: SAMPLING_SEED, perQuarter: 19, ...source }) });
+  const text = "Synthetic reusable fixture evidence.", sourceHash = sha(text);
+  write(`pipeline/snapshots/${sourceHash}.json`, { redactedText: text });
+  const runtime = { version: "c1", byCheck: guidance.checks }, schema = buildContract(ids).jsonSchema;
+  for (const entry of [...previousEntries, ...entries]) {
+    const fresh = entry.n > 300;
+    write(`pipeline/manifests/${entry.n}.json`, { hnId: entry.hn_id, snapshotHashesInCollectionOrder: [sourceHash], ...(fresh ? { codingCorrection: { version: "c1", checks: [ids[1]] } } : {}) });
+    const spans = projectSpans(f.dataDir, entry.n), digest = spansDigest(spans);
+    if (entry.n <= 30) await f.db.updateTable("pipeline_project_results").set({ snapshot_hashes_json: JSON.stringify([sourceHash]) }).where("project_n", "=", entry.n).execute();
+    else {
+      await f.db.insertInto("pipeline_project_results").values({ project_n: entry.n, hn_id: entry.hn_id, model_id: PINNED_MODEL, codebook_version: cb.codebookVersion, completed_at: "2026-10-24T00:00:00Z", snapshot_hashes_json: JSON.stringify([sourceHash]), coding_all_unknown: 0, prompt_hash: fresh ? hash({ schema, guidance: runtime, messages: chunkSpans(spans).map(chunk => buildCodingMessages(ids, cb, schema, chunk, runtime)) }) : "original" }).execute();
+      for (const id of ids) {
+        const state = fresh && entry.n <= 312 ? "pass" : "unknown", cited = state === "pass" ? '["p1-s001"]' : "[]";
+        await f.db.insertInto("pipeline_check_states").values({ project_n: entry.n, check_id: id, proposed_state: state, filtered_state: state, span_ids_json: cited }).execute();
+        if (fresh) await f.db.insertInto("pipeline_gold_labels").values({ project_n: entry.n, check_id: id, codebook_version: cb.codebookVersion, labeller_id: goldId, provider: "ollama", model_id: "glm-5.3-flash:cloud", reasoning: "low", filtered_state: state, span_ids_json: cited, input_digest: digest, labelled_at: "2026-10-24T00:00:00Z" }).execute();
+      }
+      if (fresh) await f.db.insertInto("pipeline_gold_outcomes").values({ project_n: entry.n, codebook_version: cb.codebookVersion, labeller_id: goldId, input_digest: digest, outcome: "labelled", decided_at: "2026-10-24T00:00:00Z" }).execute();
+    }
+  }
+  f.sampleNs = previousEntries.map(e => e.n);
+  const proof = Object.fromEntries([["guidancePath", "guidance.json"], ["proposalPath", "proposal.json"], ["samplingSourcePath", "sampling-source.json"]].map(([key, name]) => [key, path.join(f.dataDir, "validation", name)]));
+  proof.signoffPath = path.join(f.dataDir, "decisions/release-signoff.jsonl");
+  const verified = await verifyRevalidationProof({ ...f, checkIds: ids, freshNs: entries.map(e => e.n), cutoff: Date.parse("2026-10-23T00:00:00Z"), proof });
+  return { ...f, revalidationProof: proof, revalidation: { sampleNs: entries.map(e => e.n), checks: verified.metrics.checks } };
+}
+
+test("verified fresh values must agree even when the affected check is withheld for funding", async () => {
+  const f = await verifiedFreshFixture();
+  try {
+    const funding = fundingFiles(f);
+    const options = { ...f, fundingFallback: { policyPath: funding.policyPath, decisionPath: funding.decisionPath }, actions: funding.actions };
+    const gate = await evaluateGate(options);
+    assert.equal(gate.checks[1].status, "withheld");
+    assert.equal(gate.checks[1].revalidation.ac1, 1);
+    assert.equal(gate.recomputedRevalidation.checks[1].ac1, 1);
+    for (const mutate of [
+      rows => { rows[1].ac1 = .8; }, rows => { rows[1].precision = .9; }, rows => { rows[1].goldPasses = 11; },
+      rows => { rows.pop(); }, rows => { rows[1] = rows[0]; },
+    ]) {
+      const checks = structuredClone(f.revalidation.checks); mutate(checks);
+      await assert.rejects(evaluateGate({ ...options, revalidation: { ...f.revalidation, checks } }), /supplied revalidation metrics/);
+    }
+    assert.equal(f.revalidation.checks[1].ac1, 1);
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
 
 test("funding stops withhold a missed check without inventing failed fresh validation", async () => {
   const f = await fixture();
