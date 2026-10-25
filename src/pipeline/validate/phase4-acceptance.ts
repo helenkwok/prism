@@ -154,10 +154,25 @@ export async function runPhase4Acceptance({ dataDir, repoRoot = process.cwd(), l
     } },
     { id: "C4", run: async () => {
       const entries = sample(); const review = readJson(path.join(validation, "confirmation-spike-review.json")); const lines: string[] = []; let requests = 0;
-      const { runApprovedConfirmation } = await import("./approved-confirm.ts");
+      const { runApprovedConfirmation, validateSpikeReview, verifiedConfirmationCorrections } = await import("./approved-confirm.ts");
       const correctionProof = acceptanceCorrectionProof(dataDir, protocolPath, approvalPaths.priorApprovalProofPath);
-      const result = await runApprovedConfirmation({ db, dataDir, codebook, entries, model: review.model, reasoning: review.selectedSetting, correctionProof, goldOrder: sortPilotCandidates(entries.map(e => ({ id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), client: { dollarBudget: new DollarBudget(APPROVED_CAPS["full-confirm"]), request: async () => { requests++; throw new Error("offline-acceptance-refuses-model-call"); } }, log: line => lines.push(line) });
-      for (const line of lines) log(line); assertCachedConfirmation(result, requests);
+      const { gate } = await signedGate();
+      if (gate.confirmationRequestRefusals) {
+        validateSpikeReview(review, fs.readFileSync(path.join(validation, "confirmation-spike.json"), "utf8"), { model: review.model, reasoning: review.selectedSetting });
+        requireEvidence(review.selectedSetting === true, "refusal-scope-requires-registered-thinking-on");
+        requireEvidence(correctionProof, "refusal-scope-requires-current-correction-proof");
+        const correction = await verifiedConfirmationCorrections({ db, dataDir, codebook, entries, correctionProof });
+        requireEvidence(gate.confirmationRequestRefusals.checkIds.every((id: string) => correction.checkIds.has(id)), "refusal-scope-correction-is-no-longer-applied");
+        log(`CONFIRMATION_CORRECTION: ${JSON.stringify(correction.evidence)}`);
+        const { verifySignedConfirmationRefusalCoverage } = await import("./confirmation-refusal.ts");
+        const coverage = await verifySignedConfirmationRefusalCoverage({ gatePath, signoffPath, options: { documentPath: path.join(validation, "correction-confirmation-request-refusals.json") }, dataDir, db, codebook, sampleNs: entries.map(e => e.n) });
+        log(`ACCOUNTING: ${JSON.stringify(coverage.accounting)}`);
+        log(`CONFIRMATION_SCOPE: ${JSON.stringify(coverage.scope)}`);
+        log(`WITHHOLDING: ${JSON.stringify({ checkIds: coverage.scope.checkIds, unconfirmed: coverage.scope.withheldUnconfirmed, cause: "confirmation-request-refused", fullConfirmationComplete: false })}`);
+      } else {
+        const result = await runApprovedConfirmation({ db, dataDir, codebook, entries, model: review.model, reasoning: review.selectedSetting, correctionProof, goldOrder: sortPilotCandidates(entries.map(e => ({ id: String(e.hn_id) })), GOLD_SEED).map(e => e.id), client: { dollarBudget: new DollarBudget(APPROVED_CAPS["full-confirm"]), request: async () => { requests++; throw new Error("offline-acceptance-refuses-model-call"); } }, log: line => lines.push(line) });
+        for (const line of lines) log(line); assertCachedConfirmation(result, requests);
+      }
       const { loadProbeInput, projectProbe, assertProbeApproval } = await import("./live-probe.ts");
       const p = loadProbeInput(dataDir, path.join(validation, "irrelevant-citation-probe-input.json")); const plan = projectProbe(codebook, p); const approval = readJson(path.join(validation, "irrelevant-citation-cost-plan.json")); assertProbeApproval(plan, approval);
       const retained = readJson(path.join(validation, "irrelevant-citation-probe.json")); const probeLog = fs.readFileSync(path.join(validation, "approved-irrelevant-probe.log"), "utf8"); const ledger = readJson(path.join(validation, "approved-budget-2026-10-23.json")).stages?.["irrelevant-probe"];

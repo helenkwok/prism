@@ -17,6 +17,7 @@ import { expandGateReviewBundle } from "./gate-review-bundle.ts";
 import { loadFundingFallback, type FundingFallbackOptions } from "./funding-fallback.ts";
 import { loadCorrectionApprovalFailures, type CorrectionApprovalFailure } from "./correction-approval-failure.ts";
 import { verifyRevalidationProof, type RevalidationProofOptions } from "../revalidation-proof.ts";
+import { currentUltraDecision, loadConfirmationRequestRefusals, type ConfirmationRequestRefusalOptions } from "./confirmation-refusal.ts";
 
 export const AC1_THRESHOLD = 0.70;
 export const PRECISION_THRESHOLD = 0.85;
@@ -38,6 +39,7 @@ export type GateOptions = {
   revalidationProof?: RevalidationProofOptions;
   correctionApprovalFailures?: CorrectionApprovalFailure[];
   correctionBaseline?: { documentPath: string; docDigest: string };
+  confirmationRequestRefusals?: ConfirmationRequestRefusalOptions;
 };
 
 function within(metrics: { ac1: number; precision: number | null }): boolean {
@@ -228,12 +230,14 @@ export async function evaluateGate(o: GateOptions) {
     const state = currentEffective.find(e => e.projectN === n && e.checkId === id);
     if (!state) return false;
     if (!["pass", "claimed"].includes(state.filteredState)) return true;
-    if (state.editActorId === "agent:ollama:nemotron-3-ultra" || state.editActorId?.startsWith("agent:ollama:nemotron-3-ultra:")) return false;
     const known = new Map((spans.get(n) ?? []).map(s => [s.id, s.text]));
     const positive = { projectN: n, checkId: id, state: state.filteredState as "pass" | "claimed", spans: state.spanIds.map(id => ({ id, text: known.get(id) ?? "" })), flaggedSpanIds: flags.filter(f => f.project_n === n).map(f => f.span_id) };
-    return confirmations.some(row => row.confirmer_kind === "agent" && row.confirmer_id === "agent:ollama:nemotron-3-ultra:thinking-on" && Date.parse(row.decided_at) >= cutoff &&
-      confirmationMatches(row, positive, o.codebook, { editActorId: state.editActorId, allowedModelIds: ["nemotron-3-ultra"] }));
+    return currentUltraDecision(confirmations, positive, o.codebook, cutoff, state.editActorId);
   });
+  const requestRefusals = o.confirmationRequestRefusals ? await loadConfirmationRequestRefusals({ options: o.confirmationRequestRefusals, dataDir: o.dataDir, db: o.db, codebook: o.codebook, sampleNs: activeSample, cutoff }) : undefined;
+  const refusalActions = actions.filter(action => action.basis === "confirmation-request-refused");
+  if (refusalActions.length !== (requestRefusals?.evidence.checkIds.length ?? 0) || refusalActions.some(action => action.action !== "withhold" || action.applied !== true ||
+      !requestRefusals?.evidence.checkIds.includes(action.checkId) || actions.filter(a => a.checkId === action.checkId).length !== 1)) throw new Error("confirmation refusal requires matching explicit withholding actions");
   const personCoverage = (id: string) => activeSample.length > 0 && activeSample.every(n => {
     const candidates = edits.filter(e => e.project_n === n && e.check_id === id).sort((a, b) => String(b.edited_at).localeCompare(String(a.edited_at)));
     const e = candidates[0];
@@ -259,12 +263,18 @@ export async function evaluateGate(o: GateOptions) {
     const uncorrectedStatus = status;
     if (versions.length) { status = "missed"; reason = "correction requires complete approved application, verified fresh validation and current confirmation before release"; }
     const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
+    const confirmationRefused = requestRefusals?.evidence.checkIds.includes(metric.checkId) === true;
     const approvalFailure = approvalFailures.find(failure => failure.checkId === metric.checkId);
     if (approvalFailure) {
       if (status !== "missed") throw new Error("correction approval failure may only withhold an originally missed check");
       if (versions.length) throw new Error("a rejected correction must remain unapplied on every scoped project");
       status = "withheld";
       reason = "independent approval of the correction was rejected; correction remains unapplied and the originally missed check is withheld; any fresh metrics remain reported separately";
+    }
+    else if (confirmationRefused) {
+      if (correctionBaseline?.checks.find((c: any) => c.checkId === metric.checkId)?.status !== "missed" || !correctionApplied || !verifiedCorrection || !rv || !estimable(rv.goldPasses) || !within(rv)) throw new Error("confirmation refusal withholding requires a bound original miss, approved complete correction and passing verified fresh evidence");
+      status = "withheld";
+      reason = "fresh correction passed and was applied; required complete confirmation requests exceed the unchanged token guard outside the exact-nine exceptions; confirmation remains incomplete and the entire check is withheld under D-55b";
     }
     else if (fundingWithheld) {
       if (versions.length ? correctionBaseline?.checks.find((c: any) => c.checkId === metric.checkId)?.status !== "missed" : uncorrectedStatus !== "missed") throw new Error("funding fallback may only withhold a check that missed its original gate; corrected checks require a bound pre-application baseline");
@@ -274,7 +284,7 @@ export async function evaluateGate(o: GateOptions) {
     else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
     else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied && verifiedCorrection && correctionConfirmed(metric.checkId)) { status = "corrected-revalidated"; reason = "passed recomputed current fresh revalidation with approved guidance applied across the scoped sample and all current positives independently confirmed"; }
-    return { ...metric, status, reason, correctionApplied, ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
+    return { ...metric, status, reason, correctionApplied, ...(confirmationRefused ? { confirmationRefusalProofDigest: requestRefusals!.evidence.proofDigest } : {}), ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
   const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
   const flaggedProjects = new Set(flags.map(f => f.project_n));
@@ -298,6 +308,7 @@ export async function evaluateGate(o: GateOptions) {
     ...(approvalFailures.length ? { correctionApprovalFailures: approvalFailures } : {}),
     ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
     ...(correctionBaseline ? { correctionBaselineEvidence: { docDigest: o.correctionBaseline!.docDigest, generatedAt: correctionBaseline.generatedAt } } : {}),
+    ...(requestRefusals ? { confirmationRequestRefusals: requestRefusals.evidence } : {}),
     bootstrap: { resamples: 2000, unit: "projects", primarySeed: goldSeed, secondModelSeed: secondSeed },
     thresholds: { ac1: AC1_THRESHOLD, passPrecision: PRECISION_THRESHOLD, goldPassesForEstimability: 10, basis: "point estimates; pooled results never rescue a check" },
     labeller: { kind: "agent", provider: "ollama", modelId: GOLD_MODEL, reasoning: "low", wording: "agreement with an independent labeller (GLM-5.3)" },

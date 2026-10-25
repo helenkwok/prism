@@ -15,7 +15,10 @@ import { ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans,
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED, SAMPLING_SEED, QUARTER_STARTS } from "../../src/pipeline/select/draw-sample.ts";
 import { buildContract } from "../../src/pipeline/coding/contract.ts";
-import { buildCodingMessages, chunkSpans } from "../../src/pipeline/run.ts";
+import { buildCodingMessages, chunkSpans, guidedCodingChunks } from "../../src/pipeline/run.ts";
+import { buildConfirmationBody } from "../../src/pipeline/confirm/confirm.ts";
+import { estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
+import { APPROVED_CAPS, APPROVED_OLLAMA_CAP } from "../../src/pipeline/validate/approved-budget.ts";
 import { verifyRevalidationProof } from "../../src/pipeline/revalidation-proof.ts";
 import { prepareGateReviewBundle } from "../../src/pipeline/validate/gate-review-bundle.ts";
 import { loadCorrectionApprovalFailures } from "../../src/pipeline/validate/correction-approval-failure.ts";
@@ -312,6 +315,47 @@ test("complete verified corrections require current independent Ultra-on decisio
     assert.equal((await evaluateGate(options)).checks[1].status, "missed");
     await f.db.updateTable("pipeline_confirmations").set({ confirmer_id: "agent:ollama:nemotron-3-ultra:thinking-on", input_digest: "stale" }).where("project_n", "=", 18).execute();
     assert.equal((await evaluateGate(options)).checks[1].status, "missed");
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+test("an actual non-exempt oversized confirmation withholds a passing complete correction honestly", async () => {
+  const f = await verifiedFreshFixture();
+  try {
+    for (let n = 31; n <= 300; n++) await f.db.insertInto("pipeline_gold_outcomes").values({ project_n: n, codebook_version: cb.codebookVersion, labeller_id: goldId, input_digest: spansDigest(projectSpans(f.dataDir, n)), outcome: "no-gold", decided_at: "2026-10-24T00:00:00Z" }).execute();
+    const write = (name, value) => fs.writeFileSync(path.join(f.dataDir, name), JSON.stringify(value));
+    const text = Array.from({ length: 70 }, (_, i) => `Clause ${i} ${"e".repeat(1400)}.`).join("\n\n"), h = sha(text);
+    write(`pipeline/snapshots/${h}.json`, { redactedText: text });
+    const first = path.join(f.dataDir, "pipeline/manifests/1.json"), manifest = JSON.parse(fs.readFileSync(first));
+    manifest.snapshotHashesInCollectionOrder = [h]; fs.writeFileSync(first, JSON.stringify(manifest));
+    const spans = projectSpans(f.dataDir, 1), sourceDigest = spansDigest(spans);
+    await f.db.updateTable("pipeline_project_results").set({ snapshot_hashes_json: JSON.stringify([h]) }).where("project_n", "=", 1).execute();
+    await f.db.updateTable("pipeline_gold_outcomes").set({ input_digest: sourceDigest }).where("project_n", "=", 1).execute();
+    await f.db.updateTable("pipeline_gold_labels").set({ input_digest: sourceDigest }).where("project_n", "=", 1).execute();
+    const baseline = await evaluateGate({ ...f, revalidation: undefined, revalidationProof: undefined }); baseline.generatedAt = new Date(Date.now() - 60_000).toISOString();
+    const baselineText = JSON.stringify(baseline), baselinePath = path.join(f.dataDir, "validation/original-gate.json"); fs.writeFileSync(baselinePath, baselineText);
+    const contract = buildContract([ids[1]]), guidance = { version: "c1", byCheck: { [ids[1]]: "Synthetic unchanged-rule clarification." } };
+    for (const n of f.sampleNs) {
+      const file = path.join(f.dataDir, `pipeline/manifests/${n}.json`), m = JSON.parse(fs.readFileSync(file));
+      m.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(file, JSON.stringify(m));
+      const messages = guidedCodingChunks(projectSpans(f.dataDir, n), cb, contract, guidance).map(chunk => buildCodingMessages([ids[1]], cb, contract.jsonSchema, chunk, guidance));
+      await f.db.updateTable("pipeline_project_results").set({ prompt_hash: sha(JSON.stringify({ schema: contract.jsonSchema, guidance, messages })), completed_at: new Date().toISOString() }).where("project_n", "=", n).execute();
+    }
+    await f.db.updateTable("pipeline_check_states").set({ span_ids_json: JSON.stringify(spans.map(s => s.id)) }).where("project_n", "=", 1).where("check_id", "=", ids[1]).execute();
+    const model = "nemotron-3-ultra:cloud", p = { projectN: 1, checkId: ids[1], state: "pass", spans, flaggedSpanIds: [] }, body = buildConfirmationBody(cb, p, model, true);
+    const request = { projectN: 1, checkId: ids[1], inputDigest: inputDigest(cb, p), requestDigest: sha(JSON.stringify(body)), inputTokens: estimateMessagesTokens(body.messages), tokenCap: 20000, model, thinking: true };
+    assert.ok(request.inputTokens > 20000);
+    const plan = { approved: true, approvalDate: "2026-10-24", stage: "full-confirm", model, currentCap: 20000, proposedCap: 50000, otherRequestsKeepCap: 20000, outputLimit: 8192, stageBudget: APPROVED_CAPS["full-confirm"], sharedOllamaBudget: APPROVED_OLLAMA_CAP, preserveAllCitedText: true, confirmationEnvelopeParser: false, maxInputEstimate: 21000, scope: Array.from({ length: 9 }, (_, i) => ({ projectN: 900 + i, checkId: ids[1], estimatedTokens: 21000, inputDigest: sha(`input${i}`), requestDigest: sha(`request${i}`) })) };
+    write("validation/confirmation-request-cap-plan.json", plan);
+    write("validation/refusal.json", { version: 1, checkIds: [ids[1]], requests: [request], exceptionsPath: path.join(f.dataDir, "validation/confirmation-request-cap-plan.json"), exceptionsDigest: sha(JSON.stringify(plan)) });
+    const options = { ...f, correctionBaseline: { documentPath: baselinePath, docDigest: sha(baselineText) }, confirmationRequestRefusals: { documentPath: path.join(f.dataDir, "validation/refusal.json") }, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true, basis: "confirmation-request-refused" }] } };
+    const gate = await evaluateGate(options);
+    assert.equal(gate.checks[1].status, "withheld"); assert.equal(gate.checks[1].correctionApplied, true); assert.equal(gate.checks[1].revalidation.ac1, 1);
+    assert.equal(gate.confirmationRequestRefusals.refused, 1); assert.ok(gate.confirmationRequestRefusals.pending > 1);
+    assert.match(gate.checks[1].reason, /confirmation remains incomplete/); assert.doesNotMatch(gate.checks[1].reason, /funding|fresh correction did not pass/);
+    assert.throws(() => assertPublishable(gate, ids[1]));
+    await assert.rejects(evaluateGate({ ...options, correctionBaseline: undefined }), /bound original miss/);
+    await assert.rejects(evaluateGate({ ...options, revalidationProof: undefined }), /passing verified fresh evidence/);
+    await assert.rejects(evaluateGate({ ...options, confirmationRequestRefusals: undefined }), /matching explicit withholding actions/);
   } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
 });
 
