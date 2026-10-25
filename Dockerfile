@@ -23,7 +23,7 @@ COPY package.json package-lock.json ./
 COPY docker/better-sqlite3 ./docker/better-sqlite3
 RUN npm ci
 RUN sha256sum -c "docker/better-sqlite3/linux-$(node -p process.arch).sha256"
-COPY rsbuild.config.ts postcss.config.mjs tsconfig.json ./
+COPY rsbuild.config.ts postcss.config.mjs tsconfig.json base-path.mjs ./
 COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
 # src/pipeline/select imports the robots-first preflight from the spike script.
 COPY scripts/spikes/pick-projects.mjs ./scripts/spikes/pick-projects.mjs
@@ -62,6 +62,7 @@ COPY protocol/PROTOCOL.md ./protocol/PROTOCOL.md
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY base-path.mjs ./base-path.mjs
 COPY scripts/serve.mjs ./scripts/serve.mjs
 
 RUN mkdir /data && chown node:node /data

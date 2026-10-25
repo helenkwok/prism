@@ -8,6 +8,7 @@ import { FIXTURE_NOTICE, Notice } from "../components/Notice";
 import { checkAnchor, day } from "../components/report/report";
 import { markSpans } from "../../report/marks.ts";
 import { getSnapshot } from "../server/report-fns.ts";
+import { withBase } from "../lib/base";
 
 export const SNAPSHOT_NOTICE = "Archived text as collected. Links, images and scripts are not reproduced.";
 
@@ -27,7 +28,7 @@ function SnapshotPage() {
   const { projectId } = Route.useParams();
   const { check } = Route.useSearch();
   const checkId = check && snap.spans.some((s) => s.checkIds.includes(check)) ? check : snap.spans[0]?.checkIds[0];
-  const back = `/p/${encodeURIComponent(projectId)}${checkId ? `#${checkAnchor(checkId)}` : ""}`;
+  const back = withBase(`/p/${encodeURIComponent(projectId)}${checkId ? `#${checkAnchor(checkId)}` : ""}`);
 
   // The browser scrolls to #span-<id>; focus follows it so keyboard and screen-reader users land there too.
   useEffect(() => {

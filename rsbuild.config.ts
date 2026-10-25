@@ -2,6 +2,7 @@ import { builtinModules } from "node:module";
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/rsbuild";
+import { BASE_PATH } from "./base-path.mjs";
 
 // The client bundle reaches server-only imports it never runs: access.ts's lazy
 // server imports (auth, db, @tanstack/react-start/server) and the Node file
@@ -14,6 +15,7 @@ const clientOnlyStub = (request: string) =>
 // TanStack Start's official Rsbuild build: `rsbuild build` writes dist/client and
 // dist/server; scripts/serve.mjs runs them on Node.
 export default defineConfig({
+  server: { base: BASE_PATH },
   plugins: [pluginReact(), tanstackStart({ srcDirectory: "src/app" })],
   environments: {
     // Both load a binary relative to their own package (better-sqlite3's native

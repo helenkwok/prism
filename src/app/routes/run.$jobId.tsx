@@ -11,6 +11,7 @@ import { StageList, STATUS, clock } from "../components/run/StageList";
 import { buttonVariants } from "../../components/ui/button";
 import { getRunStatus } from "../server/run-fns.ts";
 import type { RunStatus, StageView } from "../server/live-run.ts";
+import { withBase } from "../lib/base";
 
 export const Route = createFileRoute("/run/$jobId")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -97,7 +98,7 @@ function RunView({ initial }: { initial: RunStatus }) {
         </p>
       ) : null}
       <p className="mt-8">
-        <a href="/run">Back to live runs</a>
+        <a href={withBase("/run")}>Back to live runs</a>
       </p>
     </>
   );
@@ -108,7 +109,7 @@ function EndState({ status, linkRef }: { status: RunStatus; linkRef: Ref<HTMLAnc
   const stage = job.stopStageLabel ?? "the run";
   const open = report ? (
     <p className="mt-4">
-      <a ref={linkRef} href={`/p/${encodeURIComponent(report.projectRef)}`} className={buttonVariants({ size: "lg" })}>
+      <a ref={linkRef} href={withBase(`/p/${encodeURIComponent(report.projectRef)}`)} className={buttonVariants({ size: "lg" })}>
         Open the report
       </a>
     </p>

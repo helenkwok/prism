@@ -7,6 +7,7 @@ import net from "node:net";
 import path from "node:path";
 import { Readable, pipeline } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { BASE_PATH } from "../base-path.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const clientDir = path.join(root, "dist", "client");
@@ -53,6 +54,16 @@ export function staticFile(urlPath, base = clientDir) {
  * advanced.ipAddress.ipAddressHeaders). serve.mjs always sets it itself, so a
  * client cannot pick its own bucket by sending one.
  */
+/**
+ * The app lives under BASE_PATH (base-path.mjs). Returns the path inside the app for a URL path under
+ * the base, or null for a path outside it ("/app" and "/app/x" are inside "/app"; "/apple" is not).
+ */
+export function appPath(urlPath, base = BASE_PATH) {
+  if (base === "/") return urlPath;
+  if (urlPath === base) return "/";
+  return urlPath.startsWith(`${base}/`) ? urlPath.slice(base.length) : null;
+}
+
 export const CLIENT_IP_HEADER = "x-forwarded-for";
 
 const unmap = (ip) => (ip?.toLowerCase().startsWith("::ffff:") && net.isIPv4(ip.slice(7)) ? ip.slice(7) : ip);
@@ -135,7 +146,13 @@ async function main() {
     }
     try {
       const url = new URL(req.url ?? "/", "http://localhost");
-      const file = (req.method === "GET" || req.method === "HEAD") && staticFile(url.pathname);
+      const inner = appPath(url.pathname);
+      if (inner === null) {
+        // Links from before the app moved under its base (prism.helenkwok.dev/p/... and so on).
+        res.writeHead(308, { location: `${BASE_PATH}${url.pathname}${url.search}` });
+        return void res.end();
+      }
+      const file = (req.method === "GET" || req.method === "HEAD") && staticFile(inner);
       if (file) {
         res.writeHead(200, {
           "content-type": TYPES[path.extname(file)] ?? "application/octet-stream",
@@ -143,7 +160,7 @@ async function main() {
           // Static files bypass Start's middleware (src/app/start.ts), so noindex is set here too (APP-04).
           "x-robots-tag": "noindex, nofollow",
           // Hashed names under /assets never change; anything else is revalidated.
-          "cache-control": url.pathname.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-store",
+          "cache-control": inner.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-store",
         });
         if (req.method === "HEAD") return void res.end();
         // A client that disconnects mid-stream must not crash the server.

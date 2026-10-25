@@ -9,6 +9,7 @@
 	}
 }
 
+# One host: the public findings site at the root, the private app under /app (base-path.mjs).
 prism.helenkwok.dev {
 	tls {
 		issuer acme {
@@ -17,26 +18,40 @@ prism.helenkwok.dev {
 	}
 	# Default forwarded headers: X-Forwarded-For (the client address; incoming values are
 	# replaced because no trusted_proxies are set), X-Forwarded-Proto https, X-Forwarded-Host.
-	reverse_proxy prism-app:3000
+	@app path /app /app/*
+	handle @app {
+		reverse_proxy prism-app:3000
+	}
+
+	# The findings site: static files only, from a read-only mount. site/scripts/deploy.mjs puts each build in
+	# /srv/prism/findings/releases/<id> and points the relative symlink current at it; caddy-headers is the
+	# build's Content-Security-Policy (site/scripts/csp.mjs), the same policy as its _headers file.
+	@findings file {
+		root /srv/findings/current/client
+		try_files {path} {path}/index.html {path}.html
+	}
+	handle @findings {
+		root * /srv/findings/current/client
+		# a glob, so a tree without a findings release still loads
+		import /srv/findings/current/caddy-header*
+		file_server {
+			hide _headers
+		}
+	}
+
+	# Anything else goes to the app: links from before the move (/p/..., /sign-in) are redirected under /app
+	# by scripts/serve.mjs, and unknown paths get the app's 404.
+	handle {
+		reverse_proxy prism-app:3000
+	}
 }
 
-# The findings site: static files only, from a read-only mount. site/scripts/deploy.mjs puts each build in
-# /srv/prism/findings/releases/<id> and points the relative symlink current at it; caddy-headers is the
-# build's Content-Security-Policy (site/scripts/csp.mjs), the same policy as its _headers file.
+# The findings' old host: every path moves to the same path on prism.helenkwok.dev.
 findings.helenkwok.dev {
 	tls {
 		issuer acme {
 			disable_http_challenge
 		}
 	}
-	root * /srv/findings/current/client
-	# a glob, so a tree without a findings release still loads
-	import /srv/findings/current/caddy-header*
-	file_server {
-		hide _headers
-	}
-	handle_errors 404 {
-		rewrite * /404.html
-		file_server
-	}
+	redir https://prism.helenkwok.dev{uri} permanent
 }

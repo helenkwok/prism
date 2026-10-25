@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
-import { readCreds, stateFor } from "./helpers.ts";
+import { app, readCreds, stateFor } from "./helpers.ts";
 import type { Role } from "./helpers.ts";
 
 const run = promisify(execFile);
@@ -109,7 +109,7 @@ test.describe("report print layout (/p/P01, admin)", () => {
   test.beforeEach(async ({ page }) => {
     // Lay out at the printable width so line wrapping matches the A4 page.
     await page.setViewportSize({ width: Math.floor(printable.width), height: Math.floor(printable.height) });
-    await page.goto("/p/P01");
+    await page.goto(app("/p/P01"));
     await page.emulateMedia({ media: "print", colorScheme: "light" });
   });
 

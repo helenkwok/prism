@@ -11,6 +11,7 @@ import { CrosswalkChip } from "../components/report/report";
 import { getMethodView } from "../server/report-fns.ts";
 import type { CodebookEntry } from "../../report/method-view.ts";
 import type { RoleLine } from "../../report/view.ts";
+import { withBase } from "../lib/base";
 
 export const Route = createFileRoute("/method")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -103,11 +104,11 @@ function Pager({ page, pages }: { page: number; pages: number }) {
   if (pages <= 1) return null;
   return (
     <nav aria-label="Confirmation record pages" className="mt-4 flex items-center gap-4">
-      {page > 1 ? <a href={page === 2 ? "/method" : `/method?page=${page - 1}`}>Previous</a> : null}
+      {page > 1 ? <a href={withBase(page === 2 ? "/method" : `/method?page=${page - 1}`)}>Previous</a> : null}
       <span>
         Page {page} of {pages}
       </span>
-      {page < pages ? <a href={`/method?page=${page + 1}`}>Next</a> : null}
+      {page < pages ? <a href={withBase(`/method?page=${page + 1}`)}>Next</a> : null}
     </nav>
   );
 }

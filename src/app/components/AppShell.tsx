@@ -5,8 +5,9 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { createAuthClient } from "better-auth/react";
 import { Button } from "../../components/ui/button";
+import { withBase } from "../lib/base";
 
-const authClient = createAuthClient();
+const authClient = createAuthClient({ basePath: withBase("/api/auth") });
 
 export interface ShellUser {
   email: string;
@@ -34,7 +35,7 @@ export function AppShell({ user, pathname, children }: { user: ShellUser; pathna
   async function signOut() {
     setSigningOut(true);
     await authClient.signOut();
-    window.location.assign("/sign-in");
+    window.location.assign(withBase("/sign-in"));
   }
   return (
     <>
@@ -47,7 +48,7 @@ export function AppShell({ user, pathname, children }: { user: ShellUser; pathna
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-[880px] flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4 sm:px-8">
           <div className="order-1 flex items-baseline gap-2">
-            <a href="/" className="text-base font-semibold no-underline">
+            <a href={withBase("/")} className="text-base font-semibold no-underline">
               PRISM
             </a>
             <span className="text-[0.8125rem] font-semibold tracking-[0.12em] text-accent-ink uppercase">Private</span>
@@ -59,7 +60,7 @@ export function AppShell({ user, pathname, children }: { user: ShellUser; pathna
                 return (
                   <li key={n.href}>
                     <a
-                      href={n.href}
+                      href={withBase(n.href)}
                       aria-current={current ? "page" : undefined}
                       className="inline-block border-b-2 border-transparent py-1 no-underline aria-[current=page]:border-accent-ink"
                     >

@@ -14,6 +14,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, request } from "@playwright/test";
 import { assertOutsideRepo, resolvePrivateDir, resolveRepoRoot } from "./check-data-dir.mjs";
+import { BASE_PREFIX as BASE } from "../base-path.mjs";
 
 function fail(message, code = 1) {
   process.stderr.write(`report-pdf: ${message}\n`);
@@ -77,7 +78,7 @@ const password = fs.readFileSync(pwFile, "utf8").replace(/\r?\n$/, "");
 
 const api = await request.newContext({ baseURL: origin });
 const signIn = () =>
-  api.post("/api/auth/sign-in/email", {
+  api.post(`${BASE}/api/auth/sign-in/email`, {
     data: { email, password },
     headers: { origin },
   });
@@ -96,9 +97,9 @@ const browser = await chromium.launch();
 let refused = null;
 try {
   const page = await (await browser.newContext({ storageState, baseURL: origin })).newPage();
-  const resp = await page.goto(`/p/${project}`, { waitUntil: "networkidle" });
+  const resp = await page.goto(`${BASE}/p/${project}`, { waitUntil: "networkidle" });
   const landed = new URL(page.url()).pathname;
-  if (!resp || resp.status() !== 200 || landed !== `/p/${project}`) {
+  if (!resp || resp.status() !== 200 || landed !== `${BASE}/p/${project}`) {
     refused = `report not available to this account (HTTP ${resp?.status() ?? "none"}, ${landed}); no PDF written`;
   } else {
     await page.emulateMedia({ media: "print", colorScheme: "light" });

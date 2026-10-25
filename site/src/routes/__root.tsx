@@ -26,6 +26,7 @@ function Document({ children }: { children: ReactNode }) {
         <header className="site-header">
           <a className="brand" href="/" aria-current={current('/')}>PRISM</a>
           <nav aria-label="Main">{main.map(([label, href]) => <a key={href} href={href} aria-current={current(href) ?? (href === '/findings/checks' && path.startsWith('/findings/') ? 'page' : undefined)}>{label}</a>)}</nav>
+          <a className="app-link" href={import.meta.env.PRISM_APP_PATH} data-app-link>Private app (sign in)</a>
         </header>
         <main id="content">
           {path.startsWith('/findings/') && findings.length > 1 && <nav className="subnav" aria-label="Findings">{findings.map(([label, href]) => <a key={href} href={href} aria-current={current(href)}>{label}</a>)}</nav>}

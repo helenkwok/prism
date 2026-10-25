@@ -4,3 +4,11 @@ declare module '@public-data/*.json' {
   const value: unknown
   export default value
 }
+
+// Set by rsbuild.config.ts from ../base-path.mjs: where the private app lives on the same host.
+interface ImportMetaEnv {
+  readonly PRISM_APP_PATH: string
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

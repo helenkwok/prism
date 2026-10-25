@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { VERDICT } from "./report/report";
+import { withBase } from "../lib/base";
 
 export const EXPLAINER_KEY = "prism.explainer.dismissed";
 export const AUDIENCE_LINE = "PRISM is a checklist for users, a tour guide for builders and a benchmark for investors.";
@@ -56,7 +57,7 @@ export function Explainer({ canRun }: { canRun: boolean }) {
         {canRun ? (
           <>
             {" "}
-            Or <a href="/run">start a live run on one URL</a>.
+            Or <a href={withBase("/run")}>start a live run on one URL</a>.
           </>
         ) : null}
       </p>

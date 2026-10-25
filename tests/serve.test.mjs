@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { CLIENT_IP_HEADER, clientIp, proxyConfig, requestHeaders, requestScheme, staticFile } from "../scripts/serve.mjs";
+import { CLIENT_IP_HEADER, appPath, clientIp, proxyConfig, requestHeaders, requestScheme, staticFile } from "../scripts/serve.mjs";
 
 test("staticFile resolves inside the client directory and refuses everything else", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prism-serve-"));
@@ -91,4 +91,13 @@ test("x-forwarded-proto is honoured only from the trusted proxy and only as exac
   assert.equal(requestScheme("203.0.113.5", { "x-forwarded-proto": "https" }, proxy), "http");
   assert.equal(requestScheme("172.30.0.2", { "x-forwarded-proto": "https" }, null), "http");
   assert.equal(requestScheme(undefined, { "x-forwarded-proto": "https" }, proxy), "http");
+});
+
+test("appPath maps paths under the base into the app and leaves others outside", () => {
+  assert.equal(appPath("/app", "/app"), "/");
+  assert.equal(appPath("/app/", "/app"), "/");
+  assert.equal(appPath("/app/p/P01", "/app"), "/p/P01");
+  assert.equal(appPath("/apple", "/app"), null);
+  assert.equal(appPath("/p/P01", "/app"), null);
+  assert.equal(appPath("/p/P01", "/"), "/p/P01");
 });

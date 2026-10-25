@@ -4,6 +4,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, request } from "@playwright/test";
 import type { APIRequestContext, Page } from "@playwright/test";
+import { BASE_PREFIX as BASE } from "../base-path.mjs";
+/** An app path ("/p/P01") as a URL path under the app's base (base-path.mjs). */
+export const app = (p: string) => `${BASE}${p}`;
+/** The app path of a URL under the base: "/app/p/P01" -> "/p/P01". */
+export const inApp = (u: URL | string) => {
+  const p = new URL(String(u)).pathname;
+  return BASE && (p === BASE || p.startsWith(`${BASE}/`)) ? p.slice(BASE.length) || "/" : p;
+};
 
 export type Role = "admin" | "judge" | "companyA" | "companyB";
 export interface Account {
@@ -23,13 +31,13 @@ export const CREDENTIAL_FAILURE = "Email or password is incorrect. Check both an
 
 /** Fills and submits the sign-in form; returns the sign-in API status once the page has moved on or shows its alert. */
 export async function submitSignIn(page: Page, email: string, password: string, next?: string) {
-  await page.goto(next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in");
+  await page.goto(app(next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in"));
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
-  const response = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/auth/sign-in/email");
+  const response = page.waitForResponse((r) => inApp(r.url()) === "/api/auth/sign-in/email");
   await page.getByRole("button", { name: "Sign in" }).click();
   const status = (await response).status();
-  if (status === 200) await page.waitForURL((u) => u.pathname !== "/sign-in");
+  if (status === 200) await page.waitForURL((u) => inApp(u) !== "/sign-in");
   else await expect(page.getByRole("alert")).toBeVisible();
   return status;
 }
@@ -46,7 +54,7 @@ export async function signIn(page: Page, role: Role, next = "/") {
     if ((await submitSignIn(page, email, password, next)) !== 429) break;
     await page.waitForTimeout(11_000);
   }
-  await expect(page).toHaveURL((u) => u.pathname === next);
+  await expect(page).toHaveURL((u) => inApp(u) === next);
 }
 
 const states = new Map<Role, Promise<Awaited<ReturnType<APIRequestContext["storageState"]>>>>();
@@ -77,7 +85,7 @@ export function stateFor(role: Role) {
 export async function signInByApi(request: APIRequestContext, role: Role, baseURL: string) {
   const { email, password } = readCreds()[role];
   const post = () =>
-    request.post("/api/auth/sign-in/email", { data: { email, password }, headers: { origin: baseURL } });
+    request.post(app("/api/auth/sign-in/email"), { data: { email, password }, headers: { origin: baseURL } });
   let res = await post();
   if (res.status() === 429) {
     const wait = Math.min(Number(res.headers()["x-retry-after"]) || 10, 30);

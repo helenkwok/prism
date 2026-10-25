@@ -32,7 +32,7 @@ const check = (name, ok, detail = "") => {
 
 const signIn = await fetch(`${base}/api/auth/sign-in/email`, {
   method: "POST",
-  headers: { "content-type": "application/json", origin: base },
+  headers: { "content-type": "application/json", origin: new URL(base).origin },
   body: JSON.stringify({ email: "prism-judge@helenkwok.dev", password }),
 });
 check("judge sign-in returns 200", signIn.status === 200, `status ${signIn.status}`);
@@ -44,8 +44,10 @@ const home = await get("/");
 const homeHtml = await home.text();
 check("judge list answers 200", home.status === 200, `status ${home.status}`);
 check("no fixture notice", !/data-notice="fixture"/.test(homeHtml));
-const pLinks = [...new Set([...homeHtml.matchAll(/href="\/p\/([^"]+)"/g)].map((m) => decodeURIComponent(m[1])))];
-const jLinks = [...new Set([...homeHtml.matchAll(/href="\/j\/([^"]+)"/g)].map((m) => decodeURIComponent(m[1])))];
+// Links are written under the app's base path (the path part of --base, e.g. /app).
+const prefix = new URL(base).pathname.replace(/\/$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const pLinks = [...new Set([...homeHtml.matchAll(new RegExp(`href="${prefix}/p/([^"]+)"`, "g"))].map((m) => decodeURIComponent(m[1])))];
+const jLinks = [...new Set([...homeHtml.matchAll(new RegExp(`href="${prefix}/j/([^"]+)"`, "g"))].map((m) => decodeURIComponent(m[1])))];
 check("every identifiable link is an own project", pLinks.every((p) => values.own.includes(p)), `${pLinks.length} links`);
 check("de-identified links listed", jLinks.length >= 3, `${jLinks.length} links`);
 

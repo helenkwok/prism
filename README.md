@@ -16,8 +16,9 @@ AI Principles. The public output is aggregate statistics, trends and a written
 review. Per-project analyses are private, in a signed-in web app that can also
 run PRISM live on one project.
 
-- Private analysis app: https://prism.helenkwok.dev (sign-in only; judges get a
-  login through Devpost).
+- Findings (public): https://prism.helenkwok.dev
+- Private analysis app: https://prism.helenkwok.dev/app (sign-in only; judges get
+  a login through Devpost). The app's URL base is set once, in `base-path.mjs`.
 - Codebook: `codebook.md`. Protocol: `protocol/PROTOCOL.md`.
 
 ## Audience

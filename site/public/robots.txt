@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+# The private app shares this host and is sign-in only.
+Disallow: /app/

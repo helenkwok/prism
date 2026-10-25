@@ -12,6 +12,7 @@ import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
+import { BASE_PREFIX } from "../base-path.mjs";
 
 const args = process.argv.slice(2);
 const spawnMode = args.includes("--spawn");
@@ -67,7 +68,7 @@ async function assertions(base, creds) {
   check("GET /sign-in is HTML", type.includes("text/html"), type);
   check("GET /sign-in body contains Sign in", body.includes("Sign in"));
 
-  const json = { "content-type": "application/json", origin: base };
+  const json = { "content-type": "application/json", origin: new URL(base).origin };
 
   // Public sign-up must be refused with the disabled-sign-up code.
   const signUp = await fetch(`${base}/api/auth/sign-up/email`, {
@@ -117,7 +118,7 @@ async function assertions(base, creds) {
   const location = anon.headers.get("location") ?? "";
   check(
     "GET / without a session redirects to /sign-in",
-    anon.status >= 300 && anon.status < 400 && new URL(location, base).pathname === "/sign-in",
+    anon.status >= 300 && anon.status < 400 && new URL(location, base).pathname === `${new URL(base).pathname.replace(/\/$/, "")}/sign-in`,
     `status ${anon.status} location ${location}`,
   );
 
@@ -163,7 +164,7 @@ async function signIn(base, email, password) {
   const attempt = () =>
     fetch(`${base}/api/auth/sign-in/email`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: base },
+      headers: { "content-type": "application/json", origin: new URL(base).origin },
       body: JSON.stringify({ email, password }),
     });
   let res = await attempt();
@@ -192,7 +193,7 @@ async function accessChecks(base, accounts) {
   const setRole = (role) =>
     fetch(`${base}/api/auth/admin/set-role`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: base, cookie: sessions[role] },
+      headers: { "content-type": "application/json", origin: new URL(base).origin, cookie: sessions[role] },
       body: JSON.stringify({ userId: accounts.company.id, role: "admin" }),
     });
   for (const role of ["judge", "company"]) {
@@ -270,8 +271,8 @@ async function stateChecks(base, sessions) {
     check(`STATE X-Robots-Tag on ${p} is noindex, nofollow`, res.headers.get("x-robots-tag") === "noindex, nofollow", `${res.status} ${res.headers.get("x-robots-tag")}`);
   }
   // Static files are served by serve.mjs, outside Start's middleware.
-  const asset = /(?:src|href)="(\/assets\/[^"]+)"/.exec((await page(base, null, "/sign-in")).body)?.[1];
-  const assetRes = asset ? await fetch(`${base}${asset}`) : null;
+  const asset = /(?:src|href)="([^"]*\/assets\/[^"]+)"/.exec((await page(base, null, "/sign-in")).body)?.[1];
+  const assetRes = asset ? await fetch(new URL(asset, base)) : null;
   check("STATE X-Robots-Tag on a static asset is noindex, nofollow", assetRes?.status === 200 && assetRes.headers.get("x-robots-tag") === "noindex, nofollow", `${asset} ${assetRes?.status}`);
   const robots = await page(base, null, "/robots.txt");
   check("STATE /robots.txt answers 200 text/plain with Disallow: /", robots.status === 200 && (robots.headers.get("content-type") ?? "").startsWith("text/plain") && robots.body.includes("User-agent: *") && robots.body.includes("Disallow: /"), `${robots.status} ${robots.headers.get("content-type")}`);
@@ -297,7 +298,7 @@ async function listChecks(base, accounts, sessions) {
   const deidIds = corpus.projects.map((p) => p.projectId).filter((id) => !["P01", "P05"].includes(id));
   const leaked = deidIds.filter((id) => judge.body.includes(name[id]) || judge.body.includes(fullTitle[id]));
   check("LIST judge never sees a de-identified project's title", leaked.length === 0, `leaked ${leaked.join(",")}`);
-  const pseudonyms = [...judge.body.matchAll(/href="\/j\/([0-9A-Z]{5})"/g)].map((m) => m[1]);
+  const pseudonyms = [...judge.body.matchAll(/href="[^"]*\/j\/([0-9A-Z]{5})"/g)].map((m) => m[1]);
   check("LIST judge sees 8 de-identified rows by pseudonym", new Set(pseudonyms).size === 8, `got ${new Set(pseudonyms).size}`);
   check("LIST judge sees no hold", !/hold/i.test(judge.body));
   check("LIST fixture notice shows above the list", judge.body.includes("Synthetic test data."));
@@ -322,7 +323,7 @@ async function listChecks(base, accounts, sessions) {
 async function signInAttempt(base, extraHeaders = {}) {
   const res = await fetch(`${base}/api/auth/sign-in/email`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: base, ...extraHeaders },
+    headers: { "content-type": "application/json", origin: new URL(base).origin, ...extraHeaders },
     body: JSON.stringify({ email: `nobody-${randomBytes(4).toString("hex")}@smoke.example`, password: randomBytes(12).toString("hex") }),
   });
   await res.arrayBuffer();
@@ -361,7 +362,7 @@ async function diskChecks(base, accounts, env) {
   const res = await fetch(`${base}/api/auth/sign-in/email`, {
     method: "POST",
     // A client bucket of its own: the proxy rate checks filled the earlier ones.
-    headers: { "content-type": "application/json", origin: base, "x-real-ip": "198.51.100.30" },
+    headers: { "content-type": "application/json", origin: new URL(base).origin, "x-real-ip": "198.51.100.30" },
     body: JSON.stringify({ email: accounts.judge.email, password: accounts.judge.password }),
   });
   await res.arrayBuffer();
@@ -428,15 +429,16 @@ try {
   if (spawnMode) {
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-smoke-"));
     const port = await freePort();
-    base = `http://127.0.0.1:${port}`;
+    const origin = `http://127.0.0.1:${port}`;
+    base = `${origin}${BASE_PREFIX}`;
     const serverEnv = {
       ...process.env,
       NODE_ENV: "production",
       PORT: String(port),
       HOST: "127.0.0.1",
       BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
-      BETTER_AUTH_URL: base,
-      TRUSTED_ORIGINS: base,
+      BETTER_AUTH_URL: origin,
+      TRUSTED_ORIGINS: origin,
       PRISM_DATA_DIR: dataDir,
     };
     // The seed script is the only account path: random credentials, passed on

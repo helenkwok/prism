@@ -18,6 +18,7 @@ import os from "node:os";
 import path from "node:path";
 
 import Database from "better-sqlite3";
+import { BASE_PREFIX } from "../base-path.mjs";
 
 const N = 31;
 const CORPUS = "tests/fixtures/report/synthetic-corpus.json";
@@ -49,15 +50,16 @@ const port = await new Promise((resolve, reject) => {
     s.close(() => resolve(p));
   });
 });
-const base = `http://127.0.0.1:${port}`;
+const origin = `http://127.0.0.1:${port}`;
+const base = `${origin}${BASE_PREFIX}`;
 const env = {
   ...process.env,
   NODE_ENV: "production",
   PORT: String(port),
   HOST: "127.0.0.1",
   BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
-  BETTER_AUTH_URL: base,
-  TRUSTED_ORIGINS: base,
+  BETTER_AUTH_URL: origin,
+  TRUSTED_ORIGINS: origin,
   PRISM_DATA_DIR: dataDir,
   PRISM_LIVE_RUNNER: "fixture",
   PRISM_LIVE_RUN_CAP_USD: "1.00",
@@ -129,7 +131,7 @@ async function timed(method, urlPath, { cookie, body } = {}) {
   const res = await fetch(`${base}${urlPath}`, {
     method,
     redirect: "manual",
-    headers: { "x-measure-client": nextIp(), origin: base, ...(cookie ? { cookie } : {}), ...(body ? { "content-type": "application/json" } : {}) },
+    headers: { "x-measure-client": nextIp(), origin: new URL(base).origin, ...(cookie ? { cookie } : {}), ...(body ? { "content-type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   await res.arrayBuffer();

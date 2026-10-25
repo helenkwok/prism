@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createAuthClient } from "better-auth/react";
 import { Button } from "../../components/ui/button";
+import { withBase } from "../lib/base";
 
 /**
  * ?next= is honoured only for a same-origin path: it starts with "/" and not
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/sign-in")({
 });
 
 // Same-origin client: the base URL is the page's own origin.
-const authClient = createAuthClient();
+const authClient = createAuthClient({ basePath: withBase("/api/auth") });
 
 // Fixed copy (07-UI-SPEC): the server's own message is never shown.
 const CREDENTIAL_FAILURE = "Email or password is incorrect. Check both and try again.";
@@ -53,7 +54,7 @@ function SignIn() {
       return;
     }
     // A full navigation so the guarded page loads with the new session cookie.
-    window.location.assign(next);
+    window.location.assign(withBase(next));
   }
 
   const invalid = error ? true : undefined;

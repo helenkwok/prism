@@ -17,6 +17,8 @@ export function violations(file, text) {
     if (spec.startsWith("@public-data/")) continue;
     if (spec.startsWith(".") || spec.startsWith("/")) {
       const target = path.resolve(path.dirname(file), spec);
+      // One public constant shared with the app on the same host: where the app lives (/app).
+      if (target === path.join(root, "base-path.mjs")) continue;
       if (target !== site && !target.startsWith(site + path.sep)) found.push(`imports outside site/: ${spec}`);
     }
     if (file.startsWith(path.join(site, "src") + path.sep) && /^(node:)?fs(\/promises)?$/.test(spec)) found.push(`file system in site/src: ${spec}`);
@@ -41,4 +43,6 @@ test("the guard catches a planted import of private code, a PRISM_DATA_DIR read 
   assert.deepEqual(violations(planted, 'import { readFileSync } from "node:fs";'), ["file system in site/src: node:fs"]);
   assert.deepEqual(violations(planted, 'const m = await import("../../src/publish/export.ts");'), ["imports outside site/: ../../src/publish/export.ts"]);
   assert.deepEqual(violations(planted, 'import release from "@public-data/release.json";'), []);
+  assert.deepEqual(violations(planted, 'import { BASE_PREFIX } from "../../base-path.mjs";'), []);
+  assert.deepEqual(violations(planted, 'import x from "../../base-path.mjs.bak";'), ["imports outside site/: ../../base-path.mjs.bak"]);
 });

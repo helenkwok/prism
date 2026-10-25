@@ -7,6 +7,7 @@ import type { CheckView, DecisionView, GateStatus, PublishedValue, ReportView } 
 import { cn } from "../../../lib/utils";
 import { Notice } from "../Notice";
 import { Receipt } from "../run/Receipt";
+import { withBase } from "../../lib/base";
 
 export const day = (iso: string) => iso.slice(0, 10);
 
@@ -195,7 +196,7 @@ function QuoteText({ text }: { text: string }) {
 }
 
 export function snapshotHref(projectRef: string, hash: string, checkId: string, spanId: string) {
-  return `/p/${encodeURIComponent(projectRef)}/snapshot/${hash}?check=${encodeURIComponent(checkId)}#span-${spanId}`;
+  return withBase(`/p/${encodeURIComponent(projectRef)}/snapshot/${hash}?check=${encodeURIComponent(checkId)}#span-${spanId}`);
 }
 
 type AnyCheck = CheckView | DeidentifiedView["checks"][number];

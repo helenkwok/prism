@@ -7,6 +7,7 @@ import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 import { createAccessControl } from "better-auth/plugins/access";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getDb } from "./db.ts";
+import { withBase } from "../lib/base.ts";
 
 export const MIN_SECRET_LENGTH = 32;
 
@@ -60,6 +61,8 @@ export function authOptions() {
     ],
     secret: requireSecret(),
     baseURL,
+    // The auth route is src/app/routes/api/auth.$.ts, under the app's base (lib/base.ts).
+    basePath: withBase("/api/auth"),
     trustedOrigins: parseOrigins(process.env.TRUSTED_ORIGINS, baseURL),
     // Rate-limit buckets are per client IP. scripts/serve.mjs sets this header from
     // the socket peer (or a configured trusted proxy) and overwrites any client value.

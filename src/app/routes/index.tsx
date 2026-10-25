@@ -6,6 +6,7 @@ import { Explainer } from "../components/Explainer";
 import { FIXTURE_NOTICE, Notice } from "../components/Notice";
 import { listProjects } from "../server/list-fns.ts";
 import type { DeidentifiedRow, IdentifiableRow, ProjectList } from "../server/list-fns.ts";
+import { withBase } from "../lib/base";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { page?: number } => {
@@ -57,7 +58,7 @@ function AdminTable({ rows }: { rows: IdentifiableRow[] }) {
       {rows.map((r) => (
         <tr key={r.projectId}>
           <td className={td}>
-            <a href={`/p/${encodeURIComponent(r.projectId)}`}>{r.title}</a>
+            <a href={withBase(`/p/${encodeURIComponent(r.projectId)}`)}>{r.title}</a>
           </td>
           <td className={td}>
             {r.basis ?? "de-identified only"}
@@ -65,7 +66,7 @@ function AdminTable({ rows }: { rows: IdentifiableRow[] }) {
           </td>
           <td className={td}>{decisions(r.passCount)}</td>
           <td className={td}>{r.updated ?? "—"}</td>
-          <td className={td}>{r.reviewN ? <a href={`/review/${r.reviewN}`}>Review trail</a> : null}</td>
+          <td className={td}>{r.reviewN ? <a href={withBase(`/review/${r.reviewN}`)}>Review trail</a> : null}</td>
         </tr>
       ))}
     </Table>
@@ -79,7 +80,7 @@ function IdentifiableTable({ rows, why }: { rows: IdentifiableRow[]; why: boolea
       {rows.map((r) => (
         <tr key={r.projectId}>
           <td className={td}>
-            <a href={`/p/${encodeURIComponent(r.projectId)}`}>{r.title}</a>
+            <a href={withBase(`/p/${encodeURIComponent(r.projectId)}`)}>{r.title}</a>
           </td>
           {why ? <td className={td}>{r.basis ? WHY[r.basis] : null}</td> : null}
           <td className={td}>{decisions(r.passCount)}</td>
@@ -96,7 +97,7 @@ function DeidentifiedTable({ rows }: { rows: DeidentifiedRow[] }) {
       {rows.map((r) => (
         <tr key={r.pseudonym}>
           <td className={td}>
-            <a href={`/j/${encodeURIComponent(r.pseudonym)}`}>Project {r.pseudonym}</a>
+            <a href={withBase(`/j/${encodeURIComponent(r.pseudonym)}`)}>Project {r.pseudonym}</a>
           </td>
           <td className={td}>{decisions(r.passCount)}</td>
           <td className={td}>{r.collected ?? "—"}</td>
@@ -118,8 +119,8 @@ function Empty({ role }: { role: string }) {
             Records appear here once the sample's results are confirmed and loaded. The method audit is available now.
           </p>
           <p className="mt-2 flex gap-4">
-            <a href="/method">Open the method audit</a>
-            {role === "admin" ? <a href="/run">Run PRISM on one URL</a> : null}
+            <a href={withBase("/method")}>Open the method audit</a>
+            {role === "admin" ? <a href={withBase("/run")}>Run PRISM on one URL</a> : null}
           </p>
         </>
       )}
@@ -135,7 +136,7 @@ function Pager({ page, pages }: { page: number; pages: number }) {
       <span>
         Page {page} of {pages}
       </span>
-      {page < pages ? <a href={`/?page=${page + 1}`}>Next</a> : null}
+      {page < pages ? <a href={withBase(`/?page=${page + 1}`)}>Next</a> : null}
     </nav>
   );
 }

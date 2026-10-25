@@ -3,6 +3,7 @@
 import os from "node:os";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import { BASE_PREFIX } from "./base-path.mjs";
 
 const port = Number(process.env.E2E_PORT ?? 4317);
 // Exported so e2e/serve.mjs (webServer) and the test workers agree on one directory.
@@ -20,7 +21,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: "node e2e/serve.mjs",
-    url: `${baseURL}/sign-in`,
+    url: `${baseURL}${BASE_PREFIX}/sign-in`,
     reuseExistingServer: false,
     timeout: 60_000,
     // SIGTERM (not the default SIGKILL) so serve.mjs can stop the server and remove E2E_DIR.

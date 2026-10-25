@@ -20,6 +20,7 @@ import {
   type DemoLimitHit,
   type ProviderId,
 } from "../server/live-options.ts";
+import { withBase } from "../lib/base";
 
 export const Route = createFileRoute("/run/")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -105,19 +106,19 @@ function RunPage() {
           {refused === "demo-limit" || refused === "budget" ? (
             <>
               {" "}
-              <a href="/">Read the recorded reports</a>
+              <a href={withBase("/")}>Read the recorded reports</a>
             </>
           ) : null}
         </Notice>
       ) : null}
       {budget.notice ? (
         <Notice variant="refused" className="mt-8">
-          <span data-budget-notice="">{budget.notice}</span> <a href="/">Read the recorded reports</a>
+          <span data-budget-notice="">{budget.notice}</span> <a href={withBase("/")}>Read the recorded reports</a>
         </Notice>
       ) : null}
       {demo.tavilyNotice ? (
         <Notice variant="refused" className="mt-8">
-          <span data-tavily-notice="">{demo.tavilyNotice}</span> <a href="/">Read the recorded reports</a>
+          <span data-tavily-notice="">{demo.tavilyNotice}</span> <a href={withBase("/")}>Read the recorded reports</a>
         </Notice>
       ) : null}
       <form className="mt-8 max-w-[640px]" onSubmit={onSubmit}>
@@ -262,7 +263,7 @@ function RecentRuns({ runs }: { runs: JobView[] }) {
                 <span className="rounded-md border border-border px-2 py-0.5 text-[0.8125rem]">{JOB_WORD[r.status]}</span>
               </td>
               <td className={td}>
-                <a href={`/run/${r.id}`}>View</a>
+                <a href={withBase(`/run/${r.id}`)}>View</a>
               </td>
             </tr>
           ))}

@@ -11,7 +11,7 @@ import type { Page } from "@playwright/test";
 import { dictionaryOf, scanDeidentified } from "../src/report/deidentify.ts";
 import type { DeidentifiedView, Dictionary } from "../src/report/deidentify.ts";
 import type { ReportView } from "../src/report/view.ts";
-import { openEvidence, stateFor } from "./helpers.ts";
+import { app, inApp, openEvidence, stateFor } from "./helpers.ts";
 
 const DEID_FIGCAPTION = "Source page and snapshot withheld in de-identified records.";
 
@@ -79,14 +79,14 @@ test.describe("judge", () => {
 
   test("opens a de-identified record from the list: kicker, h1, disclaimer, masking legend", async ({ page }) => {
     const p02 = pseud("P02");
-    await page.goto("/");
+    await page.goto(app("/"));
     const section = page.getByRole("region", { name: "De-identified records" });
     const link = section.getByRole("link", { name: `Project ${p02}` });
     await expect(link).toBeVisible();
-    const doc = page.waitForResponse((r) => new URL(r.url()).pathname === `/j/${p02}` && r.request().resourceType() === "document");
+    const doc = page.waitForResponse((r) => inApp(r.url()) === `/j/${p02}` && r.request().resourceType() === "document");
     await link.click();
     expect((await doc).status()).toBe(200);
-    await expect(page).toHaveURL((u) => u.pathname === `/j/${p02}`);
+    await expect(page).toHaveURL((u) => inApp(u) === `/j/${p02}`);
     await expect(page.locator("article[data-report=deidentified] > p").first()).toHaveText("PRISM · De-identified record");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(`De-identified project ${p02}`);
     await expect(page.locator("[data-scope-disclaimer]")).toHaveText(
@@ -112,7 +112,7 @@ test.describe("judge", () => {
     expect(held.body).not.toContain("/j/");
     expect(held.body).not.toContain(pseud("P03"));
     expect((await html(page, `/j/${pseud("P03")}`)).status).toBe(200);
-    const own = await page.goto("/p/P01");
+    const own = await page.goto(app("/p/P01"));
     expect(own?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(harness().titles.get("P01")!);
   });
@@ -145,7 +145,7 @@ test.describe("judge", () => {
   });
 
   test("the masked render: no URL, host, snapshot or live link; withheld captions; quotes of at most 40 words; visible redactions", async ({ page }) => {
-    const res = await page.goto(`/j/${pseud("P07")}`);
+    const res = await page.goto(app(`/j/${pseud("P07")}`));
     expect(res?.status()).toBe(200);
     await openEvidence(page);
     const main = page.locator("main");
@@ -196,7 +196,7 @@ test.describe("company A", () => {
   });
 
   test("gets the 403 page on /method (07-03 Q3: hidden from companies)", async ({ page }) => {
-    const res = await page.goto("/method");
+    const res = await page.goto(app("/method"));
     expect(res?.status()).toBe(403);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not available to your account");
     await expect(page.locator("[data-method]")).toHaveCount(0);
@@ -223,7 +223,7 @@ function identifiersIn(body: string, projectIds: string[]) {
 /** Every page of /method's confirmation records, as HTML and as visible rows. */
 async function methodPages(page: Page) {
   const out: { body: string; rows: { project: string; identifiable: string }[] }[] = [];
-  let url: string | null = "/method";
+  let url: string | null = app("/method");
   while (url) {
     const res = await page.goto(url);
     expect(res?.status()).toBe(200);
@@ -241,7 +241,7 @@ test.describe("method audit, judge", () => {
   test.use({ storageState: ({}, use) => stateFor("judge").then(use) });
 
   test("agreement table, selection counts and 24 codebook entries", async ({ page }) => {
-    const res = await page.goto("/method");
+    const res = await page.goto(app("/method"));
     expect(res?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Method audit");
     for (const name of ["Agreement with the independent labeller", "How projects were selected", "Codebook", "Confirmation records", "How this report was made"]) {
@@ -309,7 +309,7 @@ test.describe("method audit, admin", () => {
     expect(saved.length).toBe(1);
     db.prepare("delete from app_method_view").run();
     try {
-      const res = await page.goto("/method");
+      const res = await page.goto(app("/method"));
       expect(res?.status()).toBe(200);
       await expect(page.locator("[data-not-loaded]")).toHaveText("Agreement figures appear here once validation is complete.");
       await expect(page.locator("tr[data-agreement]")).toHaveCount(0);

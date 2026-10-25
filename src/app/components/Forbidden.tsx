@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useRouteContext, useRouterState } from "@tanstack/react-router";
 import type { ErrorComponentProps } from "@tanstack/react-router";
+import { withBase } from "../lib/base";
 
 function useUser() {
   return useRouteContext({ from: "__root__" }).user;
@@ -31,8 +32,8 @@ export function Forbidden() {
         account can open is on your projects page.
       </p>
       <p className="mt-8 flex flex-wrap gap-4">
-        <a href="/">Go to your projects</a>
-        {user?.role === "judge" ? <a href="/method">Open the method audit</a> : null}
+        <a href={withBase("/")}>Go to your projects</a>
+        {user?.role === "judge" ? <a href={withBase("/method")}>Open the method audit</a> : null}
       </p>
     </Page>
   );
@@ -43,7 +44,7 @@ export function NotFound() {
     <Page title="Page not found">
       <p className="mt-4">This page does not exist.</p>
       <p className="mt-8">
-        <a href="/">Go to your projects</a>
+        <a href={withBase("/")}>Go to your projects</a>
       </p>
     </Page>
   );
@@ -66,7 +67,7 @@ export function AppError({ error }: ErrorComponentProps) {
     <Page title="Something went wrong">
       <p className="mt-4">This page could not be shown. Try again, or go back to your projects.</p>
       <p className="mt-8">
-        <a href="/">Go to your projects</a>
+        <a href={withBase("/")}>Go to your projects</a>
       </p>
     </Page>
   );

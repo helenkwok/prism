@@ -80,14 +80,22 @@ test("production never sets the fixture runner, and the app trusts only Caddy's 
   assert.match(src, /--ip-range 172\.30\.0\.128\/25/);
 });
 
-test("plan 06-08: Caddy mounts the findings site read-only, and the findings block uses TLS-ALPN-01 only", () => {
+test("plan 06-08: Caddy mounts the findings site read-only and serves it statically at prism's root; TLS-ALPN-01 only", () => {
   const caddyRun = runs.find((l) => /--name prism-caddy\b/.test(l));
   assert.ok(caddyRun.includes('-v "$FINDINGS:/srv/findings:ro"'), caddyRun);
   assert.match(fnBody("cmd_caddy"), /^\s*sha_arg "\$\{1:-\}"$/m);
   const caddyfile = fs.readFileSync("deploy/Caddyfile", "utf8");
-  const block = /findings\.helenkwok\.dev \{\n([\s\S]*?)\n\}/.exec(caddyfile)?.[1] ?? "";
-  assert.match(block, /disable_http_challenge/);
-  assert.match(block, /root \* \/srv\/findings\/current\/client/);
-  assert.doesNotMatch(block, /reverse_proxy/);
+  const prism = /prism\.helenkwok\.dev \{\n([\s\S]*?)\n\}/.exec(caddyfile)?.[1] ?? "";
+  const findings = /\thandle @findings \{\n([\s\S]*?)\n\t\}/.exec(prism)?.[1] ?? "";
+  assert.match(prism, /disable_http_challenge/);
+  assert.match(prism, /@app path \/app \/app\/\*/);
+  assert.match(findings, /root \* \/srv\/findings\/current\/client/);
+  assert.match(findings, /file_server/);
+  assert.doesNotMatch(findings, /reverse_proxy/);
+  // The old findings host only redirects to the same path on prism.helenkwok.dev.
+  const old = /findings\.helenkwok\.dev \{\n([\s\S]*?)\n\}/.exec(caddyfile)?.[1] ?? "";
+  assert.match(old, /disable_http_challenge/);
+  assert.match(old, /redir https:\/\/prism\.helenkwok\.dev\{uri\} permanent/);
+  assert.doesNotMatch(old, /reverse_proxy|file_server/);
   assert.match(caddyfile, /auto_https disable_redirects/);
 });

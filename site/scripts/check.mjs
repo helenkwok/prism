@@ -10,6 +10,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { chromium } from '@playwright/test'
 import { serve } from './serve.mjs'
+import { BASE_PREFIX } from '../../base-path.mjs'
 
 // 06-UI-SPEC Page Inventory: path -> [h1, route file under src/routes].
 export const ROUTES = {
@@ -84,6 +85,8 @@ try {
   await step(`internal links (${internal.size})`, async () => {
     for (const href of internal) {
       const { pathname } = new URL(href, origin)
+      // The private app on the same host (../base-path.mjs) is not a site route; app-smoke checks it.
+      if (pathname.startsWith(`${BASE_PREFIX}/`)) continue
       const route = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname
       assert(route in ROUTES, `${href} is not a UI-SPEC route`)
       assert(!/\/\d+(\/|$)/.test(pathname) && !/review\/\d/.test(pathname) && !/[$:]/.test(pathname), `${href} looks like a per-item page`)
