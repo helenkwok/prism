@@ -8,6 +8,11 @@ import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
 import { loadGateFile, buildContract } from "../../src/pipeline/coding/contract.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
 import { buildSnapshot } from "../../src/pipeline/evidence/segment.ts";
+import { GOLD_SEED, ARTCRAFT_HN_ID } from "../../src/pipeline/select/draw-sample.ts";
+import { sortPilotCandidates } from "../../src/pipeline/select/pilot-draw.ts";
+import Database from "better-sqlite3";
+import { Kysely, SqliteDialect } from "kysely";
+import { ensureGoldSchema } from "../../src/pipeline/validate/gold.ts";
 
 const starts = ["2025-09-02", "2025-12-02", "2026-03-02", "2026-06-02"];
 const previousEntries = Array.from({ length: 300 }, (_, i) => ({ n: i + 1, hn_id: `prior-${i}`, entry_url: `https://prior-${i}.test/` }));
@@ -27,7 +32,7 @@ async function fixture() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "prism-fresh-"));
   const entries = await prepareFreshSample({ dataDir, posts, previousEntries, previousLog, screeners, budget: budget(.5), log: quiet });
   const goldBudget = budget(1.1);
-  const db = { selectFrom: () => ({ select: () => ({ where: () => ({ execute: async () => entries.map(e => ({ project_n: e.n, coding_all_unknown: 0 })) }) }) }) };
+  const db = { selectFrom: () => ({ select: () => ({ where: () => ({ execute: async () => entries.map(e => ({ project_n: e.n, coding_all_unknown: 0 })) }) }) }), updateTable: () => ({ set: () => ({ where: () => ({ execute: async () => {} }) }) }) };
   const o = { dataDir, cacheDir: path.join(dataDir, "pipeline/cache"), db, entries, previousEntries, previousLog, codebook, contract, codebookVersion: "fixture", guidance: { version: "fixture-c1", byCheck: { [contract.checkIds[0]]: "Synthetic clarification." } }, priorApprovalProofPath: "synthetic-proof.json", assertGuidanceApproved: () => {}, coding: { apiKeys: { nebius: "fixture", github: "fixture", tavily: "" }, budget: budget(1) }, gold: { budget: goldBudget, client: { dollarBudget: goldBudget, request: async () => { throw new Error("unexpected HTTP"); } } }, log: quiet };
   fs.mkdirSync(path.join(dataDir, "pipeline/snapshots"), { recursive: true });
   fs.mkdirSync(path.join(dataDir, "pipeline/manifests"), { recursive: true });
@@ -158,4 +163,46 @@ test("gold budget stop drains two active projects and preserves the successful i
   assert.equal(result.remaining, 75);
   assert.equal(result.complete, false);
   assert.equal(result.ok, false);
+});
+
+test("fresh gold allows exactly two no-gold outcomes in the first twenty", async () => {
+  const o = await fixture(); const lines = []; let calls = 0;
+  const result = await runFreshValidation({ ...o, stage: "gold", concurrency: 2, log: line => lines.push(line) }, { proof, label: async () => ({ outcome: ++calls <= 2 ? "no-gold" : "labelled" }) });
+  assert.equal(calls, 76); assert.equal(result.complete, true); assert.equal(result.noGold, 2);
+  const gate = JSON.parse(lines.find(line => line.startsWith("GOLD_GATE:")).slice(10));
+  assert.deepEqual(gate, { projects: 20, failed: 2, rate: .1, threshold: .1, passed: true });
+});
+
+test("fresh gold stops after twenty accounted outcomes when three have no gold", async () => {
+  const o = await fixture(); const lines = []; let calls = 0;
+  const result = await runFreshValidation({ ...o, stage: "gold", concurrency: 2, log: line => lines.push(line) }, { proof, label: async () => ({ outcome: ++calls <= 3 ? "no-gold" : "labelled" }) });
+  assert.equal(calls, 20); assert.equal(result.accounted, 20); assert.equal(result.noGold, 3); assert.equal(result.remaining, 56); assert.equal(result.ok, false); assert.equal(result.complete, false);
+  const gate = JSON.parse(lines.find(line => line.startsWith("GOLD_GATE:")).slice(10)); assert.deepEqual(gate, { projects: 20, failed: 3, rate: .15, threshold: .1, passed: false });
+  const retained = JSON.parse(fs.readFileSync(path.join(o.dataDir, "validation/fresh-gold-accounting.json"), "utf8")); assert.equal(retained.accounted, 20); assert.equal(retained.noGold, 3);
+});
+
+test("the twenty-first gold project waits for the entire seeded prefix", async () => {
+  const o = await fixture(); let calls = 0, release;
+  const hold = new Promise(resolve => { release = resolve; });
+  const ordered = sortPilotCandidates(o.entries.map(e => ({ ...e, id: String(e.hn_id) })), GOLD_SEED);
+  const promise = runFreshValidation({ ...o, stage: "gold", concurrency: 2 }, { proof, label: async options => { calls++; if (options.projectN === ordered[19].n) await hold; return { outcome: "labelled" }; } });
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(calls, 20); release(); assert.equal((await promise).accounted, 76);
+});
+
+test("zero-span coding remains accounted as explicit missing evidence", async () => {
+  const o = await fixture(); const n = o.entries[0].n; const lines = [], flagged = [];
+  fs.writeFileSync(path.join(o.dataDir, "pipeline/manifests", `${n}.json`), JSON.stringify({ hnId: o.entries[0].hn_id, snapshotHashesInCollectionOrder: [] }));
+  o.db = { selectFrom: () => ({ select: () => ({ where: () => ({ execute: async () => o.entries.map(e => ({ project_n: e.n, coding_all_unknown: e.n === n ? 1 : 0, missing_data: 0 })) }) }) }), updateTable: () => ({ set: fields => { assert.equal(fields.missing_data, 1); return { where: (_key, _operator, projectN) => ({ execute: async () => { flagged.push(projectN); } }) }; } }) };
+  const result = await runFreshValidation({ ...o, stage: "code", log: line => lines.push(line) }, { proof, pipeline: async () => ({ ok: true, totalProjects: 76, succeeded: 76, failed: 0, outcomes: o.entries.map(e => ({ n: e.n, status: "ok", codingFailedChunks: 0 })) }) });
+  assert.equal(result.ok, true); assert.equal(result.succeeded, 76); assert.equal(result.failed, 0); assert.equal(result.noEvidence, 1); assert.deepEqual(result.noEvidenceProjects, [n]); assert.deepEqual(flagged, [n]);
+  const accounting = JSON.parse(lines.find(line => line.startsWith("ACCOUNTING:")).slice(12)); assert.equal(accounting.noEvidence, 1); assert.equal(accounting.totalProjects, 76);
+});
+
+test("the worked case has a durable excluded outcome and no label request", async () => {
+  const o = await fixture(); const n = o.entries[0].n; o.entries[0].hn_id = ARTCRAFT_HN_ID;
+  const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) }); await ensureGoldSchema(db); let calls = 0;
+  const result = await runFreshValidation({ ...o, db, stage: "gold", concurrency: 2 }, { proof, label: async options => { calls++; assert.notEqual(options.projectN, n); return { outcome: "labelled" }; } });
+  assert.equal(calls, 75); assert.equal(result.accounted, 76); assert.equal(result.excludedA3, 1); assert.equal(result.noGold, 0); assert.equal(result.goldGate.projects, 20); assert.equal(result.complete, true);
+  const row = await db.selectFrom("pipeline_gold_outcomes").selectAll().where("project_n", "=", n).executeTakeFirst(); assert.equal(row.outcome, "excluded-a3");
+  await db.destroy();
 });

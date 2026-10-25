@@ -7,12 +7,13 @@ import { buildChatBody, PINNED_MODEL } from "../coding/nebius-client.ts";
 import type { Codebook } from "../coding/codebook-prompt.ts";
 import type { RetryContract } from "../coding/retry.ts";
 import { uniqueProjectSpans } from "../coding/span-packing.ts";
-import { projectSpans } from "../confirm/confirm.ts";
-import { extendSample, SAMPLING_SEED, GOLD_SEED, quarterOf, type SampleEntry, type Screeners } from "../select/draw-sample.ts";
+import { projectSpans, spansDigest } from "../confirm/confirm.ts";
+import { recordMissingData } from "../store/results.ts";
+import { extendSample, SAMPLING_SEED, GOLD_SEED, ARTCRAFT_HN_ID, quarterOf, type SampleEntry, type Screeners } from "../select/draw-sample.ts";
 import type { FramePost } from "../select/draw.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
 import { runPipeline, chunkSpans, buildCodingMessages, CODING_MAX_TOKENS, type CodingGuidance } from "../run.ts";
-import { labelProject } from "./gold.ts";
+import { labelProject, writeExcludedA3 } from "./gold.ts";
 import { loadReleaseProof } from "./release-proof.ts";
 
 export const FRESH_CAPS = { screening: .50, coding: 1, gold: 1.10 } as const;
@@ -118,10 +119,20 @@ export async function runFreshValidation(o: FreshValidationOptions, dependencies
     if (sha(retained) !== sha(o.entries)) throw new Error("fresh sample file differs from registered entries");
     const result = await (dependencies.pipeline ?? runPipeline)({ sliceProjectsPath, apiKeys: o.coding.apiKeys, concurrency, cacheDir: o.cacheDir, dataDir: o.dataDir, db: o.db,
       guidance: o.guidance, priorApprovalProofPath: o.priorApprovalProofPath, secondCoderIds: new Set(), collectOnly: o.stage === "collect", overrides: { ...o.coding.overrides, useTavily: false, tfBudget: o.coding.budget } });
+    const noEvidenceProjects: number[] = [];
     if (o.stage === "code" && result.ok) {
-      const rows = await o.db.selectFrom("pipeline_project_results").select(["project_n", "coding_all_unknown"]).where("project_n", "in", o.entries.map(e => e.n)).execute();
-      const valid = new Set(rows.filter(r => r.coding_all_unknown === 0).map(r => r.project_n));
-      const invalid = new Set(o.entries.filter(e => !valid.has(e.n)).map(e => e.n));
+      const rows = await o.db.selectFrom("pipeline_project_results").select(["project_n", "coding_all_unknown", "missing_data"]).where("project_n", "in", o.entries.map(e => e.n)).execute();
+      const invalid = new Set<number>();
+      for (const e of o.entries) {
+        const row = rows.find(r => r.project_n === e.n);
+        if (!row || ![0, 1].includes(row.coding_all_unknown)) { invalid.add(e.n); continue; }
+        let spanCount: number;
+        try { spanCount = projectSpans(o.dataDir, e.n).length; } catch { invalid.add(e.n); continue; }
+        if (spanCount === 0) {
+          noEvidenceProjects.push(e.n);
+          if (row.missing_data !== 1) await recordMissingData(o.db, e.n, true);
+        } else if (row.coding_all_unknown !== 0) invalid.add(e.n);
+      }
       for (const outcome of result.outcomes ?? []) if ((outcome.codingFailedChunks ?? 0) > 0) invalid.add(outcome.n);
       if (invalid.size) {
         result.ok = false;
@@ -129,33 +140,53 @@ export async function runFreshValidation(o: FreshValidationOptions, dependencies
         result.failed = invalid.size;
         result.succeeded = 76 - invalid.size;
         for (const outcome of result.outcomes ?? []) if (invalid.has(outcome.n)) { outcome.status = "failed"; outcome.error = "fresh coding was not fully valid"; }
-        result.stopReason = "fresh coding requires all 76 valid durable results";
+        result.stopReason = "fresh coding requires all 76 durable results; empty evidence is unknown, not retry failure";
       }
     }
-    log(`ACCOUNTING: ${JSON.stringify({ stage: `fresh-${o.stage}`, ...result, outcomes: undefined, ...(o.stage === "collect" ? { modelCalls: 0 } : {}) })}`);
+    const accounted = { ...result, ...(o.stage === "code" ? { noEvidence: noEvidenceProjects.length, noEvidenceProjects, missingDataProjects: noEvidenceProjects } : {}) };
+    log(`ACCOUNTING: ${JSON.stringify({ stage: `fresh-${o.stage}`, ...accounted, outcomes: undefined, ...(o.stage === "collect" ? { modelCalls: 0 } : {}) })}`);
     log(o.coding.budget.budgetLine());
-    return result;
+    return accounted;
   }
   checkBudget(o.gold.budget, FRESH_CAPS.gold);
   if (o.gold.client.dollarBudget !== o.gold.budget) throw new Error("gold client must use the supplied stage budget");
-  const summary = { stage: "fresh-gold", total: 76, accounted: 0, labelled: 0, noGold: 0, failed: 0, remaining: 76, complete: false, ok: false, reason: null as string | null };
-  const ordered = sortPilotCandidates(o.entries.map(e => ({ ...e, id: String(e.hn_id) })), GOLD_SEED);
+  const summary = { stage: "fresh-gold", total: 76, accounted: 0, labelled: 0, noGold: 0, excludedA3: 0, failed: 0, remaining: 76, complete: false, ok: false, reason: null as string | null, goldGate: null as { projects: number; failed: number; rate: number; threshold: number; passed: boolean } | null };
+  const seeded = sortPilotCandidates(o.entries.map(e => ({ ...e, id: String(e.hn_id) })), GOLD_SEED);
+  const ordered = seeded.filter(e => String(e.hn_id) !== ARTCRAFT_HN_ID);
   let next = 0, stopped = false;
+  const persist = () => {
+    summary.remaining = summary.total - summary.accounted;
+    privateJson(path.join(o.dataDir, "validation", "fresh-gold-accounting.json"), summary);
+  };
+  for (const entry of seeded.filter(e => String(e.hn_id) === ARTCRAFT_HN_ID)) {
+    try {
+      await writeExcludedA3({ db: o.db, projectN: entry.n, codebookVersion: o.codebookVersion, role: { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" }, digest: spansDigest([]) });
+      summary.excludedA3++; summary.accounted++; persist();
+    } catch (error) { stopped = true; summary.failed++; summary.reason ??= error instanceof Error ? error.name : "Error"; }
+  }
   const guardedClient: GoldClient = { request: async (...args) => {
     if (stopped) { const error = new Error("fresh gold stopped"); error.name = "FreshStageStopped"; throw error; }
     return o.gold.client.request(...args);
   } };
-  const workers = Array.from({ length: concurrency }, async () => {
-    while (!stopped && next < ordered.length) {
+  const runWorkers = async (limit: number) => Promise.all(Array.from({ length: concurrency }, async () => {
+    while (!stopped && next < limit) {
       const entry = ordered[next++];
       try {
         const outcome = await (dependencies.label ?? labelProject)({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir, projectN: entry.n, hnId: String(entry.hn_id), codebook: o.codebook, codebookVersion: o.codebookVersion, contract: o.contract, role: { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" }, client: guardedClient });
-        summary.accounted++;
-        if (outcome.outcome === "labelled") summary.labelled++; else summary.noGold++;
+        if (outcome.outcome === "labelled") summary.labelled++;
+        else if (outcome.outcome === "no-gold") summary.noGold++;
+        else throw new Error("unexpected fresh gold outcome");
+        summary.accounted++; persist();
       } catch (error) { stopped = true; summary.failed++; summary.reason ??= error instanceof Error ? error.name : "Error"; }
     }
-  });
-  await Promise.all(workers);
+  }));
+  await runWorkers(Math.min(20, ordered.length));
+  const prefixProjects = summary.labelled + summary.noGold;
+  summary.goldGate = { projects: prefixProjects, failed: summary.noGold, rate: prefixProjects ? summary.noGold / prefixProjects : 0, threshold: .1, passed: !stopped && prefixProjects === 20 && summary.noGold <= 2 };
+  log(`GOLD_GATE: ${JSON.stringify(summary.goldGate)}`);
+  persist();
+  if (!summary.goldGate.passed) { stopped = true; summary.reason ??= "gold-first-20-failure-rate-or-incomplete"; }
+  if (!stopped) await runWorkers(ordered.length);
   summary.remaining = summary.total - summary.accounted;
   summary.complete = summary.accounted === summary.total;
   summary.ok = summary.complete && summary.labelled > 0 && summary.failed === 0;
