@@ -3,17 +3,15 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Kysely } from "kysely";
 import { DollarBudget, DEFAULT_TOKEN_CAP, estimateMessagesTokens } from "../coding/spend-guards.ts";
-import { buildChatBody, PINNED_MODEL } from "../coding/nebius-client.ts";
 import type { Codebook } from "../coding/codebook-prompt.ts";
 import type { RetryContract } from "../coding/retry.ts";
-import { uniqueProjectSpans } from "../coding/span-packing.ts";
 import { projectSpans, spansDigest } from "../confirm/confirm.ts";
 import { recordMissingData } from "../store/results.ts";
 import { extendSample, SAMPLING_SEED, GOLD_SEED, ARTCRAFT_HN_ID, quarterOf, type SampleEntry, type Screeners } from "../select/draw-sample.ts";
 import type { FramePost } from "../select/draw.ts";
 import { sortPilotCandidates } from "../select/pilot-draw.ts";
-import { runPipeline, chunkSpans, buildCodingMessages, CODING_MAX_TOKENS, type CodingGuidance } from "../run.ts";
-import { labelProject, writeExcludedA3 } from "./gold.ts";
+import { runPipeline, guidedCodingChunks, guidedCodingRequestBodies, CODING_MAX_TOKENS, type CodingGuidance } from "../run.ts";
+import { labelProject, writeExcludedA3, goldCodingChunks, goldRequestBodies } from "./gold.ts";
 import { loadReleaseProof } from "./release-proof.ts";
 
 export const FRESH_CAPS = { screening: .50, coding: 1, gold: 1.10 } as const;
@@ -72,12 +70,25 @@ export async function prepareFreshSample(o: {
 
 /** Inventory complete actual prompts without sending, truncating, or changing chunk boundaries. */
 export function inventoryFreshCoding(o: { dataDir: string; entries: SampleEntry[]; guidance: CodingGuidance; codebook: Codebook; contract: RetryContract }) {
-  const requests = o.entries.flatMap(e => chunkSpans(uniqueProjectSpans(projectSpans(o.dataDir, e.n))).map((chunk, i) => {
-    const body = buildChatBody({ model: PINNED_MODEL, messages: buildCodingMessages(o.contract.checkIds, o.codebook, o.contract.jsonSchema, chunk, o.guidance), mode: "json_schema", schema: { name: "gate_checks", schema: o.contract.jsonSchema, strict: true }, thinking: false, maxTokens: CODING_MAX_TOKENS });
-    return { projectN: e.n, chunk: i + 1, inputTokens: estimateMessagesTokens(body.messages), outputLimit: CODING_MAX_TOKENS, requestDigest: sha(body) };
+  const requests = o.entries.flatMap(e => guidedCodingChunks(projectSpans(o.dataDir, e.n), o.codebook, o.contract, o.guidance).map((chunk, i) => {
+    const [body, retryBody] = guidedCodingRequestBodies(o.codebook, o.contract, chunk, o.guidance);
+    const inputTokens = estimateMessagesTokens(body.messages), retryInputTokens = estimateMessagesTokens(retryBody.messages);
+    return { projectN: e.n, chunk: i + 1, inputTokens, retryInputTokens, maximumInputTokens: Math.max(inputTokens, retryInputTokens), outputLimit: CODING_MAX_TOKENS, requestDigest: sha(body), retryRequestDigest: sha(retryBody) };
   }));
-  const report = { version: 1, stage: "fresh-coding", guidanceVersion: o.guidance.version, projects: o.entries.length, chunks: requests.length, cap: DEFAULT_TOKEN_CAP, overCap: requests.filter(r => r.inputTokens > DEFAULT_TOKEN_CAP).length, maxInputTokens: Math.max(0, ...requests.map(r => r.inputTokens)), requests };
+  const report = { version: 1, stage: "fresh-coding", guidanceVersion: o.guidance.version, projects: o.entries.length, chunks: requests.length, cap: DEFAULT_TOKEN_CAP, overCap: requests.filter(r => r.maximumInputTokens > DEFAULT_TOKEN_CAP).length, maxInputTokens: Math.max(0, ...requests.map(r => r.maximumInputTokens)), requests };
   privateJson(path.join(o.dataDir, "validation", "fresh-coding-inventory.json"), report);
+  return report;
+}
+
+export function inventoryFreshGold(o: { dataDir: string; entries: SampleEntry[]; codebook: Codebook; contract: RetryContract }) {
+  const role = { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" } as const;
+  const requests = o.entries.flatMap(e => goldCodingChunks(projectSpans(o.dataDir, e.n), o.codebook, o.contract, role).map((chunk, i) => {
+    const bodies = goldRequestBodies(o.codebook, o.contract, chunk, role);
+    const tokenCounts = bodies.map(body => estimateMessagesTokens(body.messages));
+    return { projectN: e.n, chunk: i + 1, inputTokens: tokenCounts[1], maximumInputTokens: Math.max(...tokenCounts), outputLimit: CODING_MAX_TOKENS, requestDigests: bodies.map(sha) };
+  }));
+  const report = { version: 1, stage: "fresh-gold", projects: o.entries.length, chunks: requests.length, cap: DEFAULT_TOKEN_CAP, overCap: requests.filter(r => r.maximumInputTokens > DEFAULT_TOKEN_CAP).length, maxInputTokens: Math.max(0, ...requests.map(r => r.maximumInputTokens)), requests };
+  privateJson(path.join(o.dataDir, "validation", "fresh-gold-inventory.json"), report);
   return report;
 }
 
@@ -150,6 +161,9 @@ export async function runFreshValidation(o: FreshValidationOptions, dependencies
   }
   checkBudget(o.gold.budget, FRESH_CAPS.gold);
   if (o.gold.client.dollarBudget !== o.gold.budget) throw new Error("gold client must use the supplied stage budget");
+  const goldInventory = inventoryFreshGold(o);
+  log(`COST_PLAN: ${JSON.stringify({ ...goldInventory, requests: undefined })}`);
+  if (goldInventory.overCap) throw new Error("fresh gold prompt exceeds unchanged request cap; no labelling started");
   const summary = { stage: "fresh-gold", total: 76, accounted: 0, labelled: 0, noGold: 0, excludedA3: 0, failed: 0, remaining: 76, complete: false, ok: false, reason: null as string | null, goldGate: null as { projects: number; failed: number; rate: number; threshold: number; passed: boolean } | null };
   const seeded = sortPilotCandidates(o.entries.map(e => ({ ...e, id: String(e.hn_id) })), GOLD_SEED);
   const ordered = seeded.filter(e => String(e.hn_id) !== ARTCRAFT_HN_ID);
@@ -172,7 +186,7 @@ export async function runFreshValidation(o: FreshValidationOptions, dependencies
     while (!stopped && next < limit) {
       const entry = ordered[next++];
       try {
-        const outcome = await (dependencies.label ?? labelProject)({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir, projectN: entry.n, hnId: String(entry.hn_id), codebook: o.codebook, codebookVersion: o.codebookVersion, contract: o.contract, role: { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" }, client: guardedClient });
+        const outcome = await (dependencies.label ?? labelProject)({ db: o.db, dataDir: o.dataDir, cacheDir: o.cacheDir, projectN: entry.n, hnId: String(entry.hn_id), codebook: o.codebook, codebookVersion: o.codebookVersion, contract: o.contract, role: { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" }, client: guardedClient, boundedChunks: true });
         if (outcome.outcome === "labelled") summary.labelled++;
         else if (outcome.outcome === "no-gold") summary.noGold++;
         else throw new Error("unexpected fresh gold outcome");

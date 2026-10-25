@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { prepareFreshSample, validateFreshSample, inventoryFreshCoding, runFreshValidation } from "../../src/pipeline/validate/fresh-validation.ts";
+import { prepareFreshSample, validateFreshSample, inventoryFreshCoding, inventoryFreshGold, runFreshValidation } from "../../src/pipeline/validate/fresh-validation.ts";
 import { DollarBudget } from "../../src/pipeline/coding/spend-guards.ts";
 import { loadGateFile, buildContract } from "../../src/pipeline/coding/contract.ts";
 import { loadCodebook } from "../../src/pipeline/coding/codebook-prompt.ts";
@@ -72,11 +72,32 @@ test("inventory preserves complete prompt bodies and refuses over-cap coding bef
   const report = inventoryFreshCoding(o);
   assert.equal(report.chunks, 76);
   assert.equal(report.overCap, 0);
+  assert.ok(report.requests.every(r => r.retryInputTokens >= r.inputTokens && r.maximumInputTokens === r.retryInputTokens));
+  assert.ok(report.requests.every(r => r.requestDigest !== r.retryRequestDigest));
   assert.equal(JSON.stringify(report).includes("Synthetic cited evidence"), false);
   let codingCalls = 0;
   o.guidance.byCheck[contract.checkIds[0]] = "Synthetic guidance. ".repeat(5000);
-  await assert.rejects(runFreshValidation({ ...o, stage: "code" }, { proof, pipeline: async () => { codingCalls++; } }), /no coding started/);
+  await assert.rejects(runFreshValidation({ ...o, stage: "code" }, { proof, pipeline: async () => { codingCalls++; } }), /complete numbered span|no coding started/);
   assert.equal(codingCalls, 0);
+});
+
+test("complete initial and citation-regeneration inventories subdivide without losing evidence", async () => {
+  const o = await fixture();
+  const dir = path.join(o.dataDir, "pipeline/snapshots");
+  const file = path.join(dir, fs.readdirSync(dir)[0]);
+  const snapshot = JSON.parse(fs.readFileSync(file, "utf8"));
+  snapshot.redactedText = Array.from({ length: 2400 }, (_, i) => `Synthetic evidence ${i}.`).join("\n\n");
+  fs.writeFileSync(file, JSON.stringify(snapshot));
+  const report = inventoryFreshCoding(o);
+  assert.ok(report.chunks > 76);
+  assert.equal(report.overCap, 0);
+  assert.ok(report.maxInputTokens <= 20000);
+  assert.ok(report.requests.every(r => r.retryInputTokens >= r.inputTokens));
+  const gold = inventoryFreshGold(o);
+  assert.ok(gold.chunks > 76);
+  assert.equal(gold.overCap, 0);
+  assert.ok(gold.maxInputTokens <= 20000);
+  assert.ok(gold.requests.every(r => r.requestDigests.length === 4));
 });
 
 test("coding and collect stages use retained proof, free collection, no second coder and one shared meter", async () => {
@@ -118,6 +139,7 @@ test("gold locks its independent role, accounts honest no-gold and never starts 
   const result = await runFreshValidation({ ...o, stage: "gold", log: line => lines.push(line), concurrency: 2 }, { proof, label: async options => {
     assert.deepEqual(options.role, { provider: "ollama", model: "glm-5.3-flash:cloud", reasoning: "low" });
     assert.equal(options.codebookVersion, "fixture");
+    assert.equal(options.boundedChunks, true);
     return { outcome: ++labelled === 1 ? "no-gold" : "labelled" };
   } });
   assert.equal(result.complete, true);

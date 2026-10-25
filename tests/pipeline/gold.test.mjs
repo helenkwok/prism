@@ -24,6 +24,8 @@ import {
   ensureGoldSchema,
   GOLD_ATTEMPT_REVISION,
   labelProject,
+  goldCodingChunks,
+  goldRequestBodies,
   runGoldCli,
 } from "../../src/pipeline/validate/gold.ts";
 import {
@@ -35,6 +37,7 @@ import {
 import { ARTCRAFT_HN_ID, GOLD_SEED } from "../../src/pipeline/select/draw-sample.ts";
 import { sortPilotCandidates } from "../../src/pipeline/select/pilot-draw.ts";
 import { QuotaStop as QuotaStopClass } from "../../src/pipeline/coding/nebius-client.ts";
+import { estimateMessagesTokens } from "../../src/pipeline/coding/spend-guards.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const codebook = loadCodebook(path.join(repoRoot, "codebook.md"));
@@ -147,6 +150,27 @@ describe("ollamaClient adapter", () => {
 });
 
 describe("labelProject", () => {
+  test("fresh bounded labelling preserves all numbered evidence and every retry variant fits", async () => {
+    const dataDir = tempDir("prism-gold-bounded-");
+    writeProjectTree(dataDir, 12, [Array.from({ length: 2400 }, (_, i) => `Synthetic evidence ${i}.`).join("\n\n")]);
+    const spans = projectSpans(dataDir, 12), role = { ...ROLE_CONFIG.gold, model: "glm-5.3-flash:cloud" };
+    const chunks = goldCodingChunks(spans, codebook, contract, role);
+    assert.ok(chunks.length > 2);
+    assert.deepEqual(chunks.flat(), spans);
+    assert.ok(chunks.every(chunk => chunk.reduce((n, s) => n + s.text.length, 0) <= 40000));
+    assert.ok(chunks.every(chunk => goldRequestBodies(codebook, contract, chunk, role).every(body => estimateMessagesTokens(body.messages) <= 20000)));
+    let calls = 0;
+    const client = { request: async (_p, { body }) => {
+      assert.deepEqual(body, goldRequestBodies(codebook, contract, chunks[calls++], role)[1]);
+      return { ok: true, status: 200, json: { choices: [{ message: { content: keyedUnknownReply() } }] } };
+    } };
+    const db = new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+    try {
+      const result = await labelProject({ db, dataDir, cacheDir: path.join(dataDir, "pipeline/cache"), projectN: 12, hnId: "1012", codebook, codebookVersion: "v1.0", contract, role, client, boundedChunks: true });
+      assert.equal(result.outcome, "labelled");
+      assert.equal(calls, chunks.length);
+    } finally { await db.destroy(); }
+  });
   test("flash starts with the existing JSON correction once, preserves its hash and serves old base caches first", async () => {
     for (const model of ["glm-5.3-flash", "glm-5.3-flash:cloud"]) {
       const dataDir = tempDir("prism-gold-flash-format-"); const cacheDir = path.join(dataDir, "pipeline", "cache");
