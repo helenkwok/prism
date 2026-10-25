@@ -1,0 +1,56 @@
+{
+  "version": "v1",
+  "kind": "findings",
+  "date": "2026-10-25",
+  "files": {
+    "release.json": "b7d5f3af4b114d9df24143ee426be2e5102c3acab7ed99ac15ad493a529d459b"
+  },
+  "audit": {
+    "tuples": 192,
+    "suppressed": 117,
+    "primary": 117,
+    "complementary": 0,
+    "added": [],
+    "priors": [
+      "all",
+      "interior"
+    ],
+    "pass": true,
+    "solver": {
+      "package": "highs",
+      "version": "1.15.3"
+    },
+    "components": 20
+  },
+  "processFigures": [
+    {
+      "id": "screening-audit",
+      "reason": "screening error of the audited exclusions: a property of the screener, not of any launch",
+      "addendum": "A14"
+    },
+    {
+      "id": "collection-recall",
+      "reason": "supported and raw collection recall: a property of the collector, not of any launch",
+      "addendum": "A14"
+    },
+    {
+      "id": "person-edits",
+      "reason": "the count of labels edited by a person: a property of the process, not of any launch",
+      "addendum": "A14"
+    },
+    {
+      "id": "confirmation-total",
+      "reason": "the total share of proposed positives changed at confirmation: a property of the coder and confirmer, not of any launch",
+      "addendum": "A14"
+    }
+  ],
+  "lint": {
+    "statements": 41,
+    "findings": 8,
+    "errors": 0
+  },
+  "scan": {
+    "files": 3,
+    "hits": 0
+  }
+}

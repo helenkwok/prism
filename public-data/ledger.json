@@ -1,0 +1,452 @@
+[
+  {
+    "id": "chk|intended-use-defined|pass|all",
+    "n": 300,
+    "c": 169,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|all",
+    "n": 300,
+    "c": 162,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|all",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|all",
+    "n": 300,
+    "c": 104,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|all",
+    "n": 300,
+    "c": 62,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|all",
+    "n": 300,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q1",
+    "n": 75,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q1",
+    "n": 75,
+    "c": 36,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q1",
+    "n": 75,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|q1",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q2",
+    "n": 75,
+    "c": 39,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q2",
+    "n": 75,
+    "c": 25,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q2",
+    "n": 75,
+    "c": 13,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|q2",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q3",
+    "n": 75,
+    "c": 41,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q3",
+    "n": 75,
+    "c": 47,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q3",
+    "n": 75,
+    "c": 30,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|q3",
+    "n": 75,
+    "c": 17,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|q3",
+    "n": 75,
+    "c": 11,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|q4",
+    "n": 75,
+    "c": 45,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|q4",
+    "n": 75,
+    "c": 54,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|q4",
+    "n": 75,
+    "c": 23,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|q4",
+    "n": 75,
+    "c": 34,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|q4",
+    "n": 75,
+    "c": 16,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|pass|src:show-hn",
+    "n": 300,
+    "c": 169,
+    "version": "v1"
+  },
+  {
+    "id": "chk|limitations-stated|pass|src:show-hn",
+    "n": 300,
+    "c": 162,
+    "version": "v1"
+  },
+  {
+    "id": "chk|fallback-defined|pass|src:show-hn",
+    "n": 300,
+    "c": 44,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|pass|src:show-hn",
+    "n": 300,
+    "c": 104,
+    "version": "v1"
+  },
+  {
+    "id": "chk|intended-use-defined|claimed|src:show-hn",
+    "n": 300,
+    "c": 62,
+    "version": "v1"
+  },
+  {
+    "id": "chk|operating-cost-known|claimed|src:show-hn",
+    "n": 300,
+    "c": 27,
+    "version": "v1"
+  },
+  {
+    "id": "h1|all",
+    "n": 300,
+    "c": 96,
+    "version": "v1"
+  },
+  {
+    "id": "h3|all",
+    "n": 300,
+    "c": 212,
+    "version": "v1"
+  },
+  {
+    "id": "h1|all|sens",
+    "n": 300,
+    "c": 96,
+    "version": "v1"
+  },
+  {
+    "id": "h3|all|sens",
+    "n": 300,
+    "c": 212,
+    "version": "v1"
+  },
+  {
+    "id": "st|homepage|all",
+    "n": 300,
+    "c": 139,
+    "version": "v1"
+  },
+  {
+    "id": "st|repository-readme|all",
+    "n": 300,
+    "c": 95,
+    "version": "v1"
+  },
+  {
+    "id": "st|policy-page|all",
+    "n": 300,
+    "c": 52,
+    "version": "v1"
+  },
+  {
+    "id": "st|repository-file|all",
+    "n": 300,
+    "c": 48,
+    "version": "v1"
+  },
+  {
+    "id": "st|docs|all",
+    "n": 300,
+    "c": 37,
+    "version": "v1"
+  },
+  {
+    "id": "st|other|all",
+    "n": 300,
+    "c": 126,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|assessed",
+    "n": 1675,
+    "c": 963,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|included",
+    "n": 1675,
+    "c": 247,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|included-insufficient-text",
+    "n": 1675,
+    "c": 53,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage2:not-ai",
+    "n": 1675,
+    "c": 246,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage1:not-ai",
+    "n": 1675,
+    "c": 615,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage2:ai-adjacent",
+    "n": 1675,
+    "c": 178,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage2:unreachable-at-screening",
+    "n": 1675,
+    "c": 82,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage1:duplicate",
+    "n": 1675,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage1:model-or-paper",
+    "n": 1675,
+    "c": 18,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage1:library-no-product-claim",
+    "n": 1675,
+    "c": 29,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|stage2:library-no-product-claim",
+    "n": 1675,
+    "c": 19,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|other",
+    "n": 1675,
+    "c": 12,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|not-collectable:robots-blocked",
+    "n": 1675,
+    "c": 99,
+    "version": "v1"
+  },
+  {
+    "id": "prisma|not-collectable:redirected-off-boundary",
+    "n": 1675,
+    "c": 35,
+    "version": "v1"
+  },
+  {
+    "id": "prec|assumptions-catalogued",
+    "n": 95,
+    "c": 83,
+    "version": "v1"
+  },
+  {
+    "id": "prec|intended-use-defined",
+    "n": 246,
+    "c": 229,
+    "version": "v1"
+  },
+  {
+    "id": "prec|acceptance-criteria-defined",
+    "n": 80,
+    "c": 60,
+    "version": "v1"
+  },
+  {
+    "id": "prec|limitations-stated",
+    "n": 182,
+    "c": 172,
+    "version": "v1"
+  },
+  {
+    "id": "prec|support-maintenance-defined",
+    "n": 192,
+    "c": 160,
+    "version": "v1"
+  },
+  {
+    "id": "prec|operating-cost-known",
+    "n": 148,
+    "c": 130,
+    "version": "v1"
+  },
+  {
+    "id": "prec|alternatives-compared",
+    "n": 52,
+    "c": 31,
+    "version": "v1"
+  },
+  {
+    "id": "conf|rejected",
+    "n": 1610,
+    "c": 411,
+    "version": "v1"
+  },
+  {
+    "id": "conf|downgraded",
+    "n": 1610,
+    "c": 223,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|output-reproducible",
+    "n": 195,
+    "c": 59,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|assumptions-catalogued",
+    "n": 95,
+    "c": 33,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|intended-use-defined",
+    "n": 252,
+    "c": 78,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|acceptance-criteria-defined",
+    "n": 85,
+    "c": 47,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|acceptance-criteria-met",
+    "n": 86,
+    "c": 42,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|limitations-stated",
+    "n": 183,
+    "c": 21,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|fallback-defined",
+    "n": 66,
+    "c": 22,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|support-maintenance-defined",
+    "n": 193,
+    "c": 88,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|operating-cost-known",
+    "n": 150,
+    "c": 45,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|risk-tradeoffs-assessed",
+    "n": 37,
+    "c": 14,
+    "version": "v1"
+  },
+  {
+    "id": "conf|chk|alternatives-compared",
+    "n": 52,
+    "c": 39,
+    "version": "v1"
+  },
+  {
+    "id": "vis|provider-only",
+    "n": 300,
+    "c": 218,
+    "version": "v1"
+  }
+]

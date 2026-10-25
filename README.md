@@ -216,3 +216,7 @@ Git hooks are enabled by the `prepare` script.
 
 PRISM is licensed under the Apache License 2.0 (Apache-2.0). See `LICENSE` and
 `NOTICE`.
+
+The aggregate data in `public-data/` is licensed under Creative Commons
+Attribution 4.0 International (CC BY 4.0,
+https://creativecommons.org/licenses/by/4.0/). See `public-data/README.md`.

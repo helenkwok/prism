@@ -1,0 +1,5116 @@
+{
+  "schema": 1,
+  "kind": "findings",
+  "version": "v1",
+  "date": "2026-10-25",
+  "n": 300,
+  "figures": {
+    "checks:explore": {
+      "id": "checks:explore",
+      "title": "Checks for the decision: Keep exploring",
+      "measure": "share of included launches that publicly evidence the check (confirmed pass)",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|pass|all",
+          "label": "The artefact or action can be reproduced or inspected.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|all",
+          "label": "Important supplied context, assumptions, and inferences are visible.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    },
+    "checks:rely": {
+      "id": "checks:rely",
+      "title": "Checks for the decision: Permit reliance for the named use",
+      "measure": "share of included launches that publicly evidence the check (confirmed pass)",
+      "rows": [
+        {
+          "id": "chk|intended-use-defined|pass|all",
+          "label": "The intended use and boundaries are explicit.",
+          "state": "released",
+          "c": 169,
+          "n": 300,
+          "pct": 56,
+          "ci": [
+            51,
+            62
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|all",
+          "label": "Acceptance criteria are explicit and testable enough for the use.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|all",
+          "label": "Evidence shows the acceptance criteria were met.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|all",
+          "label": "Relevant failure modes and fallback behaviour were evaluated.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|limitations-stated|pass|all",
+          "label": "Known limitations and out-of-scope conditions are stated.",
+          "state": "released",
+          "c": 162,
+          "n": 300,
+          "pct": 54,
+          "ci": [
+            48,
+            60
+          ]
+        }
+      ]
+    },
+    "checks:operate": {
+      "id": "checks:operate",
+      "title": "Checks for the decision: Sell, operate, support, or staff repeatedly",
+      "measure": "share of included launches that publicly evidence the check (confirmed pass)",
+      "rows": [
+        {
+          "id": "chk|deliverable-gate-passed|pass|all",
+          "label": "The Deliverable gate for the intended use has passed.",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|all",
+          "label": "Operational ownership is explicit.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|all",
+          "label": "The assurance mechanism is defined for the important failure modes.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|fallback-defined|pass|all",
+          "label": "Fallback or escalation is defined.",
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
+        },
+        {
+          "id": "chk|recovery-tested|pass|all",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it.",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|all",
+          "label": "Support, maintenance, debugging, and change responsibility are defined.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|all",
+          "label": "The relevant operating-cost boundary is known well enough for the decision.",
+          "state": "released",
+          "c": 104,
+          "n": 300,
+          "pct": 35,
+          "ci": [
+            30,
+            40
+          ]
+        }
+      ]
+    },
+    "checks:measure-outcome": {
+      "id": "checks:measure-outcome",
+      "title": "Checks for the decision: Determine whether the initiative changed the result",
+      "measure": "share of included launches that publicly evidence the check (confirmed pass)",
+      "rows": [
+        {
+          "id": "chk|outcome-measure-defined|pass|all",
+          "label": "The outcome measure is defined.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|all",
+          "label": "A comparable baseline or counterfactual is defined.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|all",
+          "label": "The outcome was measured after the intervention.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|all",
+          "label": "Before/after measurements use the same relevant definition.",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|all",
+          "label": "Material confounds, uncertainty, or attribution limits are named.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    },
+    "checks:scale-renew-stop": {
+      "id": "checks:scale-renew-stop",
+      "title": "Checks for the decision: Scale, renew, expand, or stop",
+      "measure": "share of included launches that publicly evidence the check (confirmed pass)",
+      "rows": [
+        {
+          "id": "chk|outcome-evidence-available|pass|all",
+          "label": "Outcome evidence relevant to the decision is available.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|all",
+          "label": "The full relevant cost boundary is accounted for.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|all",
+          "label": "Material risks and trade-offs are assessed.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|all",
+          "label": "Reasonable alternatives or the status quo are compared.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|all",
+          "label": "The rule for scale, renew, expand, or stop is explicit.",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    },
+    "decisions": {
+      "id": "decisions",
+      "title": "Evidence by decision",
+      "measure": "share of included launches whose confirmed check states let the deterministic gate support the decision",
+      "rows": [
+        {
+          "id": "dec|explore|PASS|all",
+          "label": "Keep exploring",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|rely|PASS|all",
+          "label": "Permit reliance for the named use",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|operate|PASS|all",
+          "label": "Sell, operate, support, or staff repeatedly",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|all",
+          "label": "Determine whether the initiative changed the result",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|all",
+          "label": "Scale, renew, expand, or stop",
+          "state": "lt10"
+        }
+      ]
+    },
+    "cohorts:explore": {
+      "id": "cohorts:explore",
+      "title": "Launch cohorts: Keep exploring",
+      "measure": "share of the quarter's included launches, as evidenced today",
+      "rows": [
+        {
+          "id": "dec|explore|PASS|q1",
+          "label": "quarter 1",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|explore|PASS|q2",
+          "label": "quarter 2",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|explore|PASS|q3",
+          "label": "quarter 3",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|explore|PASS|q4",
+          "label": "quarter 4",
+          "state": "lt10"
+        }
+      ]
+    },
+    "sources:explore": {
+      "id": "sources:explore",
+      "title": "Discovery sources: Keep exploring",
+      "measure": "share of the source's included launches",
+      "rows": [
+        {
+          "id": "dec|explore|PASS|src:show-hn",
+          "label": "Show HN",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|explore|PASS|src:reddit",
+          "label": "Reddit",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "dec|explore|PASS|src:github-only",
+          "label": "GitHub-only",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "cohorts:rely": {
+      "id": "cohorts:rely",
+      "title": "Launch cohorts: Permit reliance for the named use",
+      "measure": "share of the quarter's included launches, as evidenced today",
+      "rows": [
+        {
+          "id": "dec|rely|PASS|q1",
+          "label": "quarter 1",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|rely|PASS|q2",
+          "label": "quarter 2",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|rely|PASS|q3",
+          "label": "quarter 3",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|rely|PASS|q4",
+          "label": "quarter 4",
+          "state": "lt10"
+        }
+      ]
+    },
+    "sources:rely": {
+      "id": "sources:rely",
+      "title": "Discovery sources: Permit reliance for the named use",
+      "measure": "share of the source's included launches",
+      "rows": [
+        {
+          "id": "dec|rely|PASS|src:show-hn",
+          "label": "Show HN",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|rely|PASS|src:reddit",
+          "label": "Reddit",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "dec|rely|PASS|src:github-only",
+          "label": "GitHub-only",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "cohorts:operate": {
+      "id": "cohorts:operate",
+      "title": "Launch cohorts: Sell, operate, support, or staff repeatedly",
+      "measure": "share of the quarter's included launches, as evidenced today",
+      "rows": [
+        {
+          "id": "dec|operate|PASS|q1",
+          "label": "quarter 1",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|operate|PASS|q2",
+          "label": "quarter 2",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|operate|PASS|q3",
+          "label": "quarter 3",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|operate|PASS|q4",
+          "label": "quarter 4",
+          "state": "lt10"
+        }
+      ]
+    },
+    "sources:operate": {
+      "id": "sources:operate",
+      "title": "Discovery sources: Sell, operate, support, or staff repeatedly",
+      "measure": "share of the source's included launches",
+      "rows": [
+        {
+          "id": "dec|operate|PASS|src:show-hn",
+          "label": "Show HN",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|operate|PASS|src:reddit",
+          "label": "Reddit",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "dec|operate|PASS|src:github-only",
+          "label": "GitHub-only",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "cohorts:measure-outcome": {
+      "id": "cohorts:measure-outcome",
+      "title": "Launch cohorts: Determine whether the initiative changed the result",
+      "measure": "share of the quarter's included launches, as evidenced today",
+      "rows": [
+        {
+          "id": "dec|measure-outcome|PASS|q1",
+          "label": "quarter 1",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|q2",
+          "label": "quarter 2",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|q3",
+          "label": "quarter 3",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|q4",
+          "label": "quarter 4",
+          "state": "lt10"
+        }
+      ]
+    },
+    "sources:measure-outcome": {
+      "id": "sources:measure-outcome",
+      "title": "Discovery sources: Determine whether the initiative changed the result",
+      "measure": "share of the source's included launches",
+      "rows": [
+        {
+          "id": "dec|measure-outcome|PASS|src:show-hn",
+          "label": "Show HN",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|src:reddit",
+          "label": "Reddit",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "dec|measure-outcome|PASS|src:github-only",
+          "label": "GitHub-only",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "cohorts:scale-renew-stop": {
+      "id": "cohorts:scale-renew-stop",
+      "title": "Launch cohorts: Scale, renew, expand, or stop",
+      "measure": "share of the quarter's included launches, as evidenced today",
+      "rows": [
+        {
+          "id": "dec|scale-renew-stop|PASS|q1",
+          "label": "quarter 1",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|q2",
+          "label": "quarter 2",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|q3",
+          "label": "quarter 3",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|q4",
+          "label": "quarter 4",
+          "state": "lt10"
+        }
+      ]
+    },
+    "sources:scale-renew-stop": {
+      "id": "sources:scale-renew-stop",
+      "title": "Discovery sources: Scale, renew, expand, or stop",
+      "measure": "share of the source's included launches",
+      "rows": [
+        {
+          "id": "dec|scale-renew-stop|PASS|src:show-hn",
+          "label": "Show HN",
+          "state": "lt10"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|src:reddit",
+          "label": "Reddit",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "dec|scale-renew-stop|PASS|src:github-only",
+          "label": "GitHub-only",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        }
+      ]
+    },
+    "claims": {
+      "id": "claims",
+      "title": "Claims and evidence",
+      "measure": "per check: share that claim it without linking an artefact, then share that publicly evidence it",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|claimed|all",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|all",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|all",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|all",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|all",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked)",
+          "state": "released",
+          "c": 62,
+          "n": 300,
+          "pct": 21,
+          "ci": [
+            16,
+            26
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|all",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced)",
+          "state": "released",
+          "c": 169,
+          "n": 300,
+          "pct": 56,
+          "ci": [
+            51,
+            62
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|all",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|all",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|all",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|all",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|all",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|all",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|all",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|pass|all",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced)",
+          "state": "released",
+          "c": 162,
+          "n": 300,
+          "pct": 54,
+          "ci": [
+            48,
+            60
+          ]
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|all",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|all",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|all",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|all",
+          "label": "Operational ownership is explicit. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|all",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|all",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|all",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|pass|all",
+          "label": "Fallback or escalation is defined. (publicly evidenced)",
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
+        },
+        {
+          "id": "chk|recovery-tested|claimed|all",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|all",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|all",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|all",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|all",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked)",
+          "state": "released",
+          "c": 27,
+          "n": 300,
+          "pct": 9,
+          "ci": [
+            6,
+            13
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|all",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced)",
+          "state": "released",
+          "c": 104,
+          "n": 300,
+          "pct": 35,
+          "ci": [
+            30,
+            40
+          ]
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|all",
+          "label": "The outcome measure is defined. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|all",
+          "label": "The outcome measure is defined. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|all",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|all",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|all",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|all",
+          "label": "The outcome was measured after the intervention. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|all",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|all",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|all",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|all",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|all",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|all",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|all",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|all",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|all",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|all",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|all",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|all",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|all",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|all",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    },
+    "sourceTypes": {
+      "id": "sourceTypes",
+      "title": "Where launches put their evidence",
+      "measure": "share of included launches with at least one confirmed positive quoted from the source type; one launch can count under several types",
+      "rows": [
+        {
+          "id": "st|homepage|all",
+          "label": "homepage",
+          "state": "released",
+          "c": 139,
+          "n": 300,
+          "pct": 46,
+          "ci": [
+            41,
+            52
+          ]
+        },
+        {
+          "id": "st|repository-readme|all",
+          "label": "repository-readme",
+          "state": "released",
+          "c": 95,
+          "n": 300,
+          "pct": 32,
+          "ci": [
+            27,
+            37
+          ]
+        },
+        {
+          "id": "st|policy-page|all",
+          "label": "policy-page",
+          "state": "released",
+          "c": 52,
+          "n": 300,
+          "pct": 17,
+          "ci": [
+            13,
+            22
+          ]
+        },
+        {
+          "id": "st|repository-file|all",
+          "label": "repository-file",
+          "state": "released",
+          "c": 48,
+          "n": 300,
+          "pct": 16,
+          "ci": [
+            12,
+            21
+          ]
+        },
+        {
+          "id": "st|docs|all",
+          "label": "docs",
+          "state": "released",
+          "c": 37,
+          "n": 300,
+          "pct": 12,
+          "ci": [
+            9,
+            17
+          ]
+        },
+        {
+          "id": "st|other|all",
+          "label": "other source types",
+          "state": "released",
+          "c": 126,
+          "n": 300,
+          "pct": 42,
+          "ci": [
+            37,
+            48
+          ]
+        }
+      ]
+    },
+    "checksByCohort": {
+      "id": "checksByCohort",
+      "title": "Checks by launch cohort",
+      "measure": "share of the group's included launches, per check and state",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|pass|q1",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q2",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q3",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|q4",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q1",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q2",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q3",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|q4",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q1",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q2",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q3",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|q4",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q1",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q2",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q3",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|q4",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q1",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (quarter 1)",
+          "state": "released",
+          "c": 44,
+          "n": 75,
+          "pct": 59,
+          "ci": [
+            47,
+            69
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q2",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (quarter 2)",
+          "state": "released",
+          "c": 39,
+          "n": 75,
+          "pct": 52,
+          "ci": [
+            41,
+            63
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q3",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (quarter 3)",
+          "state": "released",
+          "c": 41,
+          "n": 75,
+          "pct": 55,
+          "ci": [
+            43,
+            65
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|q4",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (quarter 4)",
+          "state": "released",
+          "c": 45,
+          "n": 75,
+          "pct": 60,
+          "ci": [
+            49,
+            70
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q1",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (quarter 1)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q2",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (quarter 2)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q3",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (quarter 3)",
+          "state": "released",
+          "c": 17,
+          "n": 75,
+          "pct": 23,
+          "ci": [
+            15,
+            33
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|q4",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (quarter 4)",
+          "state": "released",
+          "c": 16,
+          "n": 75,
+          "pct": 21,
+          "ci": [
+            14,
+            32
+          ]
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q1",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q2",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q3",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|q4",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q1",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q2",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q3",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|q4",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q1",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q2",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q3",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|q4",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q1",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q2",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q3",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|q4",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q1",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q2",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q3",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|q4",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q1",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q2",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q3",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|q4",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|limitations-stated|pass|q1",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (quarter 1)",
+          "state": "released",
+          "c": 36,
+          "n": 75,
+          "pct": 48,
+          "ci": [
+            37,
+            59
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q2",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (quarter 2)",
+          "state": "released",
+          "c": 25,
+          "n": 75,
+          "pct": 33,
+          "ci": [
+            24,
+            45
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q3",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (quarter 3)",
+          "state": "released",
+          "c": 47,
+          "n": 75,
+          "pct": 63,
+          "ci": [
+            51,
+            73
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|q4",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (quarter 4)",
+          "state": "released",
+          "c": 54,
+          "n": 75,
+          "pct": 72,
+          "ci": [
+            61,
+            81
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q1",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q2",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q3",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|q4",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q1",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q2",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q3",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|q4",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q1",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q2",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q3",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|q4",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q1",
+          "label": "Operational ownership is explicit. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q2",
+          "label": "Operational ownership is explicit. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q3",
+          "label": "Operational ownership is explicit. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|q4",
+          "label": "Operational ownership is explicit. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q1",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q2",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q3",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|q4",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|q1",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|q2",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|q3",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|q4",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q1",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q2",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q3",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|q4",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|fallback-defined|pass|q1",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|pass|q2",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|pass|q3",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|pass|q4",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (quarter 4)",
+          "state": "released",
+          "c": 23,
+          "n": 75,
+          "pct": 31,
+          "ci": [
+            21,
+            42
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q1",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q2",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q3",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 3)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|q4",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q1",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q2",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q3",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|q4",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q1",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q2",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q3",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|q4",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q1",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q2",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q3",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|q4",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q1",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q2",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q3",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|q4",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q1",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (quarter 1)",
+          "state": "released",
+          "c": 27,
+          "n": 75,
+          "pct": 36,
+          "ci": [
+            26,
+            47
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q2",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (quarter 2)",
+          "state": "released",
+          "c": 13,
+          "n": 75,
+          "pct": 17,
+          "ci": [
+            10,
+            27
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q3",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (quarter 3)",
+          "state": "released",
+          "c": 30,
+          "n": 75,
+          "pct": 40,
+          "ci": [
+            30,
+            51
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|q4",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (quarter 4)",
+          "state": "released",
+          "c": 34,
+          "n": 75,
+          "pct": 45,
+          "ci": [
+            35,
+            57
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q1",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q2",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q3",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (quarter 3)",
+          "state": "released",
+          "c": 11,
+          "n": 75,
+          "pct": 15,
+          "ci": [
+            8,
+            24
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|q4",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q1",
+          "label": "The outcome measure is defined. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q2",
+          "label": "The outcome measure is defined. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q3",
+          "label": "The outcome measure is defined. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|q4",
+          "label": "The outcome measure is defined. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q1",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q2",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q3",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|q4",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|q1",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|q2",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|q3",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|q4",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q1",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q2",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q3",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|q4",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|q1",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|q2",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|q3",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|q4",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q1",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q2",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q3",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|q4",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q1",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q2",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q3",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|q4",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q1",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (quarter 1)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q2",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (quarter 2)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q3",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (quarter 3)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|q4",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (quarter 4)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q1",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q2",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q3",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|q4",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q1",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q2",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q3",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|q4",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q1",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q2",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q3",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|q4",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q1",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q2",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q3",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|q4",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q1",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q2",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q3",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|q4",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q1",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q2",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q3",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|q4",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q1",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q2",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q3",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|q4",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q1",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q2",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q3",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|q4",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q1",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q2",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q3",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|q4",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q1",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q2",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q3",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|q4",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q1",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q2",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q3",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|q4",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q1",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 1)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q2",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 2)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q3",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 3)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|q4",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (quarter 4)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    },
+    "checksBySource": {
+      "id": "checksBySource",
+      "title": "Checks by discovery source",
+      "measure": "share of the group's included launches, per check and state",
+      "rows": [
+        {
+          "id": "chk|output-reproducible|pass|src:show-hn",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|src:reddit",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|pass|src:github-only",
+          "label": "The artefact or action can be reproduced or inspected. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:show-hn",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:reddit",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|output-reproducible|claimed|src:github-only",
+          "label": "The artefact or action can be reproduced or inspected. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:show-hn",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:reddit",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|pass|src:github-only",
+          "label": "Important supplied context, assumptions, and inferences are visible. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:show-hn",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:reddit",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assumptions-catalogued|claimed|src:github-only",
+          "label": "Important supplied context, assumptions, and inferences are visible. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:show-hn",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (Show HN)",
+          "state": "released",
+          "c": 169,
+          "n": 300,
+          "pct": 56,
+          "ci": [
+            51,
+            62
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:reddit",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|intended-use-defined|pass|src:github-only",
+          "label": "The intended use and boundaries are explicit. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:show-hn",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (Show HN)",
+          "state": "released",
+          "c": 62,
+          "n": 300,
+          "pct": 21,
+          "ci": [
+            16,
+            26
+          ]
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:reddit",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|intended-use-defined|claimed|src:github-only",
+          "label": "The intended use and boundaries are explicit. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:show-hn",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:reddit",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|pass|src:github-only",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:show-hn",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:reddit",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-defined|claimed|src:github-only",
+          "label": "Acceptance criteria are explicit and testable enough for the use. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:show-hn",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:reddit",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|pass|src:github-only",
+          "label": "Evidence shows the acceptance criteria were met. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:show-hn",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:reddit",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|acceptance-criteria-met|claimed|src:github-only",
+          "label": "Evidence shows the acceptance criteria were met. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:show-hn",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:reddit",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|pass|src:github-only",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:show-hn",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:reddit",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|failure-modes-tested|claimed|src:github-only",
+          "label": "Relevant failure modes and fallback behaviour were evaluated. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:show-hn",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (Show HN)",
+          "state": "released",
+          "c": 162,
+          "n": 300,
+          "pct": 54,
+          "ci": [
+            48,
+            60
+          ]
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:reddit",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|limitations-stated|pass|src:github-only",
+          "label": "Known limitations and out-of-scope conditions are stated. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:show-hn",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (Show HN)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:reddit",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|limitations-stated|claimed|src:github-only",
+          "label": "Known limitations and out-of-scope conditions are stated. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:show-hn",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:reddit",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|pass|src:github-only",
+          "label": "The Deliverable gate for the intended use has passed. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:show-hn",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:reddit",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|deliverable-gate-passed|claimed|src:github-only",
+          "label": "The Deliverable gate for the intended use has passed. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:show-hn",
+          "label": "Operational ownership is explicit. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:reddit",
+          "label": "Operational ownership is explicit. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|pass|src:github-only",
+          "label": "Operational ownership is explicit. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:show-hn",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:reddit",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operational-owner-assigned|claimed|src:github-only",
+          "label": "Operational ownership is explicit. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:show-hn",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:reddit",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|pass|src:github-only",
+          "label": "The assurance mechanism is defined for the important failure modes. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:show-hn",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:reddit",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|assurance-defined|claimed|src:github-only",
+          "label": "The assurance mechanism is defined for the important failure modes. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:show-hn",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (Show HN)",
+          "state": "released",
+          "c": 44,
+          "n": 300,
+          "pct": 15,
+          "ci": [
+            11,
+            19
+          ]
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:reddit",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|fallback-defined|pass|src:github-only",
+          "label": "Fallback or escalation is defined. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:show-hn",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (Show HN)",
+          "state": "lt10"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:reddit",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|fallback-defined|claimed|src:github-only",
+          "label": "Fallback or escalation is defined. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:show-hn",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:reddit",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|pass|src:github-only",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:show-hn",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:reddit",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|recovery-tested|claimed|src:github-only",
+          "label": "Recovery or rollback has been tested where failure consequence warrants it. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:show-hn",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:reddit",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|pass|src:github-only",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:show-hn",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:reddit",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|support-maintenance-defined|claimed|src:github-only",
+          "label": "Support, maintenance, debugging, and change responsibility are defined. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:show-hn",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (Show HN)",
+          "state": "released",
+          "c": 104,
+          "n": 300,
+          "pct": 35,
+          "ci": [
+            30,
+            40
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:reddit",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operating-cost-known|pass|src:github-only",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:show-hn",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (Show HN)",
+          "state": "released",
+          "c": 27,
+          "n": 300,
+          "pct": 9,
+          "ci": [
+            6,
+            13
+          ]
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:reddit",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|operating-cost-known|claimed|src:github-only",
+          "label": "The relevant operating-cost boundary is known well enough for the decision. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:show-hn",
+          "label": "The outcome measure is defined. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:reddit",
+          "label": "The outcome measure is defined. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|pass|src:github-only",
+          "label": "The outcome measure is defined. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:show-hn",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:reddit",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measure-defined|claimed|src:github-only",
+          "label": "The outcome measure is defined. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:show-hn",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:reddit",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|pass|src:github-only",
+          "label": "A comparable baseline or counterfactual is defined. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:show-hn",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:reddit",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|baseline-defined|claimed|src:github-only",
+          "label": "A comparable baseline or counterfactual is defined. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:show-hn",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:reddit",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|pass|src:github-only",
+          "label": "The outcome was measured after the intervention. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:show-hn",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:reddit",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-measured|claimed|src:github-only",
+          "label": "The outcome was measured after the intervention. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:show-hn",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:reddit",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|pass|src:github-only",
+          "label": "Before/after measurements use the same relevant definition. (publicly evidenced) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:show-hn",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (Show HN)",
+          "state": "lt10",
+          "note": "agreement not estimable: fewer than ten gold passes"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:reddit",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (Reddit)",
+          "state": "absent",
+          "reason": "no Reddit launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|measurement-definition-consistent|claimed|src:github-only",
+          "label": "Before/after measurements use the same relevant definition. (claimed, no artefact linked) (GitHub-only)",
+          "state": "absent",
+          "reason": "no GitHub-only launches met the inclusion criteria"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:show-hn",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:reddit",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|pass|src:github-only",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:show-hn",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:reddit",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|important-confounds-named|claimed|src:github-only",
+          "label": "Material confounds, uncertainty, or attribution limits are named. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:show-hn",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:reddit",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|pass|src:github-only",
+          "label": "Outcome evidence relevant to the decision is available. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:show-hn",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:reddit",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|outcome-evidence-available|claimed|src:github-only",
+          "label": "Outcome evidence relevant to the decision is available. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:show-hn",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:reddit",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|pass|src:github-only",
+          "label": "The full relevant cost boundary is accounted for. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:show-hn",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:reddit",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|full-cost-accounted|claimed|src:github-only",
+          "label": "The full relevant cost boundary is accounted for. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:show-hn",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:reddit",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|pass|src:github-only",
+          "label": "Material risks and trade-offs are assessed. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:show-hn",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:reddit",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|risk-tradeoffs-assessed|claimed|src:github-only",
+          "label": "Material risks and trade-offs are assessed. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:show-hn",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:reddit",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|pass|src:github-only",
+          "label": "Reasonable alternatives or the status quo are compared. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:show-hn",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:reddit",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|alternatives-compared|claimed|src:github-only",
+          "label": "Reasonable alternatives or the status quo are compared. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:show-hn",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:reddit",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|pass|src:github-only",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (publicly evidenced) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:show-hn",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (Show HN)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:reddit",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (Reddit)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        },
+        {
+          "id": "chk|value-rule-explicit|claimed|src:github-only",
+          "label": "The rule for scale, renew, expand, or stop is explicit. (claimed, no artefact linked) (GitHub-only)",
+          "state": "withheld",
+          "reason": "withheld under the pre-registered shortfall rule"
+        }
+      ]
+    }
+  },
+  "hypotheses": {
+    "alpha": 0.05,
+    "recall": 0.894,
+    "h1": {
+      "row": {
+        "id": "h1|all",
+        "label": "Launches that claim at least one check without linking an artefact",
+        "state": "released",
+        "c": 96,
+        "n": 300,
+        "pct": 32,
+        "ci": [
+          27,
+          37
+        ]
+      },
+      "test": {
+        "p": 0.9999999999025788,
+        "pAdjusted": 1,
+        "rejected": false,
+        "sensitivity": {
+          "c": 85,
+          "p": 1,
+          "pAdjusted": 1,
+          "rejected": false
+        },
+        "supported": false
+      },
+      "statementId": "hypothesis:h1"
+    },
+    "h2": {
+      "test": {
+        "tested": false,
+        "reason": "fewer than two source groups have included launches"
+      },
+      "statementId": "method:h2-descriptive"
+    },
+    "h3": {
+      "row": {
+        "id": "h3|all",
+        "label": "Launches that publicly evidence at least one rely-decision check",
+        "state": "released",
+        "c": 212,
+        "n": 300,
+        "pct": 71,
+        "ci": [
+          65,
+          76
+        ]
+      },
+      "test": {
+        "p": 1,
+        "pAdjusted": 1,
+        "rejected": false,
+        "sensitivity": {
+          "c": 238,
+          "p": 1,
+          "pAdjusted": 1,
+          "rejected": false
+        },
+        "supported": false
+      },
+      "statementId": "hypothesis:h3"
+    }
+  },
+  "sensitivity": {
+    "excluded": 0,
+    "rows": {
+      "h1|all|sens": {
+        "id": "h1|all|sens",
+        "label": "h1|all excluding launches whose site could not be read",
+        "state": "released",
+        "c": 96,
+        "n": 300,
+        "pct": 32,
+        "ci": [
+          27,
+          37
+        ]
+      },
+      "h3|all|sens": {
+        "id": "h3|all|sens",
+        "label": "h3|all excluding launches whose site could not be read",
+        "state": "released",
+        "c": 212,
+        "n": 300,
+        "pct": 71,
+        "ci": [
+          65,
+          76
+        ]
+      },
+      "dec|explore|PASS|all|sens": {
+        "id": "dec|explore|PASS|all|sens",
+        "label": "dec|explore|PASS|all excluding launches whose site could not be read",
+        "state": "lt10"
+      },
+      "dec|rely|PASS|all|sens": {
+        "id": "dec|rely|PASS|all|sens",
+        "label": "dec|rely|PASS|all excluding launches whose site could not be read",
+        "state": "lt10"
+      },
+      "dec|operate|PASS|all|sens": {
+        "id": "dec|operate|PASS|all|sens",
+        "label": "dec|operate|PASS|all excluding launches whose site could not be read",
+        "state": "lt10"
+      },
+      "dec|measure-outcome|PASS|all|sens": {
+        "id": "dec|measure-outcome|PASS|all|sens",
+        "label": "dec|measure-outcome|PASS|all excluding launches whose site could not be read",
+        "state": "lt10"
+      },
+      "dec|scale-renew-stop|PASS|all|sens": {
+        "id": "dec|scale-renew-stop|PASS|all|sens",
+        "label": "dec|scale-renew-stop|PASS|all excluding launches whose site could not be read",
+        "state": "lt10"
+      }
+    }
+  },
+  "prisma": {
+    "boxes": [
+      {
+        "id": "identified",
+        "label": "Records identified in the sampling frame",
+        "count": 40806
+      },
+      {
+        "id": "screened",
+        "label": "Records screened",
+        "count": 1675
+      },
+      {
+        "id": "assessed",
+        "label": "Assessed on the text of their own page",
+        "row": {
+          "id": "prisma|assessed",
+          "label": "Assessed on the text of their own page",
+          "state": "released",
+          "c": 963,
+          "n": 1675,
+          "pct": 57,
+          "ci": [
+            55,
+            60
+          ]
+        }
+      },
+      {
+        "id": "included",
+        "label": "Included",
+        "row": {
+          "id": "prisma|included",
+          "label": "Included",
+          "state": "released",
+          "c": 247,
+          "n": 1675,
+          "pct": 15,
+          "ci": [
+            13,
+            17
+          ]
+        }
+      },
+      {
+        "id": "included-insufficient-text",
+        "label": "Included with too little page text to judge",
+        "row": {
+          "id": "prisma|included-insufficient-text",
+          "label": "Included with too little page text to judge",
+          "state": "released",
+          "c": 53,
+          "n": 1675,
+          "pct": 3,
+          "ci": [
+            2,
+            4
+          ]
+        }
+      }
+    ],
+    "exclusions": [
+      {
+        "id": "stage2:not-ai",
+        "label": "Excluded at stage 2: not-ai",
+        "row": {
+          "id": "prisma|stage2:not-ai",
+          "label": "Excluded at stage 2: not-ai",
+          "state": "released",
+          "c": 246,
+          "n": 1675,
+          "pct": 15,
+          "ci": [
+            13,
+            16
+          ]
+        }
+      },
+      {
+        "id": "stage1:not-ai",
+        "label": "Excluded at stage 1: not-ai",
+        "row": {
+          "id": "prisma|stage1:not-ai",
+          "label": "Excluded at stage 1: not-ai",
+          "state": "released",
+          "c": 615,
+          "n": 1675,
+          "pct": 37,
+          "ci": [
+            34,
+            39
+          ]
+        }
+      },
+      {
+        "id": "stage2:ai-adjacent",
+        "label": "Excluded at stage 2: ai-adjacent",
+        "row": {
+          "id": "prisma|stage2:ai-adjacent",
+          "label": "Excluded at stage 2: ai-adjacent",
+          "state": "released",
+          "c": 178,
+          "n": 1675,
+          "pct": 11,
+          "ci": [
+            9,
+            12
+          ]
+        }
+      },
+      {
+        "id": "stage2:unreachable-at-screening",
+        "label": "Excluded at stage 2: unreachable-at-screening",
+        "row": {
+          "id": "prisma|stage2:unreachable-at-screening",
+          "label": "Excluded at stage 2: unreachable-at-screening",
+          "state": "released",
+          "c": 82,
+          "n": 1675,
+          "pct": 5,
+          "ci": [
+            4,
+            6
+          ]
+        }
+      },
+      {
+        "id": "stage1:duplicate",
+        "label": "Excluded at stage 1: duplicate",
+        "row": {
+          "id": "prisma|stage1:duplicate",
+          "label": "Excluded at stage 1: duplicate",
+          "state": "released",
+          "c": 42,
+          "n": 1675,
+          "pct": 3,
+          "ci": [
+            2,
+            3
+          ]
+        }
+      },
+      {
+        "id": "stage1:model-or-paper",
+        "label": "Excluded at stage 1: model-or-paper",
+        "row": {
+          "id": "prisma|stage1:model-or-paper",
+          "label": "Excluded at stage 1: model-or-paper",
+          "state": "released",
+          "c": 18,
+          "n": 1675,
+          "pct": 1,
+          "ci": [
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "stage1:library-no-product-claim",
+        "label": "Excluded at stage 1: library-no-product-claim",
+        "row": {
+          "id": "prisma|stage1:library-no-product-claim",
+          "label": "Excluded at stage 1: library-no-product-claim",
+          "state": "released",
+          "c": 29,
+          "n": 1675,
+          "pct": 2,
+          "ci": [
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "stage2:library-no-product-claim",
+        "label": "Excluded at stage 2: library-no-product-claim",
+        "row": {
+          "id": "prisma|stage2:library-no-product-claim",
+          "label": "Excluded at stage 2: library-no-product-claim",
+          "state": "released",
+          "c": 19,
+          "n": 1675,
+          "pct": 1,
+          "ci": [
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "other",
+        "label": "Other reasons (each under ten, merged)",
+        "row": {
+          "id": "prisma|other",
+          "label": "Other reasons (each under ten, merged)",
+          "state": "released",
+          "c": 12,
+          "n": 1675,
+          "pct": 1,
+          "ci": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "id": "not-collectable:robots-blocked",
+        "label": "Not collectable: robots-blocked",
+        "row": {
+          "id": "prisma|not-collectable:robots-blocked",
+          "label": "Not collectable: robots-blocked",
+          "state": "released",
+          "c": 99,
+          "n": 1675,
+          "pct": 6,
+          "ci": [
+            5,
+            7
+          ]
+        }
+      },
+      {
+        "id": "not-collectable:redirected-off-boundary",
+        "label": "Not collectable: redirected-off-boundary",
+        "row": {
+          "id": "prisma|not-collectable:redirected-off-boundary",
+          "label": "Not collectable: redirected-off-boundary",
+          "state": "released",
+          "c": 35,
+          "n": 1675,
+          "pct": 2,
+          "ci": [
+            2,
+            3
+          ]
+        }
+      }
+    ]
+  },
+  "howWeKnow": {
+    "n": 300,
+    "labeller": {
+      "modelId": "glm-5.3-flash",
+      "host": "Ollama Cloud",
+      "wording": "agreement with an independent labeller"
+    },
+    "confirmer": {
+      "modelId": "nemotron-3-ultra",
+      "host": "Ollama Cloud"
+    },
+    "agreement": {
+      "output-reproducible": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|output-reproducible",
+          "label": "Pass precision: The artefact or action can be reproduced or inspected.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "assumptions-catalogued": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|assumptions-catalogued",
+          "label": "Pass precision: Important supplied context, assumptions, and inferences are visible.",
+          "state": "released",
+          "c": 83,
+          "n": 95,
+          "pct": 87,
+          "ci": [
+            79,
+            93
+          ]
+        }
+      },
+      "intended-use-defined": {
+        "ac1": 0.89,
+        "ac1CI": [
+          0.84,
+          0.94
+        ],
+        "precision": {
+          "id": "prec|intended-use-defined",
+          "label": "Pass precision: The intended use and boundaries are explicit.",
+          "state": "released",
+          "c": 229,
+          "n": 246,
+          "pct": 93,
+          "ci": [
+            89,
+            96
+          ]
+        }
+      },
+      "acceptance-criteria-defined": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|acceptance-criteria-defined",
+          "label": "Pass precision: Acceptance criteria are explicit and testable enough for the use.",
+          "state": "released",
+          "c": 60,
+          "n": 80,
+          "pct": 75,
+          "ci": [
+            65,
+            83
+          ]
+        }
+      },
+      "acceptance-criteria-met": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|acceptance-criteria-met",
+          "label": "Pass precision: Evidence shows the acceptance criteria were met.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "failure-modes-tested": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|failure-modes-tested",
+          "label": "Pass precision: Relevant failure modes and fallback behaviour were evaluated.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "limitations-stated": {
+        "ac1": 0.86,
+        "ac1CI": [
+          0.8,
+          0.92
+        ],
+        "precision": {
+          "id": "prec|limitations-stated",
+          "label": "Pass precision: Known limitations and out-of-scope conditions are stated.",
+          "state": "released",
+          "c": 172,
+          "n": 182,
+          "pct": 95,
+          "ci": [
+            90,
+            97
+          ]
+        }
+      },
+      "deliverable-gate-passed": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|deliverable-gate-passed",
+          "label": "Pass precision: The Deliverable gate for the intended use has passed.",
+          "state": "not-estimable",
+          "reason": "agreement not estimable: fewer than ten gold passes"
+        },
+        "status": "not-estimable",
+        "note": "agreement not estimable: fewer than ten gold passes"
+      },
+      "operational-owner-assigned": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|operational-owner-assigned",
+          "label": "Pass precision: Operational ownership is explicit.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "assurance-defined": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|assurance-defined",
+          "label": "Pass precision: The assurance mechanism is defined for the important failure modes.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "fallback-defined": {
+        "ac1": 0.72,
+        "ac1CI": [
+          0.64,
+          0.8
+        ],
+        "precision": {
+          "id": "prec|fallback-defined",
+          "label": "Pass precision: Fallback or escalation is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "recovery-tested": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|recovery-tested",
+          "label": "Pass precision: Recovery or rollback has been tested where failure consequence warrants it.",
+          "state": "lt10"
+        },
+        "status": "not-estimable",
+        "note": "agreement not estimable: fewer than ten gold passes"
+      },
+      "support-maintenance-defined": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|support-maintenance-defined",
+          "label": "Pass precision: Support, maintenance, debugging, and change responsibility are defined.",
+          "state": "released",
+          "c": 160,
+          "n": 192,
+          "pct": 83,
+          "ci": [
+            77,
+            88
+          ]
+        }
+      },
+      "operating-cost-known": {
+        "ac1": 0.82,
+        "ac1CI": [
+          0.75,
+          0.88
+        ],
+        "precision": {
+          "id": "prec|operating-cost-known",
+          "label": "Pass precision: The relevant operating-cost boundary is known well enough for the decision.",
+          "state": "released",
+          "c": 130,
+          "n": 148,
+          "pct": 88,
+          "ci": [
+            82,
+            92
+          ]
+        }
+      },
+      "outcome-measure-defined": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|outcome-measure-defined",
+          "label": "Pass precision: The outcome measure is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "baseline-defined": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|baseline-defined",
+          "label": "Pass precision: A comparable baseline or counterfactual is defined.",
+          "state": "lt10"
+        }
+      },
+      "outcome-measured": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|outcome-measured",
+          "label": "Pass precision: The outcome was measured after the intervention.",
+          "state": "lt10"
+        }
+      },
+      "measurement-definition-consistent": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|measurement-definition-consistent",
+          "label": "Pass precision: Before/after measurements use the same relevant definition.",
+          "state": "lt10"
+        },
+        "status": "not-estimable",
+        "note": "agreement not estimable: fewer than ten gold passes"
+      },
+      "important-confounds-named": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|important-confounds-named",
+          "label": "Pass precision: Material confounds, uncertainty, or attribution limits are named.",
+          "state": "lt10"
+        }
+      },
+      "outcome-evidence-available": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|outcome-evidence-available",
+          "label": "Pass precision: Outcome evidence relevant to the decision is available.",
+          "state": "lt10"
+        }
+      },
+      "full-cost-accounted": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|full-cost-accounted",
+          "label": "Pass precision: The full relevant cost boundary is accounted for.",
+          "state": "lt10"
+        }
+      },
+      "risk-tradeoffs-assessed": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|risk-tradeoffs-assessed",
+          "label": "Pass precision: Material risks and trade-offs are assessed.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        }
+      },
+      "alternatives-compared": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|alternatives-compared",
+          "label": "Pass precision: Reasonable alternatives or the status quo are compared.",
+          "state": "released",
+          "c": 31,
+          "n": 52,
+          "pct": 60,
+          "ci": [
+            46,
+            72
+          ]
+        }
+      },
+      "value-rule-explicit": {
+        "ac1": null,
+        "ac1CI": null,
+        "precision": {
+          "id": "prec|value-rule-explicit",
+          "label": "Pass precision: The rule for scale, renew, expand, or stop is explicit.",
+          "state": "withheld",
+          "reason": "too few coder passes to publish under the disclosure rule"
+        }
+      }
+    },
+    "confirmation": {
+      "total": {
+        "changed": 634,
+        "proposed": 1610,
+        "pct": 39.4
+      },
+      "rejected": {
+        "id": "conf|rejected",
+        "label": "Proposed positives rejected at confirmation",
+        "state": "released",
+        "c": 411,
+        "n": 1610,
+        "pct": 26,
+        "ci": [
+          23,
+          28
+        ]
+      },
+      "downgraded": {
+        "id": "conf|downgraded",
+        "label": "Proposed passes downgraded to claimed at confirmation",
+        "state": "released",
+        "c": 223,
+        "n": 1610,
+        "pct": 14,
+        "ci": [
+          12,
+          16
+        ]
+      },
+      "perCheck": {
+        "output-reproducible": {
+          "id": "conf|chk|output-reproducible",
+          "label": "Changed at confirmation: The artefact or action can be reproduced or inspected.",
+          "state": "released",
+          "c": 59,
+          "n": 195,
+          "pct": 30,
+          "ci": [
+            24,
+            37
+          ]
+        },
+        "assumptions-catalogued": {
+          "id": "conf|chk|assumptions-catalogued",
+          "label": "Changed at confirmation: Important supplied context, assumptions, and inferences are visible.",
+          "state": "released",
+          "c": 33,
+          "n": 95,
+          "pct": 35,
+          "ci": [
+            26,
+            45
+          ]
+        },
+        "intended-use-defined": {
+          "id": "conf|chk|intended-use-defined",
+          "label": "Changed at confirmation: The intended use and boundaries are explicit.",
+          "state": "released",
+          "c": 78,
+          "n": 252,
+          "pct": 31,
+          "ci": [
+            26,
+            37
+          ]
+        },
+        "acceptance-criteria-defined": {
+          "id": "conf|chk|acceptance-criteria-defined",
+          "label": "Changed at confirmation: Acceptance criteria are explicit and testable enough for the use.",
+          "state": "released",
+          "c": 47,
+          "n": 85,
+          "pct": 55,
+          "ci": [
+            45,
+            65
+          ]
+        },
+        "acceptance-criteria-met": {
+          "id": "conf|chk|acceptance-criteria-met",
+          "label": "Changed at confirmation: Evidence shows the acceptance criteria were met.",
+          "state": "released",
+          "c": 42,
+          "n": 86,
+          "pct": 49,
+          "ci": [
+            39,
+            59
+          ]
+        },
+        "failure-modes-tested": {
+          "id": "conf|chk|failure-modes-tested",
+          "label": "Changed at confirmation: Relevant failure modes and fallback behaviour were evaluated.",
+          "state": "lt10"
+        },
+        "limitations-stated": {
+          "id": "conf|chk|limitations-stated",
+          "label": "Changed at confirmation: Known limitations and out-of-scope conditions are stated.",
+          "state": "released",
+          "c": 21,
+          "n": 183,
+          "pct": 11,
+          "ci": [
+            8,
+            17
+          ]
+        },
+        "deliverable-gate-passed": {
+          "id": "conf|chk|deliverable-gate-passed",
+          "label": "Changed at confirmation: The Deliverable gate for the intended use has passed.",
+          "state": "lt10"
+        },
+        "operational-owner-assigned": {
+          "id": "conf|chk|operational-owner-assigned",
+          "label": "Changed at confirmation: Operational ownership is explicit.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "assurance-defined": {
+          "id": "conf|chk|assurance-defined",
+          "label": "Changed at confirmation: The assurance mechanism is defined for the important failure modes.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "fallback-defined": {
+          "id": "conf|chk|fallback-defined",
+          "label": "Changed at confirmation: Fallback or escalation is defined.",
+          "state": "released",
+          "c": 22,
+          "n": 66,
+          "pct": 33,
+          "ci": [
+            23,
+            45
+          ]
+        },
+        "recovery-tested": {
+          "id": "conf|chk|recovery-tested",
+          "label": "Changed at confirmation: Recovery or rollback has been tested where failure consequence warrants it.",
+          "state": "lt10"
+        },
+        "support-maintenance-defined": {
+          "id": "conf|chk|support-maintenance-defined",
+          "label": "Changed at confirmation: Support, maintenance, debugging, and change responsibility are defined.",
+          "state": "released",
+          "c": 88,
+          "n": 193,
+          "pct": 46,
+          "ci": [
+            39,
+            53
+          ]
+        },
+        "operating-cost-known": {
+          "id": "conf|chk|operating-cost-known",
+          "label": "Changed at confirmation: The relevant operating-cost boundary is known well enough for the decision.",
+          "state": "released",
+          "c": 45,
+          "n": 150,
+          "pct": 30,
+          "ci": [
+            23,
+            38
+          ]
+        },
+        "outcome-measure-defined": {
+          "id": "conf|chk|outcome-measure-defined",
+          "label": "Changed at confirmation: The outcome measure is defined.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "baseline-defined": {
+          "id": "conf|chk|baseline-defined",
+          "label": "Changed at confirmation: A comparable baseline or counterfactual is defined.",
+          "state": "lt10"
+        },
+        "outcome-measured": {
+          "id": "conf|chk|outcome-measured",
+          "label": "Changed at confirmation: The outcome was measured after the intervention.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "measurement-definition-consistent": {
+          "id": "conf|chk|measurement-definition-consistent",
+          "label": "Changed at confirmation: Before/after measurements use the same relevant definition.",
+          "state": "lt10"
+        },
+        "important-confounds-named": {
+          "id": "conf|chk|important-confounds-named",
+          "label": "Changed at confirmation: Material confounds, uncertainty, or attribution limits are named.",
+          "state": "lt10"
+        },
+        "outcome-evidence-available": {
+          "id": "conf|chk|outcome-evidence-available",
+          "label": "Changed at confirmation: Outcome evidence relevant to the decision is available.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "full-cost-accounted": {
+          "id": "conf|chk|full-cost-accounted",
+          "label": "Changed at confirmation: The full relevant cost boundary is accounted for.",
+          "state": "suppressed",
+          "reason": "suppressed so that small counts cannot be worked out"
+        },
+        "risk-tradeoffs-assessed": {
+          "id": "conf|chk|risk-tradeoffs-assessed",
+          "label": "Changed at confirmation: Material risks and trade-offs are assessed.",
+          "state": "released",
+          "c": 14,
+          "n": 37,
+          "pct": 38,
+          "ci": [
+            24,
+            54
+          ]
+        },
+        "alternatives-compared": {
+          "id": "conf|chk|alternatives-compared",
+          "label": "Changed at confirmation: Reasonable alternatives or the status quo are compared.",
+          "state": "released",
+          "c": 39,
+          "n": 52,
+          "pct": 75,
+          "ci": [
+            62,
+            85
+          ]
+        },
+        "value-rule-explicit": {
+          "id": "conf|chk|value-rule-explicit",
+          "label": "Changed at confirmation: The rule for scale, renew, expand, or stop is explicit.",
+          "state": "lt10"
+        }
+      }
+    },
+    "personEdits": {
+      "count": 0,
+      "total": 7200
+    }
+  },
+  "methods": {
+    "frame": "Show HN posts in the sampling window",
+    "window": "2025-09-01 to 2026-08-31",
+    "roles": [
+      {
+        "role": "screener",
+        "kind": "agent",
+        "modelId": "nvidia/Nemotron-3_5-Lightning",
+        "host": "Nebius Token Factory",
+        "manifest": {
+          "promptVersion": "inclusion rules (protocol section 2)",
+          "codebookVersion": "v1.0",
+          "seed": "ae0b3a26c3b17672",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "coder",
+        "kind": "agent",
+        "modelId": "deepseek-ai/DeepSeek-V4-Flash-0731",
+        "host": "Nebius Token Factory",
+        "manifest": {
+          "promptVersion": "codebook prompt, guidance c1 on one check",
+          "codebookVersion": "v1.0",
+          "seed": "none (temperature 0)",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "second coder",
+        "kind": "agent",
+        "modelId": "nemotron-3-super",
+        "host": "Ollama Cloud",
+        "manifest": {
+          "promptVersion": "codebook prompt",
+          "codebookVersion": "v1.0",
+          "seed": "1a8a5e2c0f6afdcb",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "independent labeller",
+        "kind": "agent",
+        "modelId": "glm-5.3-flash",
+        "host": "Ollama Cloud",
+        "manifest": {
+          "promptVersion": "codebook prompt",
+          "codebookVersion": "v1.0",
+          "seed": "d1481ad50ed309ea",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "confirmer",
+        "kind": "agent",
+        "modelId": "nemotron-3-ultra",
+        "host": "Ollama Cloud",
+        "manifest": {
+          "promptVersion": "confirmation prompt",
+          "codebookVersion": "v1.0",
+          "seed": "none (temperature 0)",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "screening auditor",
+        "kind": "agent",
+        "modelId": "kimi-k3",
+        "host": "Ollama Cloud",
+        "manifest": {
+          "promptVersion": "screening audit prompt",
+          "codebookVersion": "v1.0",
+          "seed": "fa23e4fccbc39ce5",
+          "tokenCap": 20000
+        }
+      },
+      {
+        "role": "recall gatherer",
+        "kind": "agent",
+        "modelId": "kimi-k3",
+        "host": "Ollama Cloud",
+        "manifest": {
+          "promptVersion": "recall gathering prompt",
+          "codebookVersion": "v1.0",
+          "seed": "cc45c03dd0094b92",
+          "tokenCap": 20000
+        }
+      }
+    ],
+    "disclosure": {
+      "floor": 10,
+      "minValues": 5,
+      "priors": [
+        "all",
+        "interior"
+      ]
+    },
+    "ledgerVersion": "v1",
+    "codebook": [
+      {
+        "checkId": "output-reproducible",
+        "shortTitle": "The artefact or action can be reproduced or inspected.",
+        "decisionId": "explore",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.7",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Operational documentation",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 11",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "assumptions-catalogued",
+        "shortTitle": "Important supplied context, assumptions, and inferences are visible.",
+        "decisionId": "explore",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.3",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Scope",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 13",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "intended-use-defined",
+        "shortTitle": "The intended use and boundaries are explicit.",
+        "decisionId": "rely",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.9.4",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Scope",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 3",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 13",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "acceptance-criteria-defined",
+        "shortTitle": "Acceptance criteria are explicit and testable enough for the use.",
+        "decisionId": "rely",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Objectives",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "acceptance-criteria-met",
+        "shortTitle": "Evidence shows the acceptance criteria were met.",
+        "decisionId": "rely",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.4",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Evidence of implementation",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 2",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 15",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "partial"
+          }
+        ]
+      },
+      {
+        "checkId": "failure-modes-tested",
+        "shortTitle": "Relevant failure modes and fallback behaviour were evaluated.",
+        "decisionId": "rely",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.4",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: AI risk assessment",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "limitations-stated",
+        "shortTitle": "Known limitations and out-of-scope conditions are stated.",
+        "decisionId": "rely",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.8.2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Statement of Applicability",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 4",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 13",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "addresses"
+          }
+        ]
+      },
+      {
+        "checkId": "deliverable-gate-passed",
+        "shortTitle": "The Deliverable gate for the intended use has passed.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Management review",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 17",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "operational-owner-assigned",
+        "shortTitle": "Operational ownership is explicit.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.3.2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Roles",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 14",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "addresses"
+          }
+        ]
+      },
+      {
+        "checkId": "assurance-defined",
+        "shortTitle": "The assurance mechanism is defined for the important failure modes.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.6",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Evidence of implementation",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 1",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "fallback-defined",
+        "shortTitle": "Fallback or escalation is defined.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.6",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Risk treatment",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MANAGE 2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 14",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "recovery-tested",
+        "shortTitle": "Recovery or rollback has been tested where failure consequence warrants it.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 8",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Internal audit",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MANAGE 4",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 72",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "support-maintenance-defined",
+        "shortTitle": "Support, maintenance, debugging, and change responsibility are defined.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.4.6",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Operational documentation",
+            "relation": "addresses"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 6",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 17",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "operating-cost-known",
+        "shortTitle": "The relevant operating-cost boundary is known well enough for the decision.",
+        "decisionId": "operate",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.4.5",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: AI risk assessment",
+            "relation": "partial"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 3",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 17",
+            "relation": "partial"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.1",
+            "relation": "partial"
+          }
+        ]
+      },
+      {
+        "checkId": "outcome-measure-defined",
+        "shortTitle": "The outcome measure is defined.",
+        "decisionId": "measure-outcome",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 9",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Objectives",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 72",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.1",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "baseline-defined",
+        "shortTitle": "A comparable baseline or counterfactual is defined.",
+        "decisionId": "measure-outcome",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 6",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Scope",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "outcome-measured",
+        "shortTitle": "The outcome was measured after the intervention.",
+        "decisionId": "measure-outcome",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.8",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Evidence of implementation",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 3",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 72",
+            "relation": "addresses"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.1",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "measurement-definition-consistent",
+        "shortTitle": "Before/after measurements use the same relevant definition.",
+        "decisionId": "measure-outcome",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.6.2.8",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Operational documentation",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 12",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "important-confounds-named",
+        "shortTitle": "Material confounds, uncertainty, or attribution limits are named.",
+        "decisionId": "measure-outcome",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.5.3",
+            "relation": "partial"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: AI risk assessment",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 4",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.3",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "outcome-evidence-available",
+        "shortTitle": "Outcome evidence relevant to the decision is available.",
+        "decisionId": "scale-renew-stop",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Evidence of implementation",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MEASURE 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 72",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "full-cost-accounted",
+        "shortTitle": "The full relevant cost boundary is accounted for.",
+        "decisionId": "scale-renew-stop",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.4.2",
+            "relation": "partial"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Management review",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 3",
+            "relation": "partial"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 17",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "risk-tradeoffs-assessed",
+        "shortTitle": "Material risks and trade-offs are assessed.",
+        "decisionId": "scale-renew-stop",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.5.2",
+            "relation": "addresses"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: AI risk assessment",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MAP 5",
+            "relation": "addresses"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "addresses"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.4",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "alternatives-compared",
+        "shortTitle": "Reasonable alternatives or the status quo are compared.",
+        "decisionId": "scale-renew-stop",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Annex A.5.2",
+            "relation": "partial"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Risk treatment",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "MANAGE 2",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      },
+      {
+        "checkId": "value-rule-explicit",
+        "shortTitle": "The rule for scale, renew, expand, or stop is explicit.",
+        "decisionId": "scale-renew-stop",
+        "relations": [
+          {
+            "standard": "iso42001",
+            "clause": "Clause 9",
+            "relation": "supports"
+          },
+          {
+            "standard": "gaicc",
+            "clause": "AIMS artefact: Management review",
+            "relation": "supports"
+          },
+          {
+            "standard": "nistAiRmf",
+            "clause": "GOVERN 1",
+            "relation": "supports"
+          },
+          {
+            "standard": "euAiAct",
+            "clause": "Article 17",
+            "relation": "supports"
+          },
+          {
+            "standard": "oecd",
+            "clause": "Principle 1.5",
+            "relation": "supports"
+          }
+        ]
+      }
+    ]
+  },
+  "validation": {
+    "screeningAudit": {
+      "errors": 5,
+      "audited": 41,
+      "pct": 12.2,
+      "ci": [
+        5.3,
+        25.5
+      ],
+      "bar": 10,
+      "remeasure": {
+        "errors": 1,
+        "pct": 2.4,
+        "exploratory": true
+      },
+      "statementIds": [
+        "limitation:screening",
+        "exploratory:screening-remeasure"
+      ]
+    },
+    "collectionRecall": {
+      "supportedFound": 59,
+      "supported": 66,
+      "recall": 0.894,
+      "contributed": 10,
+      "projects": 10,
+      "rawFound": 141,
+      "raw": 159,
+      "rawRecall": 0.887,
+      "gathered": 159,
+      "gatheredSupported": 66,
+      "unsupported": 93,
+      "boilerplate": 27,
+      "statementIds": [
+        "limitation:recall",
+        "limitation:gathered-items"
+      ]
+    },
+    "crossCheck": {
+      "projects": 142,
+      "positiveAgreement": 0.7809215844785772,
+      "allStates": 0.914906103286385,
+      "exploratory": true,
+      "statementId": "exploratory:collector-cross-check"
+    },
+    "spanDefect": {
+      "exploratory": true,
+      "statementId": "limitation:whole-page-spans"
+    },
+    "visibility": {
+      "row": {
+        "id": "vis|provider-only",
+        "label": "Launches whose evidence came only from provider-extracted text",
+        "state": "released",
+        "c": 218,
+        "n": 300,
+        "pct": 73,
+        "ci": [
+          67,
+          77
+        ]
+      },
+      "statementId": "limitation:provider-visibility"
+    }
+  },
+  "exploratory": {
+    "community": null,
+    "statementId": "exploratory:community"
+  },
+  "statements": [
+    {
+      "id": "share:intended-use-defined",
+      "kind": "finding",
+      "text": "At least 169 of 300 launches publicly evidence `intended-use-defined` (56%, 95% CI 51–62%)."
+    },
+    {
+      "id": "claims:intended-use-defined",
+      "kind": "finding",
+      "text": "62 of 300 launches claim `intended-use-defined` without linking an artefact (21%); at least 169 of 300 publicly evidence it (56%)."
+    },
+    {
+      "id": "share:limitations-stated",
+      "kind": "finding",
+      "text": "At least 162 of 300 launches publicly evidence `limitations-stated` (54%, 95% CI 48–60%)."
+    },
+    {
+      "id": "share:fallback-defined",
+      "kind": "finding",
+      "text": "At least 44 of 300 launches publicly evidence `fallback-defined` (15%, 95% CI 11–19%)."
+    },
+    {
+      "id": "share:operating-cost-known",
+      "kind": "finding",
+      "text": "At least 104 of 300 launches publicly evidence `operating-cost-known` (35%, 95% CI 30–40%)."
+    },
+    {
+      "id": "claims:operating-cost-known",
+      "kind": "finding",
+      "text": "27 of 300 launches claim `operating-cost-known` without linking an artefact (9%); at least 104 of 300 publicly evidence it (35%)."
+    },
+    {
+      "id": "method:h2-descriptive",
+      "kind": "method",
+      "text": "Reported descriptively: at least one source has fewer than 30 included launches, so the pre-registered test was not run. The Holm correction covers the remaining hypotheses."
+    },
+    {
+      "id": "hypothesis:h1",
+      "kind": "finding",
+      "text": "H1 (a majority of launches claim at least one check without linking an artefact, so they do not publicly evidence it) is not supported: 96 of 300 launches (32%), one-sided exact binomial, Holm-adjusted p = 1.000; with the recall bound, 85 of 300, Holm-adjusted p = 1.000."
+    },
+    {
+      "id": "hypothesis:h3",
+      "kind": "finding",
+      "text": "H3 (fewer than half of launches publicly evidence at least one `rely`-decision check) is not supported: at least 212 of 300 launches (71%) publicly evidence one, one-sided exact binomial, Holm-adjusted p = 1.000; with the recall bound, 238 of 300, Holm-adjusted p = 1.000."
+    },
+    {
+      "id": "method:sensitivity",
+      "kind": "method",
+      "text": "Each headline figure is repeated excluding the 0 launches whose site could not be read (protocol section 3)."
+    },
+    {
+      "id": "method:cohort-banner",
+      "kind": "method",
+      "text": "Each cohort is the launches of one quarter, described by what they publicly evidence today. Older launches have had longer to publish, and launches that disappeared are not in the sample, so these figures are not a trend and are not compared as one."
+    },
+    {
+      "id": "cohort:quarter 1",
+      "kind": "title",
+      "text": "Launched in quarter 1, as evidenced today."
+    },
+    {
+      "id": "cohort:quarter 2",
+      "kind": "title",
+      "text": "Launched in quarter 2, as evidenced today."
+    },
+    {
+      "id": "cohort:quarter 3",
+      "kind": "title",
+      "text": "Launched in quarter 3, as evidenced today."
+    },
+    {
+      "id": "cohort:quarter 4",
+      "kind": "title",
+      "text": "Launched in quarter 4, as evidenced today."
+    },
+    {
+      "id": "method:source-types-overlap",
+      "kind": "method",
+      "text": "One launch can count under several source types, so the shares do not sum to 100%."
+    },
+    {
+      "id": "absent:reddit",
+      "kind": "method",
+      "text": "not in this release: no Reddit launches met the inclusion criteria"
+    },
+    {
+      "id": "absent:github-only",
+      "kind": "method",
+      "text": "not in this release: no GitHub-only launches met the inclusion criteria"
+    },
+    {
+      "id": "validation:person-edits",
+      "kind": "method",
+      "text": "Agent roles, no human edits."
+    },
+    {
+      "id": "method:eligibility",
+      "kind": "method",
+      "text": "A launch is included when it is an AI product with its own site, screened in two stages: first its title and URL, then the text of its own page."
+    },
+    {
+      "id": "method:frame",
+      "kind": "method",
+      "text": "The sampling frame is Show HN posts in the sampling window, 2025-09-01 to 2026-08-31, drawn in a seeded order."
+    },
+    {
+      "id": "method:collection",
+      "kind": "method",
+      "text": "Evidence is collected from each launch's own site and own repository only."
+    },
+    {
+      "id": "method:self-claim",
+      "kind": "method",
+      "text": "A check counts as publicly evidenced only when the launch's own page quotes it and links an artefact; a quote with no linked artefact is coded as claimed."
+    },
+    {
+      "id": "method:confirmation",
+      "kind": "method",
+      "text": "Every positive is confirmed by a confirmer that did not code it before it enters any figure. A rejected positive counts as not evidenced and stays in the denominator; a downgraded pass counts as claimed."
+    },
+    {
+      "id": "method:gate",
+      "kind": "method",
+      "text": "The deterministic gate, not a model, decides each decision from the confirmed check states."
+    },
+    {
+      "id": "method:disclosure",
+      "kind": "method",
+      "text": "Every figure is a count of launches under disclosure control: a count, its complement or its group size under 10 is suppressed, and an exact audit requires at least 5 possible values for every suppressed count."
+    },
+    {
+      "id": "method:hypotheses",
+      "kind": "method",
+      "text": "H1 and H3 use one-sided exact binomial tests and H2 a permutation test with Cramér's V. Holm's correction holds the family-wise level at 0.05, and a hypothesis is supported only when it also holds with the measured collection recall as a bound."
+    },
+    {
+      "id": "limitation:screening",
+      "kind": "limitation",
+      "text": "Screening missed its pre-registered target: 12.2% of audited exclusions were in error (5 of 41, 95% CI 5.3–25.5%) against a 10% bar. This is a selection limitation."
+    },
+    {
+      "id": "exploratory:screening-remeasure",
+      "kind": "exploratory",
+      "text": "A re-measure at 2.4% is exploratory: the rule was tightened on the same 41 cases and was not re-applied to the 300."
+    },
+    {
+      "id": "limitation:recall",
+      "kind": "limitation",
+      "text": "Supported recall 0.894 (59 of 66; 10 of 10 projects contributed); raw recall 0.887 (141 of 159)."
+    },
+    {
+      "id": "limitation:gathered-items",
+      "kind": "limitation",
+      "text": "Of 159 gathered items, 66 (42%) were supported and 93 (58%) unsupported, 27 (17%) of them boilerplate such as calls to action."
+    },
+    {
+      "id": "limitation:collector-change",
+      "kind": "limitation",
+      "text": "The paid search collector was replaced by a free own-site collector for all bulk coding (addendum A8), so every launch was collected the same way."
+    },
+    {
+      "id": "exploratory:collector-cross-check",
+      "kind": "exploratory",
+      "text": "Exploratory: on 142 projects the free and the paid collectors agree at a positive-level agreement of about 0.78. The all-states agreement of 0.915 is raised by states both found nothing for and is not the headline."
+    },
+    {
+      "id": "limitation:whole-page-spans",
+      "kind": "limitation",
+      "text": "A collector defect produced whole-page evidence spans. Every project was re-segmented into spans of at most 1,500 characters, and the decisions made on the defective spans are archived as exploratory and feed no published figure (addendum A9)."
+    },
+    {
+      "id": "limitation:agent-roles",
+      "kind": "limitation",
+      "text": "Every role is an agent: screener (nvidia/Nemotron-3_5-Lightning on Nebius Token Factory); coder (deepseek-ai/DeepSeek-V4-Flash-0731 on Nebius Token Factory); second coder (nemotron-3-super on Ollama Cloud); independent labeller (glm-5.3-flash on Ollama Cloud); confirmer (nemotron-3-ultra on Ollama Cloud); screening auditor (kimi-k3 on Ollama Cloud); recall gatherer (kimi-k3 on Ollama Cloud). No human edited a label. Agreement figures are agreement with an independent labeller."
+    },
+    {
+      "id": "limitation:provider-visibility",
+      "kind": "limitation",
+      "text": "Evidence is read from text extracted from each launch's own pages. What the extractor could not see, such as pages behind a login or text inside images, does not count as public evidence."
+    },
+    {
+      "id": "limitation:cohort-survivorship",
+      "kind": "limitation",
+      "text": "Cohorts are described as they are evidenced today. Older launches have had longer to publish, and launches whose sites disappeared are not in the sample."
+    },
+    {
+      "id": "limitation:not-done",
+      "kind": "limitation",
+      "text": "Not publicly evidenced does not mean not done."
+    },
+    {
+      "id": "limitation:sampling-frame",
+      "kind": "limitation",
+      "text": "The sampling frame is led by Show HN launches, so the figures describe launches posted there and not AI launches in general."
+    },
+    {
+      "id": "exploratory:community",
+      "kind": "exploratory",
+      "text": "The community layer (addendum A4) is not part of this release."
+    },
+    {
+      "id": "limitation:decisions-need-withheld-checks",
+      "kind": "limitation",
+      "text": "Every decision requires at least one check that was withheld at validation. A withheld check enters the deterministic gate as unknown, so no launch can reach PASS for any decision on published states alone. The decision figures show what the released checks can support, not how far launches meet each decision."
+    }
+  ]
+}
