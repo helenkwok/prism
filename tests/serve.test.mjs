@@ -16,6 +16,11 @@ test("staticFile resolves inside the client directory and refuses everything els
   fs.writeFileSync(path.join(tmp, "client-evil", "x.js"), "e");
   try {
     assert.equal(staticFile("/assets/app.js", base), path.join(base, "assets", "app.js"));
+    fs.mkdirSync(path.join(base, "office-apps", "pdfcraft"), { recursive: true });
+    fs.writeFileSync(path.join(base, "office-apps", "pdfcraft", "index.html"), "<!doctype html>");
+    assert.equal(staticFile("/office-apps/pdfcraft/", base), path.join(base, "office-apps", "pdfcraft", "index.html"), "a directory with a slash serves its index.html");
+    assert.equal(staticFile("/office-apps/pdfcraft", base), null, "without the slash it stays a directory");
+    assert.equal(staticFile("/../client-evil/", base), null);
     for (const p of [
       "/../secret.txt",
       "/assets/../../secret.txt",

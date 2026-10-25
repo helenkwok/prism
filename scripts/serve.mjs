@@ -26,7 +26,10 @@ const TYPES = {
   ".txt": "text/plain; charset=utf-8",
 };
 
-/** The file under dist/client for a URL path, or null (no file, a directory, or outside dist/client). */
+/**
+ * The file under dist/client for a URL path, or null (no file, a directory, or outside dist/client).
+ * A path ending in "/" serves that directory's index.html (the /office editors live at /office-apps/<tool>/).
+ */
 export function staticFile(urlPath, base = clientDir) {
   let decoded;
   try {
@@ -37,8 +40,9 @@ export function staticFile(urlPath, base = clientDir) {
   if (decoded.includes("\0")) return null;
   const file = path.resolve(base, `.${path.posix.normalize(`/${decoded}`)}`);
   if (!file.startsWith(base + path.sep)) return null;
+  const target = decoded.endsWith("/") ? path.join(file, "index.html") : file;
   try {
-    return fs.statSync(file).isFile() ? file : null;
+    return fs.statSync(target).isFile() ? target : null;
   } catch {
     return null;
   }
