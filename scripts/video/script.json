@@ -19,7 +19,71 @@
       "source": "https://prism.helenkwok.dev/p/OWN-MILLELEAF, recorded live run 2026-10-25 (keep/prism/2026-10-25-live-run-milleleaf)",
       "method": "cdp",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "opening": {
+        "kicker": "PRISM",
+        "title": "What AI launches publicly evidence",
+        "sub": "Public-evidence Review of Innovation, Standards & Markets"
+      },
+      "cueAfter": 4.8,
+      "shots": [
+        {
+          "url": "/p/OWN-MILLELEAF",
+          "scroll": "h1",
+          "offset": 110
+        },
+        {
+          "at": "Each decision",
+          "url": "/p/OWN-MILLELEAF",
+          "scroll": "[data-decision=rely]",
+          "offset": 60,
+          "cues": [
+            {
+              "sel": "[data-decision=rely] [data-verdict-head] > div",
+              "at": "gate's verdict",
+              "label": "The gate's verdict",
+              "hold": true
+            },
+            {
+              "sel": "[data-decision=rely] [data-action]",
+              "at": "what would change it",
+              "label": "What would change it",
+              "hold": true
+            }
+          ]
+        },
+        {
+          "at": "with the quotes",
+          "url": "/p/OWN-MILLELEAF",
+          "actions": [
+            {
+              "open": "[data-decision=rely] details[data-evidence]"
+            }
+          ],
+          "scroll": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-chip]",
+          "offset": 330,
+          "cues": [
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-quote-card] >> nth=-1 >> blockquote",
+              "at": "quotes",
+              "label": "Quote from its own page",
+              "hold": true
+            },
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-quote-card] >> nth=-1 >> a:has-text(\"Open archived snapshot\")",
+              "at": "archived pages",
+              "label": "Archived page",
+              "hold": true
+            },
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-chip]",
+              "at": "standards",
+              "label": "Standard it maps to",
+              "hold": true
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "B1",
@@ -35,7 +99,10 @@
       "source": "title card",
       "method": "card",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "card": {
+        "title": "What do AI launches publicly evidence, for which decision, against which standard?"
+      }
     },
     {
       "id": "B2",
@@ -51,7 +118,37 @@
       "source": "findings site home page (/), hypothesis panel, built from public-data/v1/release.json",
       "method": "cdp",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "card": {
+        "title": "300 AI launches from Show HN, reviewed like a systematic review",
+        "stats": [
+          {
+            "value": {
+              "ref": "n"
+            },
+            "label": "launches reviewed",
+            "at": "We reviewed 300"
+          },
+          {
+            "value": {
+              "ref": "figures.checks:rely.rows.0.c"
+            },
+            "label": "publicly evidence their intended use",
+            "at": "At least 169"
+          },
+          {
+            "value": {
+              "ref": "figures.checks:operate.rows.3.c"
+            },
+            "label": "show a fallback",
+            "at": "just 44"
+          }
+        ],
+        "foot": {
+          "text": "Both pre-registered hypotheses: not supported",
+          "at": "Both pre-registered"
+        }
+      }
     },
     {
       "id": "B3",
@@ -67,7 +164,27 @@
       "source": "recorded runs: spikes/nebius.md matrix (C1, C2), sample-screening-log.json (C4), pilot confirmations (C5), approved-recode.log (C8); figures from 08-EVIDENCE-INVENTORY.md",
       "method": "card",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "card": {
+        "title": "NVIDIA Nemotron, served by Nebius Token Factory",
+        "stats": [
+          {
+            "value": "12",
+            "label": "model configurations tested",
+            "at": "twelve configurations"
+          },
+          {
+            "value": "1,675",
+            "label": "launches screened by Nemotron Lightning; 300 kept",
+            "at": "Nemotron Lightning screened"
+          },
+          {
+            "value": "300",
+            "label": "launches coded by an open model",
+            "at": "an open model"
+          }
+        ]
+      }
     },
     {
       "id": "B4",
@@ -84,7 +201,22 @@
       "source": "recorded runs: Tavily-142 archive bulk-300.log ACCOUNTING (C10), validation/tavily-vs-free-142.json (C12, exploratory); figures from 08-EVIDENCE-INVENTORY.md",
       "method": "card",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "card": {
+        "title": "Tavily gathered the prototype's evidence",
+        "stats": [
+          {
+            "value": "142",
+            "label": "projects collected from their own sites",
+            "at": "for 142 projects"
+          },
+          {
+            "value": "91.5%",
+            "label": "agreement with the free collector (exploratory)",
+            "at": "the two agreed"
+          }
+        ]
+      }
     },
     {
       "id": "B5",
@@ -101,7 +233,71 @@
       "source": "https://prism.helenkwok.dev/run/1, recorded live run 2026-10-25 (keep/prism/2026-10-25-live-run-take1), sped up",
       "method": "cdp",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "shots": [
+        {
+          "video": "/Volumes/shares/temp-storage/mac/keep/prism/2026-10-25-live-run-take1/live-run.webm",
+          "ss": 1,
+          "speed": 30,
+          "crop": [
+            1200,
+            675,
+            360,
+            0
+          ]
+        },
+        {
+          "at": "Each stage",
+          "url": "/run/1",
+          "scroll": "[data-stage=screen]",
+          "offset": 140,
+          "cues": [
+            {
+              "sel": "[data-stage=screen]",
+              "at": "Nemotron Lightning screens",
+              "label": "Screen: Nemotron Lightning"
+            },
+            {
+              "sel": "[data-stage=code]",
+              "at": "DeepSeek",
+              "label": "Code: DeepSeek on Token Factory"
+            },
+            {
+              "sel": "[data-stage=gate]",
+              "at": "the gate decides",
+              "label": "Gate: no model"
+            },
+            {
+              "sel": "[data-stage=confirm]",
+              "at": "Nemotron Ultra confirms",
+              "label": "Confirm: Nemotron Ultra"
+            }
+          ]
+        },
+        {
+          "at": "The receipt",
+          "url": "/run/1",
+          "scroll": "[data-receipt]",
+          "offset": 30,
+          "cues": [
+            {
+              "sel": "[data-receipt] table",
+              "at": "lists every call",
+              "label": "Every model call"
+            },
+            {
+              "sel": "[data-receipt-total]",
+              "at": "about eight cents",
+              "label": "This run"
+            },
+            {
+              "sel": "[data-receipt] p:has-text('Same run with Nemotron 3 Ultra')",
+              "at": "against twenty-eight",
+              "label": "Ultra for every step"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "B7",
@@ -118,24 +314,32 @@
       "source": "fixture 1, span s002 in tests/pipeline/injection-fixtures.test.mjs, through the real report builder, then the report card with INJECTION_NOTICE (src/app/components/report/report.tsx); every frame labelled synthetic fixture",
       "method": "cdp",
       "fixtureData": true,
-      "placeholders": {}
-    },
-    {
-      "id": "B8",
-      "title": "How we know",
-      "seconds": 16,
-      "criterion": [
-        "Technological Implementation",
-        "Potential Impact"
-      ],
-      "sc1Item": "agreement",
-      "sub04": null,
-      "narration": "An independent labeller re-coded all 300 launches; agreement, AC1, ran from 0.72 to 0.89 on the released checks. Nemotron Ultra changed 634 of 1,610 positives on confirmation. The screening audit error was 12.2 percent, and collection recall 0.89.",
-      "onScreen": "How we know: AC1 0.72 to 0.89, recall 0.89",
-      "source": "findings site /validation and a figure's How we know panel, built from public-data/v1/release.json",
-      "method": "cdp",
-      "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "shots": [
+        {
+          "base": "local",
+          "url": "/p/P03",
+          "actions": [
+            {
+              "open": "details[data-evidence]:has([data-injection])"
+            }
+          ],
+          "scroll": "[data-quote-card]:has([data-injection])",
+          "offset": 220,
+          "cues": [
+            {
+              "sel": "[data-quote-card]:has([data-injection]) blockquote",
+              "at": "hides an instruction",
+              "label": "Hidden instruction"
+            },
+            {
+              "sel": "[data-injection]",
+              "at": "A pattern detector",
+              "label": "Flagged, kept as page text"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "B11",
@@ -152,7 +356,157 @@
       "source": "https://prism.helenkwok.dev/office opening the findings files, then Helen's milleleaf-nine-apps clip (Helen, 2026-10-25: use it)",
       "method": "cdp",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "shots": [
+        {
+          "url": "/office",
+          "waitUntil": "load",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "clip": [
+            478,
+            345,
+            1182,
+            665
+          ],
+          "actions": [
+            {
+              "wait": 15000
+            },
+            {
+              "click": "button[aria-label=\"Dismiss notification\"]"
+            },
+            {
+              "click": "button:has-text(\"Home\")"
+            },
+            {
+              "wait": 3000
+            }
+          ],
+          "cues": [
+            {
+              "sel": [
+                "button:has-text(\"findings-pack.pdf\") >> nth=0",
+                "button:has-text(\"findings-deck.pptx\") >> nth=0",
+                "button:has-text(\"findings-report.docx\") >> nth=0",
+                "button:has-text(\"findings.xlsx\") >> nth=0"
+              ],
+              "at": "in four files",
+              "label": "One source, four files",
+              "hold": true
+            }
+          ],
+          "scroll": "button:has-text(\"findings-pack.pdf\") >> nth=0",
+          "offset": "center"
+        },
+        {
+          "url": "/office",
+          "waitUntil": "load",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "clip": [
+            478,
+            330,
+            1182,
+            665
+          ],
+          "at": "built with Milleleaf",
+          "actions": [
+            {
+              "wait": 6000
+            },
+            {
+              "click": "button:has-text(\"Spreadsheets\")"
+            },
+            {
+              "wait": 12000
+            }
+          ],
+          "cues": []
+        },
+        {
+          "url": "/office",
+          "waitUntil": "load",
+          "viewport": [
+            1920,
+            1080
+          ],
+          "clip": [
+            478,
+            330,
+            1182,
+            665
+          ],
+          "at": "which is still",
+          "actions": [
+            {
+              "wait": 6000
+            },
+            {
+              "click": "button:has-text(\"Documents\")"
+            },
+            {
+              "wait": 12000
+            }
+          ],
+          "cues": []
+        },
+        {
+          "at": "Its command line",
+          "video": "/Users/helen/Downloads/milleleaf-videos/milleleaf-nine-apps-short.mp4",
+          "ss": 0,
+          "speed": 6
+        }
+      ]
+    },
+    {
+      "id": "B8",
+      "title": "How we know",
+      "seconds": 16,
+      "criterion": [
+        "Technological Implementation",
+        "Potential Impact"
+      ],
+      "sc1Item": "agreement",
+      "sub04": null,
+      "narration": "An independent labeller re-coded all 300 launches; agreement, AC1, ran from 0.72 to 0.89 on the released checks. Nemotron Ultra changed 634 of 1,610 positives on confirmation. The screening audit error was 12.2 percent, and collection recall 0.89.",
+      "onScreen": "How we know: AC1 0.72 to 0.89, recall 0.89",
+      "source": "findings site /validation and a figure's How we know panel, built from public-data/v1/release.json",
+      "method": "cdp",
+      "fixtureData": false,
+      "placeholders": {},
+      "card": {
+        "title": "How we know",
+        "stats": [
+          {
+            "value": "0.72–0.89",
+            "label": "AC1 agreement with an independent labeller",
+            "at": "agreement, AC1"
+          },
+          {
+            "value": "634 / 1,610",
+            "label": "positives changed by Nemotron Ultra",
+            "at": "changed 634"
+          },
+          {
+            "value": {
+              "ref": "validation.screeningAudit.pct",
+              "fmt": "{}%"
+            },
+            "label": "screening audit error",
+            "at": "screening audit"
+          },
+          {
+            "value": "0.89",
+            "label": "collection recall",
+            "at": "collection recall"
+          }
+        ]
+      }
     },
     {
       "id": "B9",
@@ -168,7 +522,53 @@
       "source": "the review PDF from the findings site build (PRISMA flow and methods pages, rendered with pdftoppm)",
       "method": "pdf",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "shots": [
+        {
+          "pdf": "/Users/helen/workspace/alreadyopen/repositories/prism-integrate/site/dist/client/prism-review-v1-2026-10-25.pdf",
+          "page": 1,
+          "crop": [
+            80,
+            60,
+            1500,
+            844
+          ],
+          "cues": []
+        },
+        {
+          "at": "a PRISMA flow",
+          "pdf": "/Users/helen/workspace/alreadyopen/repositories/prism-integrate/site/dist/client/prism-review-v1-2026-10-25.pdf",
+          "page": 5,
+          "crop": [
+            130,
+            690,
+            1360,
+            900
+          ],
+          "cues": [
+            {
+              "box": [
+                146,
+                732,
+                582,
+                144
+              ],
+              "at": "PRISMA flow",
+              "label": "1,675 screened"
+            },
+            {
+              "box": [
+                146,
+                1194,
+                582,
+                396
+              ],
+              "at": "then the methods",
+              "label": "300 included"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "B10",
@@ -187,7 +587,32 @@
       "source": "title card",
       "method": "card",
       "fixtureData": false,
-      "placeholders": {}
+      "placeholders": {},
+      "ending": {
+        "kicker": "PRISM",
+        "title": "findings.helenkwok.dev",
+        "sub": "github.com/helenkwok/prism · code Apache-2.0 · data CC BY 4.0"
+      }
+    }
+  ],
+  "visual": "08-VIDEO-REWORK.md (2026-10-26): zoomed shots, cue rings timed to narration words, number cards, opening/section/ending panels; shots from capture-cues.mjs, layered by overlays.py",
+  "sections": [
+    {
+      "first": "B1",
+      "title": "The findings"
+    },
+    {
+      "first": "B3",
+      "title": "How it was built"
+    },
+    {
+      "first": "B5",
+      "title": "The private app",
+      "sub": "A real run, its receipt, and the findings files"
+    },
+    {
+      "first": "B8",
+      "title": "How we know"
     }
   ]
 }
