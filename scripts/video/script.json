@@ -96,7 +96,7 @@
       ],
       "sc1Item": "evidence-gathering",
       "sub04": null,
-      "narration": "This is a real run in the private app, on PRISM's own repository. Each stage names its model: Nemotron Lightning screens, DeepSeek on Token Factory codes, the gate decides with no model, and Nemotron Ultra confirms the positives. The receipt lists every call and its cost: seven cents.",
+      "narration": "This is a real run in the private app, on PRISM's own repository. Each stage names its model: Nemotron Lightning screens, DeepSeek on Token Factory codes, the gate decides with no model, and Nemotron Ultra confirms the positives. The receipt lists every call: about eight cents, against twenty-eight with Ultra for every step.",
       "onScreen": "Live run on Nebius Token Factory: models per stage, then the receipt",
       "source": "https://prism.helenkwok.dev/run/1, recorded live run 2026-10-25 (keep/prism/2026-10-25-live-run-take1), sped up",
       "method": "cdp",
