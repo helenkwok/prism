@@ -94,3 +94,63 @@ test("vocabulary means every word is in the quotes of VOCAB_DF or more projects"
   assert.equal(isVocabulary("zyxo-agent", corpusDf), false);
   assert.equal(isVocabulary("unseen", corpusDf), false);
 });
+
+const mem = () => new Kysely({ dialect: new SqliteDialect({ database: new Database(":memory:") }) });
+
+async function decidedLocal() {
+  const { db } = await run();
+  // The synthetic corpus marks its views as fixture rows; a real local database has none.
+  for (const t of ["app_report_view", "app_snapshot", "app_method_view", "app_project_access"]) await db.updateTable(t).set({ fixture: 0 }).execute();
+  await db.updateTable("app_project_access").set({ basis: "own" }).where("project_id", "=", "P01").execute();
+  await db.updateTable("app_project_access").set({ basis: "opt-in", sponsor_hold: 1 }).where("project_id", "=", "P02").execute();
+  return db;
+}
+
+async function appWithFixtureAndOwn() {
+  const { upsertProjectAccess, ensureAccessSchema } = await import("../../src/app/server/access-store.ts");
+  const { ensureReportViewSchema, upsertReportView, upsertMethodView } = await import("../../src/report/store.ts");
+  const app = mem();
+  await ensureReportViewSchema(app);
+  await ensureAccessSchema(app);
+  await upsertProjectAccess(app, { projectId: "FIX1", title: "fixture", basis: "own", sponsorHold: false, inSample: true, pseudonym: "AAAAA", fixture: true });
+  await upsertReportView(app, { projectRef: "FIX1", view: "identifiable", fixture: true, generatedAt: "2026-01-01" });
+  await upsertMethodView(app, { fixture: true, generatedAt: "2026-01-01" });
+  await upsertProjectAccess(app, { projectId: "OWN-LIVE", title: "own", basis: "own", sponsorHold: false, inSample: false, liveBoundaryJson: "[]" });
+  await upsertReportView(app, { projectRef: "OWN-LIVE", view: "identifiable", fixture: false, generatedAt: "2026-01-01" });
+  return app;
+}
+
+test("a pack holds identifiable views and snapshots only for a basis without a hold; the load replaces fixture rows and keeps live-run own rows", async () => {
+  const { buildPack, loadPack } = await import("../../src/report/judge-pack.ts");
+  const local = await decidedLocal();
+  const pack = mem();
+  const counts = await buildPack(local, pack);
+  assert.equal(counts.identifiable, 1);
+  assert.equal(counts.deid, corpus.projects.length);
+  assert.equal(counts.method, 1);
+  const ident = await pack.selectFrom("app_report_view").select("project_ref").where("view", "=", "identifiable").execute();
+  assert.deepEqual(ident.map((r) => r.project_ref), ["P01"]);
+  assert.ok((await pack.selectFrom("app_snapshot").select("project_ref").execute()).every((r) => r.project_ref === "P01"));
+
+  const app = await appWithFixtureAndOwn();
+  await loadPack(pack, app);
+  const refs = (await app.selectFrom("app_report_view").select(["project_ref", "fixture"]).execute());
+  assert.ok(!refs.some((r) => r.fixture === 1), "no fixture view left");
+  assert.ok(refs.some((r) => r.project_ref === "OWN-LIVE"), "live-run own report kept");
+  assert.ok(!(await app.selectFrom("app_project_access").select("fixture").execute()).some((r) => r.fixture === 1));
+  assert.equal((await app.selectFrom("app_method_view").select("fixture").executeTakeFirst()).fixture, 0);
+  for (const d of [local, pack, app]) await d.destroy();
+});
+
+test("a tampered pack (an identifiable view without a basis) is refused with nothing written", async () => {
+  const { buildPack, loadPack, PackRefusal } = await import("../../src/report/judge-pack.ts");
+  const local = await decidedLocal();
+  const pack = mem();
+  await buildPack(local, pack);
+  const p05 = await local.selectFrom("app_report_view").selectAll().where("project_ref", "=", "P05").where("view", "=", "identifiable").executeTakeFirst();
+  await pack.insertInto("app_report_view").values(p05).execute();
+  const app = await appWithFixtureAndOwn();
+  await assert.rejects(loadPack(pack, app), PackRefusal);
+  assert.equal((await app.selectFrom("app_report_view").select("fixture").where("fixture", "=", 1).execute()).length, 1, "fixture rows untouched");
+  for (const d of [local, pack, app]) await d.destroy();
+});

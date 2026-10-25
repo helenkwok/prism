@@ -22,6 +22,12 @@
 // It needs the signed gate, writes only to --db (never the app database), writes the §11 and sponsor
 // candidates to PRISM_DATA_DIR/exports/judge-access-candidates.json (mode 600) and prints counts only.
 //
+// --pack --db <local db> --out <file>   (Mac) the finished load file: every de-identified view, the method
+//                                        view, every access row, identifiable views and snapshots only for a
+//                                        basis without a hold; mode 600, outside the repository
+// --load -                               (VM, through vm-deploy.sh op) the pack on stdin, checked, then loaded into
+//                                        the app database in one transaction; counts only
+//
 // When synthetic-method.json sits next to the corpus, the same transaction also
 // writes the method audit's one row (plan 07-10) and prints "METHOD rows=1 ...".
 
@@ -53,8 +59,50 @@ const { values } = parseArgs({
     deidentify: { type: "boolean" },
     "key-file": { type: "string" },
     store: { type: "boolean" },
+    pack: { type: "boolean" },
+    out: { type: "string" },
+    load: { type: "string" },
   },
 });
+const packLine = (c) => `PACK deid=${c.deid} identifiable=${c.identifiable} snapshots=${c.snapshots} access=${c.access} method=${c.method}`;
+if (values.pack) {
+  const { buildPack } = await import("../src/report/judge-pack.ts");
+  const { assertOutsideRepo } = await import("./check-data-dir.mjs");
+  if (!values.db || !values.out) refuse("usage: --pack --db <local db> --out <file>");
+  const out = path.resolve(values.out);
+  assertOutsideRepo(path.dirname(out), root);
+  if (fs.existsSync(out)) refuse("pack-exists");
+  const from = new Kysely({ dialect: new SqliteDialect({ database: new Database(path.resolve(values.db), { readonly: true, fileMustExist: true }) }) });
+  const to = new Kysely({ dialect: new SqliteDialect({ database: new Database(out) }) });
+  const counts = await buildPack(from, to);
+  await from.destroy();
+  await to.destroy();
+  fs.chmodSync(out, 0o600);
+  console.log(packLine(counts));
+  process.exit(0);
+}
+if (values.load) {
+  const { loadPack, PackRefusal } = await import("../src/report/judge-pack.ts");
+  const { getDb } = await import("../src/app/server/db.ts");
+  if (values.load !== "-") refuse("usage: --load - (the pack on stdin)");
+  // The pack lives only in this process's temp directory, gone with the container.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prism-pack-"));
+  const file = path.join(tmp, "pack.sqlite");
+  fs.writeFileSync(file, fs.readFileSync(0), { mode: 0o600 });
+  const pack = new Kysely({ dialect: new SqliteDialect({ database: new Database(file, { readonly: true, fileMustExist: true }) }) });
+  const app = getDb();
+  try {
+    console.log(packLine(await loadPack(pack, app)).replace(/^PACK/, "LOADED"));
+  } catch (e) {
+    if (e instanceof PackRefusal) refuse(`load: ${e.message}`);
+    throw e;
+  } finally {
+    await pack.destroy();
+    await app.destroy();
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  process.exit(0);
+}
 if (values.store) {
   await storeMode();
   process.exit(0);
