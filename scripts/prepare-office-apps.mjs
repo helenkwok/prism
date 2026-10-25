@@ -53,3 +53,18 @@ if not (root / 'index.html').is_file(): raise ValueError('Missing app entry poin
   console.log(`Verified and installed ${app} ${version}`);
 }
 await writeFile(path.join(root, "public/office-apps/versions.json"), `${JSON.stringify(lock, null, 2)}\n`);
+
+// The four findings files /office opens, fetched from the findings site and checked against the sums
+// pinned in site/downloads.sha256 before anything is written to public/office/findings/.
+const findingsBase = process.env.PRISM_FINDINGS_DOWNLOADS ?? "https://findings.helenkwok.dev/downloads/";
+const sums = (await readFile(path.join(root, "site/downloads.sha256"), "utf8")).trim().split("\n").map((line) => line.split(/\s+/));
+await mkdir(path.join(root, "public/office/findings"), { recursive: true });
+for (const [sha256, name] of sums) {
+  if (name.endsWith(".json")) continue;
+  const response = await fetch(new URL(name, findingsBase));
+  if (!response.ok) throw new Error(`${name}: download failed (${response.status})`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (createHash("sha256").update(bytes).digest("hex") !== sha256) throw new Error(`${name}: checksum mismatch`);
+  await writeFile(path.join(root, "public/office/findings", name), bytes);
+  console.log(`Verified and installed findings/${name}`);
+}

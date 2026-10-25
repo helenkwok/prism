@@ -21,6 +21,10 @@
 !scripts
 !scripts/check-data-dir.mjs
 !scripts/serve.mjs
+!scripts/prepare-office-apps.mjs
+!office-apps.lock.json
+!site
+!site/downloads.sha256
 !scripts/spikes
 !scripts/spikes/pick-projects.mjs
 !scripts/spikes/lib

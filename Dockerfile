@@ -29,6 +29,15 @@ COPY scripts/check-data-dir.mjs ./scripts/check-data-dir.mjs
 COPY scripts/spikes/pick-projects.mjs ./scripts/spikes/pick-projects.mjs
 COPY scripts/spikes/lib/preflight.mjs scripts/spikes/lib/paths.mjs ./scripts/spikes/lib/
 COPY src ./src
+# /office: the four pinned editors and the four findings files, each checked against a pinned SHA-256
+# before it is written to public/ (python3 unpacks the editor ZIPs only).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+COPY office-apps.lock.json ./
+COPY scripts/prepare-office-apps.mjs ./scripts/prepare-office-apps.mjs
+COPY site/downloads.sha256 ./site/downloads.sha256
+RUN node scripts/prepare-office-apps.mjs
 RUN npm run build
 RUN npm prune --omit=dev
 

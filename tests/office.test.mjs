@@ -85,3 +85,11 @@ test("the office route is at /office and renders client-only", async () => {
   assert.match(source, /typeof window === "undefined"/);
   assert.doesNotMatch(source.split('typeof window === "undefined"')[0], /<WebOffice/);
 });
+
+test("site/downloads.sha256 pins every findings file the office route opens", () => {
+  const sums = new Map(fs.readFileSync(path.join(repoRoot, "site/downloads.sha256"), "utf8").trim().split("\n").map((l) => l.split(/\s+/).reverse()));
+  const route = fs.readFileSync(path.join(repoRoot, "src/app/routes/office.tsx"), "utf8");
+  const names = [...route.matchAll(/\/office\/findings\/([\w.-]+)/g)].map((m) => m[1]);
+  assert.equal(names.length, 4);
+  for (const name of names) assert.match(sums.get(name) ?? "", /^[0-9a-f]{64}$/, name);
+});

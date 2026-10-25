@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // build-mleaf.mjs — turn a PRISM public release file into a Milleleaf project.
 //
-//   node scripts/build-mleaf.mjs ../public-data/v1/release.json <out-dir>
+//   node scripts/build-mleaf.mjs <published v1 release.json> <out-dir>
 //
 // Writes <out-dir>/project.mleaf.json only. The Milleleaf CLI (in development, not
 // in this repo) renders it to findings.xlsx, findings-report.docx, findings-deck.pptx
