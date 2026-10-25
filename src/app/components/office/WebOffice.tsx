@@ -13,13 +13,13 @@ import "./office.css";
 export type OpenOnStart = { name: string; url: string; tool: Tool };
 
 const tools: { id: Tool; label: string; short: string; format: string; description: string; color: string; paper: string; bridge: boolean }[] = [
-  { id: "wordcraft", label: "Documents", short: "Write", format: "DOCX", description: "Find the words. Make them yours.", color: "#315eac", paper: "#e5ebf5", bridge: false },
+  { id: "wordcraft", label: "Documents", short: "Write", format: "DOCX", description: "Find the words. Make them yours.", color: "#315eac", paper: "#e5ebf5", bridge: true },
   { id: "gridcraft", label: "Spreadsheets", short: "Calculate", format: "XLSX", description: "A little order for your numbers.", color: "#34755b", paper: "#e5eee7", bridge: true },
   { id: "deckcraft", label: "Slides", short: "Present", format: "PPTX", description: "Give your next idea some space.", color: "#b65b36", paper: "#f6e8df", bridge: false },
   { id: "pdfcraft", label: "PDF", short: "Read & refine", format: "PDF", description: "The finishing touches, all here.", color: "#956046", paper: "#f0e7e1", bridge: true },
 ];
 const getTool = (id: Tool) => tools.find((tool) => tool.id === id)!;
-const bridgeTools = new Set<Tool>(["gridcraft", "pdfcraft"]);
+const bridgeTools = new Set<Tool>(["wordcraft", "gridcraft", "pdfcraft"]);
 
 function ToolIcon({ tool, small = false }: { tool: Tool; small?: boolean }) {
   return (
@@ -202,6 +202,7 @@ export function WebOffice({ appsBase, openOnStart = [] }: { appsBase: string; op
     startList.current = [];
     void (async () => {
       const absent: string[] = [];
+      const noBridge: string[] = [];
       for (const item of list) {
         try {
           const response = await fetch(item.url);
@@ -213,6 +214,12 @@ export function WebOffice({ appsBase, openOnStart = [] }: { appsBase: string; op
           const saved: SavedFile = { id: crypto.randomUUID(), name: item.name, tool: item.tool, bytes: await response.arrayBuffer(), modified: Date.now() };
           await saveFile(saved);
           await refreshLibrary();
+          // An editor without the parent bridge (Slides) cannot be handed a file: keep it on the desk and
+          // say how to open it, instead of launching an empty editor.
+          if (!bridgeTools.has(item.tool)) {
+            noBridge.push(item.name);
+            continue;
+          }
           launch(item.tool);
           sendFile(item.tool, saved);
         } catch {
@@ -220,6 +227,7 @@ export function WebOffice({ appsBase, openOnStart = [] }: { appsBase: string; op
         }
       }
       if (absent.length) setMissing(absent);
+      if (noBridge.length) setNotice(`${noBridge.join(", ")} is on your desk: download it from Home, then use File → Open in Slides.`);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mount]);
@@ -231,11 +239,6 @@ export function WebOffice({ appsBase, openOnStart = [] }: { appsBase: string; op
         Skip to workspace
       </a>
       <header className="topbar">
-        <button className="brand" onClick={() => setActive("home")} aria-label="WebOffice home">
-          <span className="brand-mark">w<span>·</span></span>
-          <span>web<span className="brand-light">office</span></span>
-          <span className="prototype">preview</span>
-        </button>
         <div className="topbar-right">
           <span className="local-label"><span className="status-dot" />Your work stays here</span>
           <button className="help-button" onClick={() => setHelp(true)} aria-label="About this workspace">?</button>

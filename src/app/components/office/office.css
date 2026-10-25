@@ -16,7 +16,7 @@
 .webOffice .brand-mark span{color:#8fc9ff}
 .webOffice .brand-light{font-weight:400}
 .webOffice .prototype{font-size:10px;letter-spacing:.7px;background:#e9eff8;padding:4px 7px;border-radius:4px;margin:4px 0 0 2px;font-weight:500}
-.webOffice .topbar-right{display:flex;gap:23px;align-items:center}
+.webOffice .topbar-right{display:flex;gap:23px;align-items:center;margin-left:auto}
 .webOffice .local-label{font-size:12px;color:#59677d;display:flex;align-items:center;gap:8px}
 .webOffice .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82b6;flex-shrink:0}
 .webOffice .help-button{border:1px solid #dce2ec;border-radius:50%;width:28px;height:28px;font-family:inherit}

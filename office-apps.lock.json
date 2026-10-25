@@ -1,5 +1,5 @@
 {
-  "wordcraft": { "version": "0.10.0", "sha256": "46e32c024cac86d644874e7120ee9e42a6c0ccc76bd020ba9c741706b5b77b05" },
+  "wordcraft": { "version": "0.11.0", "sha256": "b87db9cf806ec7172c60be570f96b7e245cafced14d5c419300d9938302742c7" },
   "gridcraft": { "version": "0.11.1", "sha256": "b9491325936457cebd874656becbe5d189fbd2039db6798d9d7f5c5e0190715e" },
   "deckcraft": { "version": "0.10.0", "sha256": "1bae430debab4e3247f756046816c87ae8d931b34661508c60f65b3056db6d35" },
   "pdfcraft": { "version": "0.13.0", "sha256": "b16bb14222f371bc5c8da9dc2ee39c77c35f748ffd953d738e4cb3241287b3c8" }

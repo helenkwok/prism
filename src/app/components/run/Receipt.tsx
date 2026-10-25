@@ -66,7 +66,7 @@ export function Receipt({ receipt, collector }: { receipt: RunReceipt; collector
           Same run with Nemotron 3 Ultra for every model step: {usd(receipt.ultraEstimateUsd)} (estimate: this run's token counts at Ultra's Token Factory list price).
         </p>
       ) : null}
-      <p className="mt-1 text-[0.8125rem] text-muted-foreground">Costs are list prices for the tokens each call reported.</p>
+      <p className="mt-1 text-[0.8125rem] text-muted-foreground">Costs are list prices for the tokens each call reported, with cached input at its cached rate.</p>
     </section>
   );
 }

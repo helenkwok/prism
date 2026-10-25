@@ -897,11 +897,12 @@ async function runJobInner(db: Kysely<any>, jobId: number, runner: LiveRunner, o
         if (typeof sent === "string" && usage) {
           const tokensIn = Number(usage.prompt_tokens ?? 0);
           const tokensOut = Number(usage.completion_tokens ?? 0);
-          const { priceOf } = await import("../../pipeline/coding/spend-guards.ts");
+          const { cachedTokenCount, measuredCostUsd } = await import("../../pipeline/coding/spend-guards.ts");
           let usd = 0;
           try {
-            const p = priceOf(sent);
-            usd = tokensIn * p.prompt + tokensOut * p.completion;
+            // The same pricing the run's budget guard charges (cached input at its cached rate), so the
+            // receipt total and the run's spent figure agree.
+            usd = measuredCostUsd(sent, tokensIn, tokensOut, cachedTokenCount(usage.prompt_tokens_details?.cached_tokens, tokensIn));
           } catch {
             // no list price: tokens still count, dollars show 0
           }
