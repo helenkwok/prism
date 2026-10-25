@@ -12,6 +12,7 @@
     "test:gate": "node --test \"tests/gate/*.gate.mjs\"",
     "build": "rsbuild build",
     "start": "node scripts/serve.mjs",
+    "prepare:office": "node scripts/prepare-office-apps.mjs",
     "smoke": "rsbuild build && node scripts/app-smoke.mjs --spawn",
     "typecheck": "tsc --noEmit",
     "prepare": "git config core.hooksPath .githooks || true"
