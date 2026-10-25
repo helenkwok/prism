@@ -114,6 +114,37 @@ async function correctionFixture(cacheKind = "approved") {
 }
 
 describe("retained-evidence coding corrections", () => {
+  test("collect-only retains the normal manifest without either model or coding rows", async () => {
+    const dataDir = tempDir("prism-collect-only-");
+    const cacheDir = tempDir("prism-collect-only-cache-");
+    const db = freshDb();
+    const project = { n: 301, hn_id: "fresh-collect", title: "Synthetic fresh project", final_url: "https://fresh-collect.test/" };
+    const sliceProjectsPath = writeSliceProjects(dataDir, [project]);
+    let modelCalls = 0;
+    const options = { dataDir, cacheDir, db, sliceProjectsPath, gatesPath, collectOnly: true, apiKeys: { tavily: "fixture", nebius: "", github: "fixture" }, guidance: { version: "fixture", byCheck: { [gateFile.checkIds[0]]: "Synthetic guidance." } }, overrides: {
+      useTavily: true, ...gateOverrides,
+      nebiusFetchImpl: async () => { modelCalls++; throw new Error("must not construct a model request"); },
+      tavilyFetchImpl: async (url, init) => { const body = JSON.parse(init.body); return jsonResponse(url.endsWith("/map") ? { results: [body.url], usage: { credits: 0 } } : { results: body.urls.map(url => ({ url, raw_content: "Synthetic collection evidence. ".repeat(30) })), usage: { credits: 0 } }); },
+      renderImpl: async () => "",
+    } };
+    try {
+      const result = await runPipeline(options);
+      assert.equal(result.ok, true);
+      assert.equal(modelCalls, 0);
+      const manifest = JSON.parse(fs.readFileSync(path.join(dataDir, "pipeline/manifests/301.json"), "utf8"));
+      assert.equal(manifest.hnId, project.hn_id);
+      assert.equal(manifest.snapshots.length, 1);
+      assert.equal(manifest.codingCorrection, undefined, "collection must not claim completed correction");
+      assert.ok(fs.existsSync(path.join(dataDir, "pipeline/snapshots", `${manifest.snapshotHashesInCollectionOrder[0]}.json`)));
+      assert.equal((await db.selectFrom("pipeline_project_results").selectAll().execute()).length, 0);
+      assert.equal((await db.selectFrom("pipeline_second_coder_states").selectAll().execute()).length, 0);
+      await assert.rejects(runPipeline({ ...options, onlyChecks: [gateFile.checkIds[0]] }), /collect-only cannot/);
+      fs.writeFileSync(sliceProjectsPath, JSON.stringify([{ ...project, n: 1 }]));
+      await assert.rejects(runPipeline(options), /original 300/);
+      assert.equal(modelCalls, 0);
+    } finally { await db.destroy(); }
+  });
+
   for (const kind of ["legacy", "approved", "repaired"]) test(`${kind} baseline is reused; selected checks alone change and guided resume buys nothing`, async () => {
     const f = await correctionFixture(kind);
     let modelCalls = 0, gatesRun = 0;

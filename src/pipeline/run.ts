@@ -192,6 +192,7 @@ export interface ProjectOutcome {
   claimsFromCache?: boolean;
   recordFromCache?: boolean;
   tavilyCreditsSpent?: number;
+  codingFailedChunks?: number;
 }
 
 export interface RunAccounting {
@@ -317,6 +318,7 @@ async function processProject(
     onStop?: (reason: string) => void;
     guidance?: CodingGuidance;
     onlyChecks?: string[];
+    collectOnly?: boolean;
   },
 ): Promise<ProjectOutcome> {
   const { apiKeys, cacheDir, dataDir, db, gateFile, contract, codebook, overrides, secondCoderIds, onStop } = ctx;
@@ -520,6 +522,42 @@ async function processProject(
   );
   const injectionResult = injectionStage.value;
 
+  const persistManifest = () => {
+    // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
+    // counts and visibility. results.ts's schema (plan 02-06, not re-
+    // architected here) stores only snapshot hashes, not URLs — this file is
+    // what scripts/phase2-acceptance.sh re-checks withinBoundary against.
+    const manifestDir = path.join(dataDir, "pipeline", "manifests");
+    fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(
+      path.join(manifestDir, `${project.n}.json`),
+      JSON.stringify(
+        {
+          projectN: project.n,
+          hnId: projectId,
+          boundary,
+          homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
+          // A site-first launch's own repositories, each its own boundary (evidence/site-repos.ts).
+          repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
+          snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
+            url: s.url,
+            visibility: renderedMap[s.url] ? "rendered" : "provider-extracted",
+            redactionCounts: s.counts,
+          })),
+          snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
+          ...(ctx.guidance && !ctx.collectOnly ? { codingCorrection: { version: ctx.guidance.version, checks: Object.keys(ctx.guidance.byCheck) } } : {}),
+        },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+  };
+  if (ctx.collectOnly) {
+    persistManifest();
+    return { n: project.n, hnId: projectId, status: "ok", evidenceFromCache: evidenceStage.fromCache, segmentFromCache: segmentStage.fromCache, tavilyCreditsSpent: evidence.tavily.creditsSpent };
+  }
+
   // 5. code — skip the live model call on a guaranteed-degenerate (zero-span) input (D-29/D-30).
   // The key covers everything the model sees (codebook text, schema, spans), the model and the
   // token cap, so a reworded codebook check is re-coded rather than served from cache.
@@ -652,35 +690,7 @@ async function processProject(
     await recordInjectionFlags(db, project.n, injectionResult.spanIds.map((spanId) => ({ spanId })));
     await recordMissingData(db, project.n, evidence.tavily.pages.length === 0);
 
-    // A small sidecar manifest (criteria 2/3): per-snapshot URL, redaction
-    // counts and visibility. results.ts's schema (plan 02-06, not re-
-    // architected here) stores only snapshot hashes, not URLs — this file is
-    // what scripts/phase2-acceptance.sh re-checks withinBoundary against.
-    const manifestDir = path.join(dataDir, "pipeline", "manifests");
-    fs.mkdirSync(manifestDir, { recursive: true, mode: 0o700 });
-    fs.writeFileSync(
-      path.join(manifestDir, `${project.n}.json`),
-      JSON.stringify(
-        {
-          projectN: project.n,
-          hnId: projectId,
-          boundary,
-          homepageBoundary: (evidence as any).homepage ? deriveBoundary((evidence as any).homepage) : null,
-          // A site-first launch's own repositories, each its own boundary (evidence/site-repos.ts).
-          repoBoundaries: siteRepos.map((r) => deriveBoundary(`https://github.com/${r.owner}/${r.repo}`)),
-          snapshots: redacted.sources.map((s: { url: string; counts: unknown }) => ({
-            url: s.url,
-            visibility: renderedMap[s.url] ? "rendered" : "provider-extracted",
-            redactionCounts: s.counts,
-          })),
-          snapshotHashesInCollectionOrder: segmented.snapshotHashesInCollectionOrder,
-          ...(ctx.guidance ? { codingCorrection: { version: ctx.guidance.version, checks: Object.keys(ctx.guidance.byCheck) } } : {}),
-        },
-        null,
-        2,
-      ),
-      { mode: 0o600 },
-    );
+    persistManifest();
 
     return { recorded: true };
   })() };
@@ -700,6 +710,7 @@ async function processProject(
     claimsFromCache: claimsStage.fromCache,
     recordFromCache: recordStage.fromCache,
     tavilyCreditsSpent: evidence.tavily.creditsSpent,
+    codingFailedChunks: codingResult.failedChunks ?? 0,
   };
 }
 
@@ -716,6 +727,7 @@ export async function runPipeline({
   guidance,
   onlyChecks,
   priorApprovalProofPath,
+  collectOnly = false,
   overrides = {},
 }: {
   sliceProjectsPath?: string;
@@ -734,7 +746,10 @@ export async function runPipeline({
   onlyChecks?: string[];
   /** Explicit retained approval evidence; does not waive the separate collection approval. */
   priorApprovalProofPath?: string;
+  /** Collect fresh evidence without constructing either coding client. */
+  collectOnly?: boolean;
 }): Promise<RunAccounting> {
+  if (collectOnly && onlyChecks) throw new Error("collect-only cannot be combined with only-checks");
   const resolvedDataDir = dataDir ?? resolveDataDir();
   if (priorApprovalProofPath) {
     const { loadReleaseProof } = await import("./validate/release-proof.ts");
@@ -743,12 +758,13 @@ export async function runPipeline({
   // One budget object is shared by every project/client in this run.
   if (overrides.tfBudget != null && !(overrides.tfBudget instanceof DollarBudget)) {
     overrides = { ...overrides, tfBudget: new DollarBudget(overrides.tfBudget) };
-  } else if (!overrides.nebiusFetchImpl && overrides.tfBudget == null) {
+  } else if (!collectOnly && !overrides.nebiusFetchImpl && overrides.tfBudget == null) {
     overrides = { ...overrides, tfBudget: new DollarBudget(requireTfBudget()) };
   }
   const resolvedSliceProjectsPath = sliceProjectsPath ?? path.join(resolvedDataDir, "pipeline", "slice-projects.json");
   const allProjects: SliceEntryLike[] = JSON.parse(fs.readFileSync(resolvedSliceProjectsPath, "utf8"));
   const projects = projectFilter === undefined ? allProjects : allProjects.filter((p) => p.n === projectFilter);
+  if (collectOnly && projects.some(project => project.n <= 300)) throw new Error("collect-only is restricted to the fresh extension after the original 300");
 
   const resolvedDb = db ?? getDb();
   await ensurePipelineSchema(resolvedDb);
@@ -789,6 +805,7 @@ export async function runPipeline({
             onStop,
             guidance,
             onlyChecks,
+            collectOnly,
           });
         } catch (err) {
           if (err instanceof QuotaStop || (err as Error)?.name === "QuotaStop" || (err as Error)?.name === "BudgetExceededError") {
