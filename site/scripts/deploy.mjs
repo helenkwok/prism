@@ -1,15 +1,19 @@
 // D-69 (host changed by Helen, 2026-10-24): deploy dist/client as static files to the Oracle VM, served by
 // prism-caddy at findings.helenkwok.dev from a read-only mount. Never a fixture build.
 //
-//   node scripts/deploy.mjs <sha7>
+//   node scripts/deploy.mjs <sha7> <downloads-dir>
 //
+// <downloads-dir> holds the Milleleaf pack (built outside git, see build-mleaf.mjs). Each file listed in
+// ../downloads.sha256 is checked and copied to /downloads/; a missing or mismatched file refuses the deploy,
+// so a redeploy can never silently drop the pack.
 // <sha7> is a commit whose tracked tree is already at /srv/prism/src-<sha7> on the VM (07-DEPLOY.md); its
 // deploy/Caddyfile and scripts/vm-deploy.sh are used. The build goes to /srv/prism/findings/releases/<sha7>,
 // the relative symlink /srv/prism/findings/current is swapped to it, then `vm-deploy.sh caddy <sha7>` reloads
 // (or recreates) Caddy. The previous release stays on the VM, so a rollback is the same command with its sha7.
 // Refuses before anything runs: a page carrying the synthetic-data banner, or a build without its headers.
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const VM = 'ubuntu@149.118.68.57'
@@ -27,6 +31,16 @@ const html = readdirSync(out, { recursive: true }).filter(f => f.endsWith('.html
 if (html.some(f => readFileSync(resolve(out, f), 'utf8').includes('data-fixture-banner'))) refuse('fixture release')
 if (!existsSync(resolve(out, '_headers'))) refuse('no _headers')
 if (!existsSync(resolve(dist, 'caddy-headers'))) refuse('no caddy-headers')
+const downloads = process.argv[3] ?? refuse('usage: node scripts/deploy.mjs <sha7> <downloads-dir>')
+const sums = readFileSync(resolve(import.meta.dirname, '../downloads.sha256'), 'utf8').trim().split('\n').map(l => l.split(/\s+/))
+mkdirSync(resolve(out, 'downloads'), { recursive: true })
+for (const [hash, name] of sums) {
+  const from = resolve(downloads, name)
+  if (!existsSync(from)) refuse(`download missing: ${name}`)
+  if (createHash('sha256').update(readFileSync(from)).digest('hex') !== hash) refuse(`download checksum mismatch: ${name}`)
+  copyFileSync(from, resolve(out, 'downloads', name))
+}
+copyFileSync(resolve(import.meta.dirname, '../downloads.sha256'), resolve(out, 'downloads/SHA256SUMS'))
 
 const run = (cmd, args) => {
   const r = spawnSync(cmd, args, { stdio: 'inherit' })
