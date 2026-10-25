@@ -15,6 +15,8 @@ import { ensureConfirmationSchema, ensureEditsSchema, inputDigest, projectSpans,
 import { A9_ITEMS, a9Section } from "../../src/pipeline/signoff/a9.ts";
 import { ARTCRAFT_HN_ID, GOLD_SEED, SECOND_MODEL_SEED } from "../../src/pipeline/select/draw-sample.ts";
 import { prepareGateReviewBundle } from "../../src/pipeline/validate/gate-review-bundle.ts";
+import { loadCorrectionApprovalFailures } from "../../src/pipeline/validate/correction-approval-failure.ts";
+import { SIGNOFF_MODEL } from "../../src/pipeline/signoff/signoff.ts";
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 const book = loadCodebook();
 const ids = Object.keys(book.checks).slice(0, 3);
@@ -217,6 +219,64 @@ test("funding evidence rejects policy tampering, fake available funds and scope 
       fs.writeFileSync(p.decisionPath, JSON.stringify(p.decision));
       await assert.rejects(() => evaluateGate({ ...f, fundingFallback: { policyPath: p.policyPath, decisionPath: p.decisionPath }, actions: p.actions }), /funding/);
     }
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+function rejectedCorrectionFiles(f) {
+  const dir = path.join(f.dataDir, "validation");
+  const item = `Codebook correction adjudication (${ids[1]})`;
+  const proposal = { item, doc: "Synthetic correction proposal with complete method evidence.", context: "Synthetic unchanged prior rule.", requiresExplicitAuthorization: true };
+  const record = { item, decision: "rejected", narrowsWhatPasses: false, reason: "Synthetic correction lacks approval.", docDigest: sha(proposal.doc), inputDigest: sha(JSON.stringify({ doc: proposal.doc, context: proposal.context, item })), decidedAt: "2026-10-24T00:00:00Z", reviewer: { id: `agent:${SIGNOFF_MODEL}`, kind: "agent", modelId: SIGNOFF_MODEL } };
+  const proposalPath = path.join(dir, "synthetic-proposal.json"), recordPath = path.join(dir, "synthetic-rejection.json"), signoffPath = path.join(f.dataDir, "decisions", "release-signoff.jsonl");
+  fs.writeFileSync(proposalPath, JSON.stringify(proposal)); fs.writeFileSync(recordPath, JSON.stringify(record)); fs.writeFileSync(signoffPath, JSON.stringify(record) + "\n");
+  return { proposal, record, failure: { checkId: ids[1], proposalPath, recordPath, signoffPath }, actions: { checks: [{ checkId: ids[1], action: "withhold", applied: true, basis: "correction-approval-failed" }] } };
+}
+
+test("a signed correction rejection withholds the original miss without pretending fresh failure or funding shortfall", async () => {
+  const f = await fixture();
+  try {
+    const p = rejectedCorrectionFiles(f);
+    const options = { ...f, correctionApprovalFailures: [p.failure], actions: p.actions, revalidation: { sampleNs: Array.from({ length: 76 }, (_, i) => i + 301), checks: [{ checkId: ids[1], goldPasses: 12, ac1: .8, precision: .9 }] } };
+    const gate = await evaluateGate(options);
+    assert.equal(gate.checks[1].status, "withheld");
+    assert.match(gate.checks[1].reason, /approval.*rejected/);
+    assert.doesNotMatch(gate.checks[1].reason, /funding|did not pass/);
+    assert.equal(gate.checks[1].revalidation.ac1, .8);
+    assert.match(gate.checks[1].approvalFailureEvidenceDigest, /^[a-f0-9]{64}$/);
+    assert.equal(gate.checks[1].correctionApplied, false);
+    assert.throws(() => assertPublishable(gate, ids[1]));
+    await assert.rejects(() => evaluateGate({ ...f, actions: p.actions }), /approval failure evidence/);
+    const file = path.join(f.dataDir, "pipeline/manifests/1.json"), manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+    manifest.codingCorrection = { version: "c1", checks: [ids[1]] }; fs.writeFileSync(file, JSON.stringify(manifest));
+    await assert.rejects(() => evaluateGate(options), /must remain unapplied/);
+  } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
+});
+
+test("correction rejection evidence rejects changed proposals, later approval, old ledgers and false scope", async () => {
+  const f = await fixture();
+  try {
+    const cutoff = Date.parse("2026-10-23T00:00:00Z");
+    for (const mutate of [
+      p => { p.proposal.doc += " changed"; },
+      p => { p.proposal.context += " changed"; },
+      p => { p.record.decision = "approved"; },
+      p => { p.record.decidedAt = "invalid"; },
+      p => { p.failure.checkId = "unknown-check"; },
+      p => { p.failure.signoffPath = path.join(f.dataDir, "decisions", "signoff.jsonl"); },
+      p => { p.actions.checks[0].applied = false; },
+      p => { fs.appendFileSync(p.failure.signoffPath, JSON.stringify({ ...p.record, decision: "approved", decidedAt: "2026-10-24T01:00:00Z" }) + "\n"); },
+      p => { const link = path.join(f.dataDir, "validation", "linked-receipt.json"); fs.symlinkSync(p.failure.recordPath, link); p.failure.recordPath = link; },
+    ]) {
+      const p = rejectedCorrectionFiles(f); mutate(p);
+      fs.writeFileSync(p.failure.proposalPath, JSON.stringify(p.proposal));
+      if (!p.failure.recordPath.endsWith("linked-receipt.json")) fs.writeFileSync(p.failure.recordPath, JSON.stringify(p.record));
+      assert.throws(() => loadCorrectionApprovalFailures([p.failure], f.dataDir, ids, p.actions.checks, cutoff), /correction approval failure/);
+    }
+    const p = rejectedCorrectionFiles(f);
+    p.proposal.item = `Correction (${ids[0]})`; p.record.item = p.proposal.item; p.record.inputDigest = sha(JSON.stringify({doc:p.proposal.doc,context:p.proposal.context,item:p.proposal.item}));
+    p.failure.checkId = ids[0]; p.actions.checks[0].checkId = ids[0];
+    fs.writeFileSync(p.failure.proposalPath, JSON.stringify(p.proposal)); fs.writeFileSync(p.failure.recordPath, JSON.stringify(p.record)); fs.writeFileSync(p.failure.signoffPath, JSON.stringify(p.record) + "\n");
+    await assert.rejects(() => evaluateGate({ ...f, correctionApprovalFailures: [p.failure], actions: p.actions }), /originally missed/);
   } finally { await f.db.destroy(); fs.rmSync(f.dataDir, { recursive: true, force: true }); }
 });
 

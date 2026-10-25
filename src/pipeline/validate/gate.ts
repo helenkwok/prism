@@ -15,6 +15,7 @@ import { agreementByCheck, estimable, type AgreementRow } from "./agreement.ts";
 import { loadReleaseProof } from "./release-proof.ts";
 import { expandGateReviewBundle } from "./gate-review-bundle.ts";
 import { loadFundingFallback, type FundingFallbackOptions } from "./funding-fallback.ts";
+import { loadCorrectionApprovalFailures, type CorrectionApprovalFailure } from "./correction-approval-failure.ts";
 
 export const AC1_THRESHOLD = 0.70;
 export const PRECISION_THRESHOLD = 0.85;
@@ -33,6 +34,7 @@ export type GateOptions = {
   screeningAuditAction?: { documentPath: string; signoffPath?: string };
   priorApprovalProofPath?: string;
   fundingFallback?: FundingFallbackOptions;
+  correctionApprovalFailures?: CorrectionApprovalFailure[];
 };
 
 function within(metrics: { ac1: number; precision: number | null }): boolean {
@@ -179,6 +181,8 @@ export async function evaluateGate(o: GateOptions) {
   if (actions.some(a => !checkIds.includes(a.checkId)) || (o.revalidation?.checks ?? []).some(c => !checkIds.includes(c.checkId))) throw new Error("action or revalidation contains an unknown check");
   const funding = o.fundingFallback ? loadFundingFallback(o.fundingFallback, o.dataDir, sampleNs, checkIds, actions) : undefined;
   if (!funding && actions.some(a => a.basis === "funding-envelope")) throw new Error("funding fallback evidence is required");
+  const approvalFailures = o.correctionApprovalFailures ? loadCorrectionApprovalFailures(o.correctionApprovalFailures, o.dataDir, checkIds, actions, cutoff) : [];
+  if (!approvalFailures.length && actions.some(a => a.basis === "correction-approval-failed")) throw new Error("correction approval failure evidence is required");
   const freshNs = o.revalidation?.sampleNs ?? [];
   const freshDraw = readJson(path.join(o.dataDir, "pipeline", "fresh-projects.json"));
   const quarters = Array.isArray(freshDraw) ? [1, 2, 3, 4].map(q => freshDraw.filter(e => freshNs.includes(e.n) && e.quarter === q).length) : null;
@@ -205,7 +209,14 @@ export async function evaluateGate(o: GateOptions) {
     let status = metric.n === 0 ? "missed" : !estimable(metric.goldPasses) ? "released-not-estimable" : within(metric) ? "released" : "missed";
     let reason = status === "released-not-estimable" ? "validated by confirmation only; agreement not estimable (fewer than 10 gold passes)" : status === "released" ? "both registered point-estimate thresholds met" : "registered point-estimate threshold missed or no current paired gold";
     const fundingWithheld = funding?.checkIds.includes(metric.checkId) === true;
-    if (fundingWithheld) {
+    const approvalFailure = approvalFailures.find(failure => failure.checkId === metric.checkId);
+    if (approvalFailure) {
+      if (status !== "missed") throw new Error("correction approval failure may only withhold an originally missed check");
+      if (versions.length) throw new Error("a rejected correction must remain unapplied on every scoped project");
+      status = "withheld";
+      reason = "independent approval of the correction was rejected; correction remains unapplied and the originally missed check is withheld; any fresh metrics remain reported separately";
+    }
+    else if (fundingWithheld) {
       if (status !== "missed") throw new Error("funding fallback may only withhold a check that missed its original gate");
       status = "withheld";
       reason = `funding envelope prevents ${funding!.step}; withheld under the standing funding directive; any fresh revalidation result remains reported separately`;
@@ -213,7 +224,7 @@ export async function evaluateGate(o: GateOptions) {
     else if (action?.action === "person-coded" && action.applied && personCoverage(metric.checkId)) { status = "person-coded"; reason = "a person coded this check across the full scoped sample on current citations"; }
     else if (rv && (!estimable(rv.goldPasses) || !within(rv)) && action?.action === "withhold" && action.applied) { status = "withheld"; reason = !estimable(rv.goldPasses) ? "fresh revalidation is not estimable; withhold under A7.4" : "the single fresh correction did not pass; withhold under A7.5"; }
     else if (rv && estimable(rv.goldPasses) && within(rv) && correctionApplied) { status = "corrected-revalidated"; reason = "passed estimable fresh revalidation and correction is recorded on every scoped sample manifest"; }
-    return { ...metric, status, reason, correctionApplied, ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
+    return { ...metric, status, reason, correctionApplied, ...(approvalFailure ? { approvalFailureEvidenceDigest: approvalFailure.approvalFailureEvidenceDigest } : {}), ...(fundingWithheld ? { fundingDecisionDigest: funding!.decisionDigest } : {}), ...(rv ? { revalidation: { sampleRef: "revalidationSampleNs", checkId: rv.checkId, goldPasses: rv.goldPasses, ac1: rv.ac1, precision: rv.precision } } : {}) };
   });
   const detached = o.priorApprovalProofPath ? loadReleaseProof(o.priorApprovalProofPath, o.protocolPath ?? path.resolve("protocol/PROTOCOL.md")) : undefined;
   const validation = validationSummaries(o.dataDir, o.screeningAuditAction, detached);
@@ -234,6 +245,7 @@ export async function evaluateGate(o: GateOptions) {
   return {
     generatedAt: new Date().toISOString(), codebookVersion: o.codebookVersion, gateSha: o.gateFile.sha256, sampleNs, revalidationSampleNs: fresh ? freshNs : [],
     ...(funding ? { fundingFallback: funding } : {}),
+    ...(approvalFailures.length ? { correctionApprovalFailures: approvalFailures } : {}),
     ...(detached ? { approvalEvidence: { basis: "retained-completion-and-user-attestation", proofDigest: detached.proofDigest, a7Digest: detached.a7Digest, recoveryCutoffUpperBound: new Date(detached.recoveryCutoff).toISOString() } } : {}),
     bootstrap: { resamples: 2000, unit: "projects", primarySeed: goldSeed, secondModelSeed: secondSeed },
     thresholds: { ac1: AC1_THRESHOLD, passPrecision: PRECISION_THRESHOLD, goldPassesForEstimability: 10, basis: "point estimates; pooled results never rescue a check" },
