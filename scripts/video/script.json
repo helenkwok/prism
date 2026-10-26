@@ -113,7 +113,7 @@
       ],
       "sc1Item": "headline",
       "sub04": null,
-      "narration": "We reviewed 300 AI launches from Show HN like a systematic review, with hypotheses fixed in advance. At least 169 publicly evidence their intended use, but just 44 show a fallback. Both pre-registered hypotheses were not supported, and we report that.",
+      "narration": "I reviewed 300 AI launches from Show HN like a systematic review, with hypotheses fixed in advance. At least 169 publicly evidence their intended use, but just 44 show a fallback. Both pre-registered hypotheses were not supported, and I report that.",
       "onScreen": "300 launches; pre-registered findings, release 2026-10-25",
       "source": "findings site home page (/), hypothesis panel, built from public-data/v1/release.json",
       "method": "cdp",
@@ -127,7 +127,7 @@
               "ref": "n"
             },
             "label": "launches reviewed",
-            "at": "We reviewed 300"
+            "at": "I reviewed 300"
           },
           {
             "value": {
@@ -159,7 +159,7 @@
       ],
       "sc1Item": null,
       "sub04": "nemotron",
-      "narration": "We built and proved PRISM with Nemotron models served by Nebius Token Factory: twelve configurations tested, Nemotron Lightning screened 1,675 launches down to 300, and an open model coded all 300.",
+      "narration": "I built and proved PRISM with Nemotron models served by Nebius Token Factory: twelve configurations tested, Nemotron Lightning screened 1,675 launches down to 300, and an open model coded all 300.",
       "onScreen": "Nemotron on Nebius Token Factory: 12 configurations, 1,675 launches screened",
       "source": "recorded runs: spikes/nebius.md matrix (C1, C2), sample-screening-log.json (C4), pilot confirmations (C5), approved-recode.log (C8); figures from 08-EVIDENCE-INVENTORY.md",
       "method": "card",
@@ -474,13 +474,13 @@
       "sc1Item": "agreement",
       "sub04": null,
       "narration": "An independent labeller re-coded all 300 launches; agreement, AC1, ran from 0.72 to 0.89 on the released checks. Nemotron Ultra changed 634 of 1,610 positives on confirmation. The screening audit error was 12.2 percent, and collection recall 0.89.",
-      "onScreen": "How we know: AC1 0.72 to 0.89, recall 0.89",
+      "onScreen": "How I know: AC1 0.72 to 0.89, recall 0.89",
       "source": "findings site /validation and a figure's How we know panel, built from public-data/v1/release.json",
       "method": "cdp",
       "fixtureData": false,
       "placeholders": {},
       "card": {
-        "title": "How we know",
+        "title": "How I know",
         "stats": [
           {
             "value": "0.72–0.89",
@@ -612,7 +612,7 @@
     },
     {
       "first": "B8",
-      "title": "How we know"
+      "title": "How I know"
     }
   ]
 }
