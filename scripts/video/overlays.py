@@ -146,7 +146,7 @@ def ring(path, box, label=None):
     d.rounded_rectangle(r, 12, outline=AMBER, width=4)
     if label:
         f = font(28, "medium")
-        lines = wrap(d, label, f, 250)
+        lines = wrap(d, label, f, 280)
         cw = max(d.textlength(l, font=f) for l in lines) + 36
         ch = len(lines) * 36 + 20
         if r[2] + 18 + cw <= W - 16:  # right margin
@@ -197,6 +197,47 @@ def resolve(value, release):
     for k in value["ref"].split("."):
         v = v[int(k)] if isinstance(v, list) else v[k]
     return value.get("fmt", "{}").format(v)
+
+
+SPOKEN_HOLD = 1.5  # seconds a ring, number or line stays up at least when the narration says it as it appears
+
+
+def text_hold(text):
+    """Text the narration does not say stays up long enough to read: max(3 s, 1 s + words/3)."""
+    return max(3.0, 1 + len(text.split()) / 3)
+
+
+def clip_seconds(shot):
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", shot["video"]],
+                         capture_output=True, text=True, check=True).stdout
+    return (float(out) - shot.get("ss", 0)) / shot.get("speed", 1)
+
+
+def beat_length(spec, b, nar):
+    """A beat ends when its narration has ended (0.3 s lead-in + 0.4 s after) and every visual has had its time:
+    rings SPOKEN_HOLD, unspoken text text_hold, the panels their spans, a closing clip its full length. No dead air
+    beyond that; the planned slot is not a minimum. Card numbers and their lines are spoken as they appear, so
+    they need SPOKEN_HOLD; only the end card's text is unspoken."""
+    r = {"start": 0.0, "nar": nar}
+    need = [0.3 + nar + 0.4]
+    if b.get("opening"):
+        need.append(4.7)
+    if any(x["first"] == b["id"] for x in spec.get("sections", [])) and not b.get("card"):
+        need.append(4.2)
+    c = b.get("card") or {}
+    need += [word_time(b, r, st["at"]) + SPOKEN_HOLD for st in c.get("stats", [])]
+    if c.get("foot"):
+        need.append(word_time(b, r, c["foot"]["at"]) + SPOKEN_HOLD)
+    if b.get("ending"):
+        e = b["ending"]
+        need.append(text_hold(f"{e['title']} {e.get('sub', '')}"))
+    shots = b.get("shots", [])
+    for k, sh in enumerate(shots):
+        t = 0.0 if k == 0 else word_time(b, r, sh["at"])
+        if sh.get("video") and k == len(shots) - 1:
+            need.append(t + clip_seconds(sh))
+        need += [word_time(b, r, cue["at"]) + SPOKEN_HOLD for cue in sh.get("cues", [])]
+    return max(need)
 
 
 def main():
@@ -336,4 +377,8 @@ def render_beat(layers, t0, dur, seg):
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1] == "--length":  # build.sh: overlays.py --length <script.json> <beat id> <narration seconds>
+        spec = json.loads(Path(sys.argv[2]).read_text())
+        print(f"{beat_length(spec, next(b for b in spec['beats'] if b['id'] == sys.argv[3]), float(sys.argv[4])):.4f}")
+    else:
+        main()

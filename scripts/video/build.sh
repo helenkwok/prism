@@ -3,7 +3,8 @@
 #
 #   bash scripts/video/build.sh <script.json> <frames dir> <out.mp4>
 #
-# Per beat: narration with macOS say, a segment of max(slot, narration + 0.6 s)
+# Per beat: narration with macOS say, a segment as long as the narration and its visuals need (no dead air;
+# overlays.py beat_length)
 # from <frames dir>/<id>/frames/ (one PNG = a still; numbered PNGs = a sequence
 # played at <id>/fps, default 30, holding its last frame), falling back to
 # <id>/card.png, with <id>/caption.png overlaid. Then concat, mux narration as
@@ -47,7 +48,9 @@ START=0
 while read -r ID SEC <&3; do
   say -v "$VOICE" -o "$WORK/$ID.aiff" -f "$WORK/$ID.txt"
   NAR=$(dur "$WORK/$ID.aiff")
-  LEN=$(node -e 'const [n, s] = process.argv.slice(1).map(Number); console.log((Math.ceil(Math.max(s, n + 0.6) * 30) / 30).toFixed(4))' "$NAR" "$SEC")
+  # Narration plus whatever its visuals still need, no dead air (overlays.py beat_length); whole frames.
+  NEED=$(python3 "$(dirname "$0")/overlays.py" --length "$SCRIPT" "$ID" "$NAR")
+  LEN=$(node -e 'console.log((Math.ceil(Number(process.argv[1]) * 30 - 1e-6) / 30).toFixed(4))' "$NEED")
 
   DIR="$FRAMES/$ID"
   N=0
