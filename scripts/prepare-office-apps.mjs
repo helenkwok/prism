@@ -56,7 +56,9 @@ await writeFile(path.join(root, "public/office-apps/versions.json"), `${JSON.str
 
 // The four findings files /office opens, fetched from the findings site and checked against the sums
 // pinned in site/downloads.sha256 before anything is written to public/office/findings/.
-const findingsBase = process.env.PRISM_FINDINGS_DOWNLOADS ?? "https://prism.helenkwok.dev/downloads/";
+// The findings host serves the pack today and, once the findings move to prism.helenkwok.dev's root, redirects
+// to the same path there (fetch follows it); every file is checked against site/downloads.sha256 either way.
+const findingsBase = process.env.PRISM_FINDINGS_DOWNLOADS ?? "https://findings.helenkwok.dev/downloads/";
 const sums = (await readFile(path.join(root, "site/downloads.sha256"), "utf8")).trim().split("\n").map((line) => line.split(/\s+/));
 await mkdir(path.join(root, "public/office/findings"), { recursive: true });
 for (const [sha256, name] of sums) {
