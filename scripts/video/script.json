@@ -1,7 +1,11 @@
 {
   "title": "PRISM submission video",
   "maxSeconds": 175,
-  "voice": "Karen",
+  "voice": "kokoro:af_heart",
+  "pronounce": {
+    "Nemotron": "/nˈɛmOtɹɑn/",
+    "DeepSeek": "/dˈipsˈik/"
+  },
   "decisions": "08-DECISIONS-HELEN.md (2026-10-24): s1 with 08-FRAMING.md wording, n1 say, m1 headless, t4 no runtime Tavily, p3 no new paid runs, i2 synthetic fixture | 2026-10-25: two real recorded live runs approved by Helen (supersede p3 for B5 and B6); B11 added with Helen's nine-apps clip (her exception to the trademark guard)",
   "beats": [
     {
