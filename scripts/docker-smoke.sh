@@ -132,13 +132,15 @@ rm -f /tmp/prism-docker-smoke-negative.log
 
 # ---- 4. Run detached with a mapped loopback address ---------------------
 HOST_PORT=$(free_port)
-BASE_URL="http://127.0.0.1:${HOST_PORT}"
+ORIGIN="http://127.0.0.1:${HOST_PORT}"
+# The app is served under its base path (base-path.mjs, e.g. /app); auth trusts the origin.
+BASE_URL="${ORIGIN}$(node --input-type=module -e 'import { BASE_PREFIX } from "./base-path.mjs"; process.stdout.write(BASE_PREFIX)')"
 log "starting ${CONTAINER_NAME} on ${BASE_URL}"
 docker run -d --name "$CONTAINER_NAME" \
   -p "127.0.0.1:${HOST_PORT}:3000" \
   -e BETTER_AUTH_SECRET="$SEED_SECRET" \
-  -e BETTER_AUTH_URL="$BASE_URL" \
-  -e TRUSTED_ORIGINS="$BASE_URL" \
+  -e BETTER_AUTH_URL="$ORIGIN" \
+  -e TRUSTED_ORIGINS="$ORIGIN" \
   -v "${DATA_DIR}:/data" \
   "$IMAGE_TAG" >/dev/null
 
