@@ -21,9 +21,10 @@
       "fixtureData": false,
       "placeholders": {},
       "opening": {
-        "kicker": "PRISM",
-        "title": "What AI launches publicly evidence",
-        "sub": "Public-evidence Review of Innovation, Standards & Markets"
+        "kicker": "Public-evidence review",
+        "title": "PRISM",
+        "sub": "What AI launches publicly evidence, for which decision, against which standard",
+        "size": 160
       },
       "cueAfter": 4.8,
       "shots": [

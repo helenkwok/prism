@@ -65,14 +65,15 @@ def wrap(draw, text, f, width):
     return lines + [line] if line else lines
 
 
-def panel(path, kicker, title, sub=None, opaque=False):
+def panel(path, kicker, title, sub=None, opaque=False, size=68):
     img = Image.new("RGBA", (W, H), BG if opaque else (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    tf, sf, kf = font(68, "bold"), font(31, "light"), font(25, "medium")
+    tf, sf, kf = font(size, "bold"), font(31, "light"), font(25, "medium")
     tl = wrap(d, title, tf, 1240)
     sl = wrap(d, sub, sf, 1240) if sub else []
     pw = 1400
-    ph = 120 + 60 + len(tl) * 82 + (24 + len(sl) * 42 if sl else 0) + 50
+    lh = round(size * 1.2)
+    ph = 120 + 60 + len(tl) * lh + (24 + len(sl) * 42 if sl else 0) + 50
     x0, y0 = (W - pw) // 2, (H - ph) // 2
     d.rounded_rectangle([x0, y0, x0 + pw, y0 + ph], 34, fill=PANEL)
     y = y0 + 70
@@ -81,7 +82,7 @@ def panel(path, kicker, title, sub=None, opaque=False):
     y += 90
     for line in tl:
         d.text((x0 + 80, y), line, font=tf, fill=INK)
-        y += 82
+        y += lh
     y += 24
     for line in sl:
         d.text((x0 + 80, y), line, font=sf, fill=MUTED)
@@ -248,8 +249,9 @@ def main():
             add_png(f"{b['id']}-section.png", t0 + 0.4, t0 + 4.2, on_top=True)
         if b.get("opening"):
             o = b["opening"]
-            panel(work / "opening.png", o["kicker"], o["title"], o.get("sub"))
-            add_png("opening.png", t0 + 0.5, t0 + 4.7, on_top=True)
+            panel(work / "opening.png", o["kicker"], o["title"], o.get("sub"), size=o.get("size", 68))
+            # On screen from the first frame (no fade in), so frame 0 already names the submission.
+            add_png("opening.png", t0, t0 + 4.7, 0, on_top=True)
 
         shots_json = shots_dir / b["id"] / "shots.json"
         if b.get("shots"):
