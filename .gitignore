@@ -24,3 +24,5 @@ scripts/probes/worker-cpu/.cloudflare/
 public/office-apps/
 .office-downloads/
 public/office/findings/
+__pycache__/
+*.pyc
