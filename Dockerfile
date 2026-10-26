@@ -15,8 +15,11 @@
 # linux-x64). If `npm ci` cannot fetch it, the build fails; the remedy is a
 # retry, never a source build (nodejs/node#65446: a binding built against
 # Node >= 24.19.0 headers aborts in GC).
+#
+# Node 24.22.1 or later: earlier 24.x decode Brotli with CVE-2026-111497 ("Node2Shell"), and the collector's
+# fetch() decodes third-party responses. Upgrade the pin; never move it back below 24.22.1.
 
-FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS build
+FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -41,7 +44,7 @@ RUN node scripts/prepare-office-apps.mjs
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS runtime
+FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS runtime
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates \
  && rm -rf /var/lib/apt/lists/*

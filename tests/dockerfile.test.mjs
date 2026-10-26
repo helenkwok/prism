@@ -180,3 +180,12 @@ test("the Dockerfile, comments included, names no compiler, make, node-gyp or so
 test(".dockerignore lets docker/better-sqlite3 into the build context", () => {
   for (const allow of ["!docker", "!docker/better-sqlite3", "!docker/better-sqlite3/**"]) assert.ok(dockerignoreLines.includes(allow), allow);
 });
+
+test("the base image's Node is 24.22.1 or later (CVE-2026-111497, Brotli)", () => {
+  const versions = [...dockerfile.matchAll(/^FROM node:(\d+)\.(\d+)\.(\d+)-/gm)].map((m) => m.slice(1).map(Number));
+  assert.ok(versions.length >= 2, "both stages name a node:<x.y.z> image");
+  for (const [major, minor, patch] of versions) {
+    const fixed = major > 24 || (major === 24 && (minor > 22 || (minor === 22 && patch >= 1)));
+    assert.ok(fixed, `node ${major}.${minor}.${patch} is below 24.22.1`);
+  }
+});
