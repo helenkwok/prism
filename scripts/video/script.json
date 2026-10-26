@@ -14,7 +14,7 @@
       ],
       "sc1Item": "gate-first-report",
       "sub04": null,
-      "narration": "This finished PRISM report comes from a live run on one of Helen's own launches. Each decision shows the gate's verdict, then what would change it, with the quotes, archived pages and standards underneath.",
+      "narration": "This finished PRISM report comes from a live run on one of my own launches. Each decision shows the gate's verdict, then what would change it, with the quotes, archived pages and standards underneath.",
       "onScreen": "Verdict, then what would change it; a deterministic gate decides",
       "source": "https://prism.helenkwok.dev/p/OWN-MILLELEAF, recorded live run 2026-10-25 (keep/prism/2026-10-25-live-run-milleleaf)",
       "method": "cdp",
