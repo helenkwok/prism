@@ -30,6 +30,8 @@ if (!existsSync(out)) refuse('no build')
 const html = readdirSync(out, { recursive: true }).filter(f => f.endsWith('.html'))
 if (html.some(f => readFileSync(resolve(out, f), 'utf8').includes('data-fixture-banner'))) refuse('fixture release')
 if (!existsSync(resolve(out, '_headers'))) refuse('no _headers')
+// The review PDF is a separate step (npm run pdf) that a fresh build clears; the site links to it.
+if (!readdirSync(out).some(f => /^prism-review-.+\.pdf$/.test(f))) refuse('no review PDF: run `npm run pdf` after the build')
 if (!existsSync(resolve(dist, 'caddy-headers'))) refuse('no caddy-headers')
 const downloads = process.argv[3] ?? refuse('usage: node scripts/deploy.mjs <sha7> <downloads-dir>')
 const sums = readFileSync(resolve(import.meta.dirname, '../downloads.sha256'), 'utf8').trim().split('\n').map(l => l.split(/\s+/))
