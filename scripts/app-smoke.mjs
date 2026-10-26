@@ -146,8 +146,8 @@ async function assertions(base, creds) {
 async function deployChecks(base, cookie) {
   const signInPage = await page(base, null, "/sign-in");
   check("STATE X-Robots-Tag on /sign-in is noindex, nofollow", signInPage.headers.get("x-robots-tag") === "noindex, nofollow", `${signInPage.status} ${signInPage.headers.get("x-robots-tag")}`);
-  const asset = /(?:src|href)="(\/assets\/[^"]+)"/.exec(signInPage.body)?.[1];
-  const assetRes = asset ? await fetch(`${base}${asset}`) : null;
+  const asset = /(?:src|href)="([^"]*\/assets\/[^"]+)"/.exec(signInPage.body)?.[1];
+  const assetRes = asset ? await fetch(new URL(asset, base)) : null;
   check("STATE X-Robots-Tag on a static asset is noindex, nofollow", assetRes?.status === 200 && assetRes.headers.get("x-robots-tag") === "noindex, nofollow", `${asset} ${assetRes?.status}`);
   const run = await page(base, cookie, "/run");
   check("DEPLOY /run shows no fixture-runner notice", run.status === 200 && !run.body.includes('data-notice="fixture"') && !run.body.includes("Fixture:"), `status ${run.status}`);
