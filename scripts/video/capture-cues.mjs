@@ -6,7 +6,7 @@
 // For every beat with "shots", writes <out>/<id>/shot-<n>.png (1920 px wide) and
 // <out>/<id>/shots.json: each shot with its cue boxes measured from the DOM at
 // capture time, in output pixels. A shot is { base: "prod"|"local", url, viewport,
-// clip, scroll, offset, actions, cues }, its url an app path under the base (base-path.mjs); a { video } shot
+// clip, scroll, offset, actions, cues }, its url an app path under the base (base-path.mjs); a { video } or { pdf } shot
 // passes through unchanged.
 // prod signs in as prism-admin (password from its mode-600 key file, never
 // printed); local signs in as the seeded admin of e2e/serve.mjs (E2E_PORT, E2E_DIR).
@@ -106,8 +106,8 @@ try {
     fs.mkdirSync(dir, { recursive: true });
     const out = [];
     for (const [i, shot] of beat.shots.entries()) {
-      out.push(shot.video ? shot : await capture(shot, path.join(dir, `shot-${i + 1}.png`)));
-      console.log(`SHOT ${beat.id} ${i + 1} ${shot.video ? "video" : shot.url} cues=${out.at(-1).cues?.length ?? 0}`);
+      out.push(shot.video || shot.pdf ? shot : await capture(shot, path.join(dir, `shot-${i + 1}.png`)));
+      console.log(`SHOT ${beat.id} ${i + 1} ${shot.video ? "video" : shot.pdf ? "pdf" : shot.url} cues=${out.at(-1).cues?.length ?? 0}`);
     }
     fs.writeFileSync(path.join(dir, "shots.json"), JSON.stringify(out, null, 2));
   }
