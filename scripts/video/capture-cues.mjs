@@ -8,7 +8,7 @@
 // capture time, in output pixels. A shot is { base: "prod"|"local", url, viewport,
 // clip, scroll, offset, actions, cues }, its url an app path under the base (base-path.mjs); a { video } or { pdf } shot
 // passes through unchanged.
-// prod signs in as prism-admin (password from its mode-600 key file, never
+// site is the public findings site (no sign-in); prod signs in as prism-admin (password from its mode-600 key file, never
 // printed); local signs in as the seeded admin of e2e/serve.mjs (E2E_PORT, E2E_DIR).
 import fs from "node:fs";
 import os from "node:os";
@@ -28,6 +28,8 @@ const BASES = {
     email: "prism-admin@helenkwok.dev",
     password: fs.readFileSync(path.join(os.homedir(), "Library/Application Support/prism/prod-admin.key"), "utf8").trim(),
   }),
+  // The public findings site at the host's root: no sign-in.
+  site: () => ({ url: "https://prism.helenkwok.dev" }),
   local: () => {
     const { admin } = JSON.parse(fs.readFileSync(path.join(process.env.E2E_DIR, "creds.json"), "utf8"));
     return { url: `http://127.0.0.1:${process.env.E2E_PORT}${BASE_PREFIX}`, email: admin.email, password: admin.password };
@@ -40,6 +42,7 @@ const sessions = {};
 async function session(base) {
   if (sessions[base]) return sessions[base];
   const b = BASES[base]();
+  if (!b.email) return (sessions[base] = { url: b.url, state: undefined });
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
   await p.goto(`${b.url}/sign-in`);

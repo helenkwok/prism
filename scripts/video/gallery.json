@@ -1,0 +1,295 @@
+{
+  "note": "Devpost image gallery (3:2, 1920x1280). Page shots via capture-cues.mjs; cards and rings by gallery.py.",
+  "beats": [
+    {
+      "id": "01-cover",
+      "card": {
+        "cover": true
+      }
+    },
+    {
+      "id": "02-findings-site",
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "base": "site",
+          "url": "/",
+          "cues": []
+        }
+      ]
+    },
+    {
+      "id": "03-headline",
+      "card": {
+        "title": "300 AI launches from Show HN, reviewed like a systematic review",
+        "stats": [
+          {
+            "value": {
+              "ref": "n"
+            },
+            "label": "launches reviewed",
+            "at": "I reviewed 300"
+          },
+          {
+            "value": {
+              "ref": "figures.checks:rely.rows.0.c"
+            },
+            "label": "publicly evidence their intended use",
+            "at": "At least 169"
+          },
+          {
+            "value": {
+              "ref": "figures.checks:operate.rows.3.c"
+            },
+            "label": "show a fallback",
+            "at": "just 44"
+          }
+        ],
+        "foot": {
+          "text": "Both pre-registered hypotheses: not supported",
+          "at": "Both pre-registered"
+        }
+      }
+    },
+    {
+      "id": "04-report-verdict",
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "url": "/p/OWN-MILLELEAF",
+          "scroll": "[data-decision=rely]",
+          "offset": 60,
+          "cues": [
+            {
+              "sel": "[data-decision=rely] [data-verdict-head] > div",
+              "label": "The gate's verdict"
+            },
+            {
+              "sel": "[data-decision=rely] [data-action]",
+              "label": "What would change it"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "05-evidence",
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "url": "/p/OWN-MILLELEAF",
+          "actions": [
+            {
+              "open": "[data-decision=rely] details[data-evidence]"
+            }
+          ],
+          "scroll": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-chip]",
+          "offset": 330,
+          "cues": [
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-quote-card] >> nth=-1 >> blockquote",
+              "label": "Quote from its own page"
+            },
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-quote-card] >> nth=-1 >> a:has-text(\"Open archived snapshot\")",
+              "label": "Archived page"
+            },
+            {
+              "sel": "[data-decision=rely] [data-check-card] >> nth=0 >> [data-chip]",
+              "label": "Standard it maps to"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "06-live-run",
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "url": "/run/1",
+          "scroll": "h1",
+          "offset": 40,
+          "cues": [
+            {
+              "sel": "[data-stage=screen]",
+              "label": "Lightning"
+            },
+            {
+              "sel": "[data-stage=code]",
+              "label": "DeepSeek"
+            },
+            {
+              "sel": "[data-stage=gate]",
+              "label": "No model"
+            },
+            {
+              "sel": "[data-stage=confirm]",
+              "label": "Ultra"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "07-receipt",
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "url": "/run/1",
+          "scroll": "[data-receipt]",
+          "offset": 60,
+          "cues": [
+            {
+              "sel": "[data-receipt-total]",
+              "label": "This run"
+            },
+            {
+              "sel": "[data-receipt] p:has-text('Same run with Nemotron 3 Ultra')",
+              "label": "All-Ultra cost"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "08-injection",
+      "fixtureData": true,
+      "shots": [
+        {
+          "viewport": [
+            1200,
+            800
+          ],
+          "base": "local",
+          "url": "/p/P03",
+          "actions": [
+            {
+              "open": "details[data-evidence]:has([data-injection])"
+            }
+          ],
+          "scroll": "[data-quote-card]:has([data-injection])",
+          "offset": 200,
+          "cues": [
+            {
+              "sel": "[data-quote-card]:has([data-injection]) blockquote",
+              "label": "Hidden instruction"
+            },
+            {
+              "sel": "[data-injection]",
+              "label": "Flagged, kept as page text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "09-office",
+      "shots": [
+        {
+          "url": "/office",
+          "waitUntil": "load",
+          "viewport": [
+            1920,
+            1280
+          ],
+          "clip": [
+            478,
+            300,
+            1182,
+            788
+          ],
+          "actions": [
+            {
+              "wait": 15000
+            },
+            {
+              "click": "button[aria-label=\"Dismiss notification\"]"
+            },
+            {
+              "click": "button:has-text(\"Home\")"
+            },
+            {
+              "wait": 3000
+            }
+          ],
+          "cues": [
+            {
+              "sel": [
+                "button:has-text(\"findings-pack.pdf\") >> nth=0",
+                "button:has-text(\"findings-deck.pptx\") >> nth=0",
+                "button:has-text(\"findings-report.docx\") >> nth=0",
+                "button:has-text(\"findings.xlsx\") >> nth=0"
+              ],
+              "label": "One source, four files"
+            }
+          ],
+          "scroll": "button:has-text(\"findings-pack.pdf\") >> nth=0",
+          "offset": "center"
+        }
+      ]
+    },
+    {
+      "id": "10-prisma",
+      "shots": [
+        {
+          "pdf": "/Users/helen/workspace/alreadyopen/repositories/prism-integrate/site/dist/client/prism-review-v1-2026-10-25.pdf",
+          "page": 5,
+          "crop": [
+            100,
+            330,
+            1500,
+            1000
+          ],
+          "cues": []
+        }
+      ]
+    },
+    {
+      "id": "11-how-i-know",
+      "card": {
+        "title": "How I know",
+        "stats": [
+          {
+            "value": "0.72–0.89",
+            "label": "AC1 agreement with an independent labeller",
+            "at": "agreement, AC1"
+          },
+          {
+            "value": "634 / 1,610",
+            "label": "positives changed by Nemotron Ultra",
+            "at": "changed 634"
+          },
+          {
+            "value": {
+              "ref": "validation.screeningAudit.pct",
+              "fmt": "{}%"
+            },
+            "label": "screening audit error",
+            "at": "screening audit"
+          },
+          {
+            "value": "0.89",
+            "label": "collection recall",
+            "at": "collection recall"
+          }
+        ]
+      }
+    }
+  ]
+}
