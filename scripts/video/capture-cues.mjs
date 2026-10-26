@@ -46,7 +46,7 @@ async function session(base) {
   await p.getByLabel("Email").fill(b.email);
   await p.getByLabel("Password").fill(b.password);
   await p.getByRole("button", { name: "Sign in" }).click();
-  await p.waitForURL((u) => u.pathname !== "/sign-in", { timeout: 30_000 });
+  await p.waitForURL((u) => !u.pathname.endsWith("/sign-in"), { timeout: 30_000 });
   sessions[base] = { url: b.url, state: await ctx.storageState() };
   await ctx.close();
   return sessions[base];
